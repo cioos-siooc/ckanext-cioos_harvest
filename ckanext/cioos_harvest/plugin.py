@@ -196,6 +196,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return new_obj
 
     def handle_composite_harvest_dictinary(self, field, iso_values, package_dict, handled_fields):
+        sep = plugins.toolkit.h.composite_separator()
         field_name = field['field_name']
         if field_name in handled_fields:
             return
@@ -211,7 +212,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 field_value = field_value[0]
             field_value = self.flatten_composite_keys(field_value)
             for key, value in field_value.iteritems():
-                newKey = field_name + '|' + key
+                newKey = field_name + sep + key
                 package_dict['__extras'][newKey] = value
             handled_fields.append(field_name)
         # populate composite repeating fields
@@ -222,7 +223,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 # collaps subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem)
                 for key, value in subitem.iteritems():
-                    newKey = field_name + '|' + str(idx + 1) + '|' + key
+                    newKey = field_name + sep + str(idx + 1) + sep + key
                     package_dict['__extras'][newKey] = value
             handled_fields.append(field_name)
 
