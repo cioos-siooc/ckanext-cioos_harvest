@@ -10,12 +10,13 @@ from numbers import Number
 
 log = logging.getLogger(__name__)
 
-#place holder, spatial extension expects a validator to be present
+
+# place holder, spatial extension expects a validator to be present
 class MyValidator(BaseValidator):
 
     name = 'my-validator'
 
-    title= 'My very own validator'
+    title = 'My very own validator'
 
     @classmethod
     def is_valid(cls, xml):
@@ -27,13 +28,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     plugins.implements(ISpatialHarvester, inherit=True)
 
     # IConfigurer
-
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'cioos_harvest')
-
-
 
     # ISpatialHarvester
     def get_validators(self):
@@ -90,7 +88,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
                 handled_fields = []
                 if composite:
-                    self.handle_composite_harvest_dictinary(field, iso_values, package_dict, handled_fields)
+                    self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
                 if fluent:
                     self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, handled_fields, source_config)
@@ -195,7 +193,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 new_obj['_'.join(keys + [key])] = value
         return new_obj
 
-    def handle_composite_harvest_dictinary(self, field, iso_values, package_dict, handled_fields):
+    def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
         sep = plugins.toolkit.h.composite_separator()
         field_name = field['field_name']
         if field_name in handled_fields:
@@ -214,6 +212,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             for key, value in field_value.iteritems():
                 newKey = field_name + sep + key
                 package_dict['__extras'][newKey] = value
+            # remove from extras so as not to duplicate fields
+            if extras.get(field_name):
+                del extras[field_name]
             handled_fields.append(field_name)
         # populate composite repeating fields
         elif field_value and field.get('preset', '') == 'composite_repeating':
@@ -225,6 +226,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 for key, value in subitem.iteritems():
                     newKey = field_name + sep + str(idx + 1) + sep + key
                     package_dict['__extras'][newKey] = value
+            # remove from extras so as not to duplicate fields
+            if extras.get(field_name):
+                del extras[field_name]
             handled_fields.append(field_name)
 
     def handle_scheming_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
