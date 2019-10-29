@@ -2,6 +2,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.validation.validation import BaseValidator
+import ckan.lib.munge as munge
 import json
 import logging
 import subprocess
@@ -155,16 +156,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         # handle tag fields
         if field.get('preset', '') == u'fluent_tags':
-            tags = iso_values.get('tags', [])
+            fluent_tags = iso_values.get(field_name, [])
             schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
 
             # init language key
             field_value = {l: [] for l in schema_languages}
 
-            # process tags by convert list of language dictinarys into
+            # process fluent_tags by convert list of language dictinarys into
             # a dictinary of language lists
-            for t in tags:
-                tobj = self.from_json(t)
+            for t in fluent_tags:
+                tobj = self.from_json(t.get('keyword', t))
                 if isinstance(tobj, Number):
                     tobj = str(tobj)
                 if isinstance(tobj, dict):
@@ -173,28 +174,15 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                             field_value[key].append(value)
                 else:
                     field_value[default_language].append(tobj)
+
             package_dict[field_name] = field_value
 
-            # clean existing tag list in package_dict as it can only contain
-            # alphanumeric characters. This only works if clean_tags is false
-            # in config
-            pkg_dict_tags = package_dict.get('tags', [])
-            if pkg_dict_tags and (not harvest_config.get('clean_tags') or harvest_config.get('clean_tags') == 'false'):
-                tag_list = []
-                for x in pkg_dict_tags:
-                    x['name'] = self.from_json(x['name'])
-
-                    if isinstance(x['name'], dict):
-                        langValList = list(x['name'].values())
-                        for item in langValList:
-                            if item not in tag_list:
-                                tag_list.append(item)
-                    else:
-                        if x['name'] not in tag_list:
-                            tag_list.append(x['name'])
-                package_dict['tags'] = [{'name': t} for t in tag_list]
-            else:
-                log.debug('Can not process tags as they have been cleaned. set clean_tags to false')
+            # update tags with all values from fluent_tags
+            tag_list = [t['name'] for t in package_dict['tags']]
+            for item in field_value.get('en', []) + field_value.get('fr', []):
+                if item not in tag_list:
+                    tag_list.append(item)
+            package_dict['tags'] = [{'name': t} for t in tag_list]
 
         else:
             # strip trailing _translated part of field name
