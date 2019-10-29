@@ -44,7 +44,25 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             new_val = val
         return new_val
 
-    def transform_to_iso(self, original_document, original_format, harvest_object):
+    # def transform_to_iso(self, original_document, original_format, harvest_object):
+    #     log.debug('original_format:%r',original_format)
+    #     return original_document
+    #
+    #     lowered = original_document.lower()
+    #     if '</mdb:MD_Metadata>'.lower() in lowered:
+    #         log.debug('Found ISO19115-3 format, transforming to ISO19139')
+    #
+    #         xsl_filename = os.path.abspath("./ckanext-spatial/ckanext/spatial/transformers/ISO19115-3/toISO19139.xsl")
+    #         process = subprocess.Popen(["saxonb-xslt", "-s:-", xsl_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #         process.stdin.write(original_document.encode('utf-8'))
+    #         newDoc, errors = process.communicate()
+    #         process.stdin.close()
+    #         if errors:
+    #             log.error(errors)
+    #             return None
+    #         return newDoc
+    #
+    #     return None
 
         lowered = original_document.lower()
         if '</mdb:MD_Metadata>'.lower() in lowered:
