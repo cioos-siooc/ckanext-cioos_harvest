@@ -222,28 +222,44 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if '__extras' not in package_dict:
             package_dict['__extras'] = {}
 
-        # populate composite fields
+        # Calculate possable field names and try to populate value
+        # this is helpfull when a composite field combination maps directly
+        # to a iso_value. creates a dictinary from the values so the next block
+        # is dealing with a consistant dictiniary structure
+        if not field_value and field.get('preset', '') == 'composite':
+            for sf in field['subfields']:
+                computed_field_name = '-'.join([field_name, sf['field_name']])
+                sf_value = iso_values.get(computed_field_name)
+                if sf_value:
+                    field_value[sf['field_name']] = sf_value
+
+        # populate composite fields from multi-level dictinary
         if field_value and field.get('preset', '') == 'composite':
             if isinstance(field_value, list):
                 field_value = field_value[0]
-            field_value = self.flatten_composite_keys(field_value)
+            field_value = self.flatten_composite_keys(field_value, {}, [])
+
             for key, value in field_value.iteritems():
                 newKey = field_name + sep + key
                 package_dict['__extras'][newKey] = value
+
             # remove from extras so as not to duplicate fields
             if extras.get(field_name):
                 del extras[field_name]
             handled_fields.append(field_name)
+
         # populate composite repeating fields
         elif field_value and field.get('preset', '') == 'composite_repeating':
             if isinstance(field_value, dict):
                 field_value[0] = field_value
+
             for idx, subitem in enumerate(field_value):
                 # collaps subfields into one key value pair
-                subitem = self.flatten_composite_keys(subitem)
+                subitem = self.flatten_composite_keys(subitem, {}, [])
                 for key, value in subitem.iteritems():
                     newKey = field_name + sep + str(idx + 1) + sep + key
                     package_dict['__extras'][newKey] = value
+
             # remove from extras so as not to duplicate fields
             if extras.get(field_name):
                 del extras[field_name]
