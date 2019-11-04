@@ -79,8 +79,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
         source_config = json.loads(data_dict['harvest_object'].source.config)
-        waf_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
-        waf_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
+        xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
+        xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
 
         # Handle Scheming, Composit, and Fluent extensions
         loaded_plugins = plugins.toolkit.config.get("ckan.plugins")
@@ -94,8 +94,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # convert extras key:value list to dictinary
             extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
 
-            extras['waf_location_url'] = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
-            extras['waf_modified_date'] = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
+            extras['xml_location_url'] = xml_location_url
+            extras['xml_modified_date'] = xml_modified_date
 
             # Package name, default harvester uses title or guid in that order.
             # we want to reverse that order, so guid or title. Also use english
