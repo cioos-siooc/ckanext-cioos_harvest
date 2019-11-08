@@ -106,6 +106,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # log.debug('name:%r',name)
             package_dict['name'] = name
 
+            # populate license_id
+            package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
+
             for field in schema['dataset_fields']:
                 fn = field['field_name']
                 iso = iso_values.get(fn, {})
