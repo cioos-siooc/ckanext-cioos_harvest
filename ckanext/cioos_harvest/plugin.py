@@ -24,9 +24,36 @@ class MyValidator(BaseValidator):
 
         return True, []
 
+
 class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(ISpatialHarvester, inherit=True)
+    plugins.implements(plugins.IOrganizationController, inherit=True)
+
+    # IOrganizationController
+    def read(self, entity):
+        pass
+
+    def create(self, entity):
+        log.debug('create:%r', entity.__dict__)
+        if entity.title_translated == '{}' or not entity.title_translated:
+            toolkit.get_action('organization_patch')(
+                data_dict={
+                    'id': entity.id,
+                    'title': entity.title,
+                    'title_translated': '{"en":"%s", "fr":"%s"}' % (entity.title, entity.title)
+                }
+            )
+        return entity
+
+    def edit(self, entity):
+        pass
+
+    def delete(self, entity):
+        pass
+
+    def before_view(self, pkg_dict):
+        return pkg_dict
 
     # IConfigurer
     def update_config(self, config_):
