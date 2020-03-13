@@ -136,12 +136,20 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate license_id
             package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
+            # populate trlanslation method for bilingual field
+            notes_translation_method = iso_values.get('abstract_translation_method')
+            title_translation_method = iso_values.get('title_translation_method')
+            if notes_translation_method:
+                extras['notes_translation_method'] = notes_translation_method
+            if title_translation_method:
+                extras['title_translation_method'] = title_translation_method
+            # interate over schema fields and update package dictinary as needed
             for field in schema['dataset_fields']:
-                fn = field['field_name']
-                iso = iso_values.get(fn, {})
-                # remove empty strings from list
-                if isinstance(iso, list):
-                    iso = list(filter(len, iso))
+                # fn = field['field_name']
+                # iso = iso_values.get(fn, {})
+                # # remove empty strings from list
+                # if isinstance(iso, list):
+                #     iso = list(filter(len, iso))
 
                 handled_fields = []
                 if composite:
