@@ -102,6 +102,44 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 return extra.value
         return None
 
+    def cioos_guess_resource_format(self, url, use_mimetypes=True):
+        '''
+        Given a URL try to guess the best format to assign to the resource
+
+        This function does not replace the guess_resource_format() in the base
+        spatial harvester. In stead it adds some resource and file types that
+        are missing from that function.
+
+        Returns None if no format could be guessed.
+
+        '''
+        url = url.lower().strip()
+        resource_types = {
+            # ERDDAP
+            'ERDDAP': ('/erddap/',),
+        }
+
+        for resource_type, parts in resource_types.iteritems():
+            log.debug('resource_type:parts',resource_type,parts)
+            if any(part in url for part in parts):
+                return resource_type
+
+        file_types = {
+            'CSV': ('csv',),
+            'PDF': ('pdf',),
+            'TXT': ('txt',),
+            'XML': ('xml',),
+            'HTML': ('html',),
+            'JSON': ('json',),
+        }
+
+        for file_type, extensions in file_types.iteritems():
+            if any(url.endswith(extension) for extension in extensions):
+                return file_type
+
+        return None
+
+
     def get_package_dict(self, context, data_dict):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
@@ -167,6 +205,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             package_dict['extras'] = extras_as_dict
             #log.debug('PACKAGE_DICT Keywords:%r', package_dict['keywords'])
+
+        # update resource format
+        resources = package_dict.get('resources', [])
+        if len(resources):
+            for resource in resources:
+                url = resource.get('url', '').strip()
+                if url:
+                    format = self.cioos_guess_resource_format(url) or resource.get('format')
+                    resource['format'] = format
+        package_dict['resources'] = resources
         return package_dict
 
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, handled_fields, harvest_config):
