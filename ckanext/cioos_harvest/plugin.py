@@ -105,6 +105,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     def get_package_dict(self, context, data_dict):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
+        #xml_tree = data_dict['xml_tree']
         source_config = json.loads(data_dict['harvest_object'].source.config)
         xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
         xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
@@ -128,9 +129,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # we want to reverse that order, so guid or title. Also use english
             # title only for name
             title_as_name = self.from_json(package_dict.get('title', '{}')).get('en', package_dict['name'])
-            # log.debug('title_as_name:%r',title_as_name)
             name = munge.munge_name(extras.get('guid', title_as_name)).lower()
-            # log.debug('name:%r',name)
             package_dict['name'] = name
 
             # populate license_id
@@ -156,6 +155,35 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
 
+            # add default publisher name and uri if not set
+            if(not package_dict.get('publisher_name')):
+                org_id = package_dict.get('owner_org')
+                if org_id:
+                    org_details = toolkit.get_action('organization_show')(
+                        data_dict={
+                            'id': org_id,
+                            'include_datasets': False,
+                            'include_dataset_count': False,
+                            'include_extras': True,
+                            'include_users': False,
+                            'include_groups': False,
+                            'include_tags': False,
+                            'include_followers': False,
+                        }
+                    )
+                    package_dict['publisher_name'] = org_details.get('title_translated', {})
+                    org_uri = org_details.get('organization-uri', {})
+                    if org_uri:
+                        code = org_uri.get('code')
+                        codeSpace = org_uri.get('code-space')
+                        authority = org_uri.get('authority')
+                        version = org_uri.get('version')
+                        id_list = [authority, codeSpace, code, version]
+                        package_dict['publisher_uri'] = '/'.join(x.strip() for x in id_list if x.strip())
+                    else:
+                        package_dict['publisher_uri'] = '{0}/organization/{1}'.format(plugins.toolkit.config.get('ckan.site_url').rstrip('/'), org_id)
+
+
             extras_as_dict = []
             for key, value in extras.iteritems():
                 if package_dict.get(key, ''):
@@ -166,7 +194,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                     extras_as_dict.append({'key': key, 'value': value})
 
             package_dict['extras'] = extras_as_dict
-            #log.debug('PACKAGE_DICT Keywords:%r', package_dict['keywords'])
         return package_dict
 
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, handled_fields, harvest_config):
