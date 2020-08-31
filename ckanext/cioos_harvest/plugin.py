@@ -170,6 +170,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
+            # populate resource format if missing
+            for resource in package_dict.get('resources', []):
+                if not resource.get('format'):
+                    if (resource.get('resource_locator_protocol').startswith('http') or
+                            resource.get('url').startswith('http')):
+                        resource['format'] = 'text/html'
+
             # set default values
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
