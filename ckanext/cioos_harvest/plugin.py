@@ -212,6 +212,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if field.get('preset', '') == u'fluent_tags':
             fluent_tags = iso_values.get(field_name, [])
             schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
+            do_clean = toolkit.asbool(harvest_config.get('clean_tags', False))
 
             # init language key
             field_value = {l: [] for l in schema_languages}
@@ -225,8 +226,15 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 if isinstance(tobj, dict):
                     for key, value in tobj.iteritems():
                         if key in schema_languages:
+                            if do_clean:
+                                if isinstance(value, list):
+                                    value = [munge.munge_tag(kw) for kw in value]
+                                else:
+                                    value = munge.munge_tag(value)
                             field_value[key].append(value)
                 else:
+                    if do_clean:
+                        tobj = munge.munge_tag(tobj)
                     field_value[default_language].append(tobj)
 
             package_dict[field_name] = field_value
