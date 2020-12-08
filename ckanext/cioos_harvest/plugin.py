@@ -7,6 +7,7 @@ import json
 import logging
 import subprocess
 import os
+import numbers
 from numbers import Number
 
 log = logging.getLogger(__name__)
@@ -102,6 +103,23 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 return extra.value
         return None
 
+
+    def trim_values(self, values):
+        if(isinstance(values, numbers.Number)):
+            return values
+        elif(isinstance(values, list)):
+            return [self.trim_values(x) for x in values]
+        elif(isinstance(values, dict)):
+            return {k.strip(): self.trim_values(v) for k, v in values.iteritems()}
+        elif(isinstance(values, basestring)):
+            try:
+                json_object = json.loads(values)
+            except ValueError:
+                return values.strip()
+            else:
+                return json.dumps(self.trim_values(json_object))
+        return values
+
     def get_package_dict(self, context, data_dict):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
@@ -160,6 +178,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
+            # populate resource format if missing
+            for resource in package_dict.get('resources', []):
+                if not resource.get('format'):
+                    if (resource.get('resource_locator_protocol').startswith('http') or
+                            resource.get('url').startswith('http')):
+                        resource['format'] = 'text/html'
+
             # set default values
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
@@ -174,8 +199,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                     extras_as_dict.append({'key': key, 'value': value})
 
             package_dict['extras'] = extras_as_dict
-            #log.debug('PACKAGE_DICT Keywords:%r', package_dict['keywords'])
-        return package_dict
+        return self.trim_values(package_dict)
 
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, handled_fields, harvest_config):
         field_name = field['field_name']
