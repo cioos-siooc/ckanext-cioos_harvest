@@ -138,7 +138,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         }
 
         for resource_type, parts in resource_types.iteritems():
-            log.debug('resource_type:parts',resource_type,parts)
+            log.debug('%r:%r', resource_type, parts)
             if any(part in url for part in parts):
                 return resource_type
 
@@ -243,9 +243,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if len(resources):
             for resource in resources:
                 url = resource.get('url', '').strip()
+                format = resource.get('format') or ''
                 if url:
-                    format = self.cioos_guess_resource_format(url) or resource.get('format')
-                    resource['format'] = format
+                    format = self.cioos_guess_resource_format(url) or format
+                resource['format'] = format
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
