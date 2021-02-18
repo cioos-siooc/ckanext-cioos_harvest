@@ -6,6 +6,7 @@ from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
 import json
 import logging
@@ -13,6 +14,7 @@ from numbers import Number
 import urllib2
 import socket
 import xml.etree.ElementTree as ET
+import re
 
 log = logging.getLogger(__name__)
 
@@ -24,63 +26,85 @@ def load_json(j):
         new_val = j
     return new_val
 
+
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     try:
-        xml_str = urllib2.urlopen(xml_url, timeout=urlopen_timeout).read(100000)  # read only 100 000 chars
-        ET.XML(xml_str)  # test for valid xml
-        return xml_str
-    except ET.ParseError as e:
-        msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-        log.warn(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
-        err.save()
-    except urllib2.URLError as e:
-        msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-        log.warn(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
-        err.save()
-    except socket.timeout as e:
-        msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-        log.warn(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
-        err.save()
-    except Exception as e:
-        msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-        log.warn(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
-        err.save()
-    finally:
-        return None
+        try:
+            xml_str = urllib2.urlopen(xml_url, timeout=urlopen_timeout).read(100000)  # read only 100 000 chars
+            ET.XML(xml_str)  # test for valid xml
+            return xml_str
+        except ET.ParseError as e:
+            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            log.warn(msg)
+            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err.save()
+        except urllib2.URLError as e:
+            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            log.warn(msg)
+            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err.save()
+        except socket.timeout as e:
+            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            log.warn(msg)
+            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err.save()
+        except Exception as e:
+            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            log.warn(msg)
+            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err.save()
+        finally:
+            return None
+    except StaleDataError as e:
+        log.warn('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
+
+
+def _get_extra(key, package_dict):
+    for extra in package_dict.get('extras', []):
+        if extra['key'] == key:
+            return extra
+
 
 def _extract_xml_from_harvest_object(context, package_dict, harvest_object):
     content = harvest_object.content
+    key = 'harvest_document_content'
+    value = ''
+
     if content.startswith('<'):
-        package_dict['extras_harvest_document_content'] = harvest_object.content
+        value = harvest_object.content
     else:
         log.warn('Unable to find harvest object "%s" '
                  'referenced by dataset "%s". Trying xml url',
                  harvest_object.id, package_dict['id'])
 
         # try reading from xml url
-        xml_str = ''
         xml_url = load_json(package_dict.get('xml_location_url'))
         urlopen_timeout = float(toolkit.config.get('ckan.index_xml_url_read_timeout', '500')) / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
 
         # single file
-        if xml_url and isinstance(xml_url, basestring):
-            package_dict['extras_harvest_document_content'] = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
+        if xml_url and isinstance(xml_url, str):
+            value = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
 
         # list of files
         if xml_url and isinstance(xml_url, list):
             for xml_file in xml_url:
-                xml_str = xml_str + '<doc>' + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object) + '</doc>'
+                value = value + '<doc>' + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object) + '</doc>'
 
-            if xml_str:
-                xml_str = '<?xml version="1.0" encoding="utf-8"?><docs>' + xml_str + '</docs>'
-                package_dict['extras_harvest_document_content'] = xml_str
+            if value:
+                value = '<?xml version="1.0" encoding="utf-8"?><docs>' + value + '</docs>'
+
+    if 'extras' not in package_dict:
+        package_dict['extras'] = []
+    existing_extra = _get_extra(key, package_dict)
+    if existing_extra:
+        package_dict['extras'].remove(existing_extra)
+    value = re.sub('\s+',' ', value) # remove extra white space
+    value = re.sub('> <','><', value)
+    value = re.sub('> ','>', value)
+    value = re.sub(' <','<', value)
+    package_dict['extras'].append({'key': key, 'value': value})
 
     return package_dict
-
 
 
 class CIOOSCKANHarvester(CKANHarvester):
@@ -176,15 +200,14 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 return extra.value
         return None
 
-
     def trim_values(self, values):
-        if(isinstance(values, numbers.Number)):
+        if(isinstance(values, Number)):
             return values
         elif(isinstance(values, list)):
             return [self.trim_values(x) for x in values]
         elif(isinstance(values, dict)):
             return {k.strip(): self.trim_values(v) for k, v in values.iteritems()}
-        elif(isinstance(values, basestring)):
+        elif(isinstance(values, str)):
             try:
                 json_object = json.loads(values)
             except ValueError:
@@ -229,7 +252,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 return file_type
 
         return None
-
 
     def get_package_dict(self, context, data_dict):
         package_dict = data_dict['package_dict']
@@ -349,7 +371,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             do_clean = toolkit.asbool(harvest_config.get('clean_tags', False))
 
             # init language key
-            field_value = {l: [] for l in schema_languages}
+            field_value = {sl: [] for sl in schema_languages}
 
             # process fluent_tags by convert list of language dictinarys into
             # a dictinary of language lists
