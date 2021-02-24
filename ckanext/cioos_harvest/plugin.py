@@ -127,6 +127,14 @@ class CIOOSCKANHarvester(CKANHarvester):
 
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
 
+        existing_extra = _get_extra('metadata_created_source', package_dict)
+        if not existing_extra:
+            package_dict['extras'].append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
+
+        existing_extra = _get_extra('metadata_modified_source', package_dict)
+        if not existing_extra:
+            package_dict['extras'].append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
+
         return package_dict
 
 
