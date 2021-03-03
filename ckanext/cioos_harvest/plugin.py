@@ -15,6 +15,7 @@ import urllib2
 import socket
 import xml.etree.ElementTree as ET
 import re
+from six import string_types
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         finally:
-            return None
+            return ''
     except StaleDataError as e:
         log.warn('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
 
@@ -79,31 +80,30 @@ def _extract_xml_from_harvest_object(context, package_dict, harvest_object):
 
         # try reading from xml url
         xml_url = load_json(package_dict.get('xml_location_url'))
-        urlopen_timeout = float(toolkit.config.get('ckan.index_xml_url_read_timeout', '500')) / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
+        if not xml_url:
+            log.warn('Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved.')
+        else:
+            urlopen_timeout = float(toolkit.config.get('ckan.index_xml_url_read_timeout', '500')) / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
 
-        # single file
-        if xml_url and isinstance(xml_url, str):
-            value = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
+            # single file
+            if xml_url and isinstance(xml_url, string_types):
+                value = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
 
-        # list of files
-        if xml_url and isinstance(xml_url, list):
-            for xml_file in xml_url:
-                value = value + '<doc>' + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object) + '</doc>'
+            # list of files
+            if xml_url and isinstance(xml_url, list):
+                for xml_file in xml_url:
+                    value = value + '<doc>' + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object) + '</doc>'
 
-            if value:
-                value = '<?xml version="1.0" encoding="utf-8"?><docs>' + value + '</docs>'
+                if value:
+                    value = '<?xml version="1.0" encoding="utf-8"?><docs>' + value + '</docs>'
 
-    if 'extras' not in package_dict:
-        package_dict['extras'] = []
-    existing_extra = _get_extra(key, package_dict)
-    if existing_extra:
-        package_dict['extras'].remove(existing_extra)
-    value = re.sub('\s+',' ', value) # remove extra white space
-    value = re.sub('> <','><', value)
-    value = re.sub('> ','>', value)
-    value = re.sub(' <','<', value)
-    package_dict['extras'].append({'key': key, 'value': value})
-
+            value = re.sub('\s+',' ', value) # remove extra white space
+            value = re.sub('> <','><', value)
+            value = re.sub('> ','>', value)
+            value = re.sub(' <','<', value)
+    if value:
+        log.info('Success. External xml retrieved.')
+        package_dict[key] = value
     return package_dict
 
 
