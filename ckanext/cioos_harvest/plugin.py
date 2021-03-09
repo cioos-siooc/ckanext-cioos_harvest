@@ -192,6 +192,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate license_id
             package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
+            # populate citation
+            package_dict['citation'] = iso_values.get('citation')
+
             # populate trlanslation method for bilingual field
             notes_translation_method = iso_values.get('abstract_translation_method')
             title_translation_method = iso_values.get('title_translation_method')
