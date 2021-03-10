@@ -269,6 +269,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
         xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
 
+        # convert extras key:value list to dictinary
+        extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
+
+        extras['xml_location_url'] = xml_location_url
+        extras['xml_modified_date'] = xml_modified_date
+
+        # copy some fields over from iso_values if they exist
+        if(iso_values.get('metadata-reference-date')):
+            extras['metadata-reference-date'] = iso_values.get('metadata-reference-date')
+
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
 
@@ -281,12 +291,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictinary ####')
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
 
-            # convert extras key:value list to dictinary
-            extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
-
-            extras['xml_location_url'] = xml_location_url
-            extras['xml_modified_date'] = xml_modified_date
-
             # Package name, default harvester uses title or guid in that order.
             # we want to reverse that order, so guid or title. Also use english
             # title only for name
@@ -298,6 +302,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate license_id
             package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
+
+            # populate citation
+            package_dict['citation'] = iso_values.get('citation')
 
             # populate trlanslation method for bilingual field
             notes_translation_method = iso_values.get('abstract_translation_method')
@@ -334,16 +341,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
 
-            extras_as_dict = []
-            for key, value in extras.iteritems():
-                if package_dict.get(key, ''):
-                    log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
-                if isinstance(value, (list, dict)):
-                    extras_as_dict.append({'key': key, 'value': json.dumps(value)})
-                else:
-                    extras_as_dict.append({'key': key, 'value': value})
+        extras_as_list = []
+        for key, value in extras.iteritems():
+            if package_dict.get(key, ''):
+                log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+            if isinstance(value, (list, dict)):
+                extras_as_list.append({'key': key, 'value': json.dumps(value)})
+            else:
+                extras_as_list.append({'key': key, 'value': value})
 
-            package_dict['extras'] = extras_as_dict
+        package_dict['extras'] = extras_as_list
 
         # update resource format
         resources = package_dict.get('resources', [])
