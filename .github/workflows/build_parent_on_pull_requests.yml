@@ -20,5 +20,3 @@ jobs:
         repository: cioos-siooc/ckan
         event-type: submodule-pull-request
         client-payload: '{"submodule": "${{ github.repository }}", "ref": "${{ github.ref }}", "sha": "${{ github.sha }}", "head_ref":"${{ github.event.pull_request.head.ref }}", "head_sha":"${{ github.event.pull_request.head.sha }}", "base_ref":"${{ github.event.pull_request.base.ref }}", "base_sha":"${{ github.event.pull_request.base.sha }}", "prn":"${{ github.event.pull_request.number}}"}'
-    - name: print event
-      run: echo "${{ toJson(github.event) }}"
