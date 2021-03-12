@@ -81,6 +81,7 @@ setup(
     entry_points='''
         [ckan.plugins]
         cioos_harvest=ckanext.cioos_harvest.plugin:Cioos_HarvestPlugin
+        ckan_cioos_harvester=ckanext.cioos_harvest.plugin:CIOOSCKANHarvester
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
