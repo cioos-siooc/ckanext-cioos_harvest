@@ -313,6 +313,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 extras['notes_translation_method'] = notes_translation_method
             if title_translation_method:
                 extras['title_translation_method'] = title_translation_method
+
+            extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
+            extras['use-constraints'] = iso_values.get('use-constraints')
+            extras['access-constraints'] = iso_values.get('access-constraints')
+            extras['use-constraints-code'] = iso_values.get('use-constraints-code')
             # interate over schema fields and update package dictinary as needed
             for field in schema['dataset_fields']:
                 # fn = field['field_name']
