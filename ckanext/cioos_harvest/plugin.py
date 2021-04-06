@@ -159,17 +159,18 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     # IOrganizationController
     def read(self, entity):
         pass
-
+#if has attr
     def create(self, entity):
         log.debug('create:%r', entity.__dict__)
-        if entity.title_translated == '{}' or not entity.title_translated:
-            toolkit.get_action('organization_patch')(
-                data_dict={
-                    'id': entity.id,
-                    'title': entity.title,
-                    'title_translated': '{"en":"%s", "fr":"%s"}' % (entity.title, entity.title)
-                }
-            )
+        if hasattr(entity, 'title_translated'):
+            if entity.title_translated == '{}' or not entity.title_translated:
+                toolkit.get_action('organization_patch')(
+                    data_dict={
+                        'id': entity.id,
+                        'title': entity.title,
+                        'title_translated': '{"en":"%s", "fr":"%s"}' % (entity.title, entity.title)
+                        }
+                        )
         return entity
 
     def edit(self, entity):
@@ -278,6 +279,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         # copy some fields over from iso_values if they exist
         if(iso_values.get('metadata-reference-date')):
             extras['metadata-reference-date'] = iso_values.get('metadata-reference-date')
+        if(iso_values.get('limitations-on-public-access')):
+            extras['limitations-on-public-access'] = iso_values.get('limitations-on-public-access')
+        if(iso_values.get('access-constraints')):
+            extras['access-constraints'] = iso_values.get('access-constraints')
+        if(iso_values.get('use-constraints')):
+            extras['use-constraints'] = iso_values.get('use-constraints')
+        if(iso_values.get('use-constraints-code')):
+            extras['use-constraints-code'] = iso_values.get('use-constraints-code')
+        if(iso_values.get('legal-constraints-reference-code')):
+            extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
