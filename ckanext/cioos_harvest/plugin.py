@@ -289,6 +289,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['use-constraints-code'] = iso_values.get('use-constraints-code')
         if(iso_values.get('legal-constraints-reference-code')):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
+        if(iso_values.get('aggregation-info')):
+            extras['associated-datasets'] = iso_values.get('aggregation-info')
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
