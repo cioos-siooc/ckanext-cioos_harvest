@@ -161,7 +161,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         pass
 
     def create(self, entity):
-        log.debug('create:%r', entity.__dict__)
         if hasattr(entity, 'title_translated'):
             if entity.title_translated == '{}' or not entity.title_translated:
                 toolkit.get_action('organization_patch')(
@@ -243,7 +242,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         }
 
         for resource_type, parts in resource_types.iteritems():
-            log.debug('%r:%r', resource_type, parts)
             if any(part in url for part in parts):
                 return resource_type
 
@@ -289,8 +287,22 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['use-constraints-code'] = iso_values.get('use-constraints-code')
         if(iso_values.get('legal-constraints-reference-code')):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
-        if(iso_values.get('aggregation-info')):
-            extras['associated-datasets'] = iso_values.get('aggregation-info')
+        # if(iso_values.get('aggregation-info')):
+        #     extras['aggregation-info'] = iso_values.get('aggregation-info')
+            # for x in toolkit.h.cioos_load_json(extras['associated-datasets']):
+            #     result = toolkit.get_action('package_relationship_create')(
+            #         data_dict={"subject": extras.get('guid'),
+            #                    "object": x.get('aggregate-dataset-identifier'),
+            #                    "type": "links_to",
+            #                    "comment": x.get('association-type')
+            #                    }
+            #     )
+            #     OR
+            # package_dict['relationships_as_subject'] = [{"subject": extras.get('guid'),
+            #                                              "object": x.get('aggregate-dataset-identifier'),
+            #                                              "type": "links_to",
+            #                                              "comment": x.get('association-type')} for x in toolkit.h.cioos_load_json(extras['associated-datasets'])]
+            # log.debug('%r', package_dict['relationships_as_subject'])
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
@@ -318,6 +330,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
+
+            # # populate associated-datasets
+            # package_dict['aggregation-info'] = iso_values.get('aggregation-info')
 
             # populate trlanslation method for bilingual field
             notes_translation_method = iso_values.get('abstract_translation_method')
