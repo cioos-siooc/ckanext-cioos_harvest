@@ -161,7 +161,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         pass
 
     def create(self, entity):
-        log.debug('create:%r', entity.__dict__)
         if hasattr(entity, 'title_translated'):
             if entity.title_translated == '{}' or not entity.title_translated:
                 toolkit.get_action('organization_patch')(
@@ -471,15 +470,15 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         # this is helpfull when a composite field combination maps directly
         # to a iso_value. creates a dictinary from the values so the next block
         # is dealing with a consistant dictiniary structure
-        if not field_value and field.get('preset', '') == 'composite':
-            for sf in field['subfields']:
+        if not field_value and field.get('simple_subfields'):
+            for sf in field['simple_subfields']:
                 computed_field_name = '-'.join([field_name, sf['field_name']])
                 sf_value = iso_values.get(computed_field_name)
                 if sf_value:
                     field_value[sf['field_name']] = sf_value
 
         # populate composite fields from multi-level dictinary
-        if field_value and field.get('preset', '') == 'composite':
+        if field_value and field.get('simple_subfields'):
             if isinstance(field_value, list):
                 field_value = field_value[0]
             field_value = self.flatten_composite_keys(field_value, {}, [])
@@ -494,7 +493,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             handled_fields.append(field_name)
 
         # populate composite repeating fields
-        elif field_value and field.get('preset', '') == 'composite_repeating':
+        elif field_value and field.get('repeating_subfields'):
             if isinstance(field_value, dict):
                 field_value[0] = field_value
 
