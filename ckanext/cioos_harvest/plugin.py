@@ -9,14 +9,14 @@ from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
 import json
-import logging
+import requests
 from numbers import Number
-import urllib2
 import socket
 import xml.etree.ElementTree as ET
 import re
 from six import string_types
 
+import logging
 log = logging.getLogger(__name__)
 
 
@@ -31,21 +31,26 @@ def load_json(j):
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     try:
         try:
-            xml_str = urllib2.urlopen(xml_url, timeout=urlopen_timeout).read(100000)  # read only 100 000 chars
-            ET.XML(xml_str)  # test for valid xml
-            return xml_str
+            r = requests(xml_url, timeout=urlopen_timeout)
+            ET.XML(r.content)  # test for valid xml
+            return r
         except ET.ParseError as e:
             msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
             log.warn(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
-        except urllib2.URLError as e:
+        except requests.exceptions.Timeout as e:
             msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
             log.warn(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
-        except socket.timeout as e:
-            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+        except requests.exceptions.TooManyRedirects as e:
+            msg = 'HTTP too many redirects: %s' % e.code
+            log.warn(msg)
+            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err.save()
+        except requests.exceptions.RequestException as e:
+            msg = 'HTTP request exception: %s' % e.code
             log.warn(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
@@ -56,6 +61,7 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
             err.save()
         finally:
             return ''
+
     except StaleDataError as e:
         log.warn('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
 
@@ -214,7 +220,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         elif(isinstance(values, list)):
             return [self.trim_values(x) for x in values]
         elif(isinstance(values, dict)):
-            return {k.strip(): self.trim_values(v) for k, v in values.iteritems()}
+            return {k.strip(): self.trim_values(v) for k, v in values.items()}
         elif(isinstance(values, str)):
             try:
                 json_object = json.loads(values)
@@ -241,7 +247,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             'ERDDAP': ('/erddap/',),
         }
 
-        for resource_type, parts in resource_types.iteritems():
+        for resource_type, parts in resource_types.items():
             log.debug('%r:%r', resource_type, parts)
             if any(part in url for part in parts):
                 return resource_type
@@ -255,7 +261,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             'JSON': ('json',),
         }
 
-        for file_type, extensions in file_types.iteritems():
+        for file_type, extensions in file_types.items():
             if any(url.endswith(extension) for extension in extensions):
                 return file_type
 
@@ -333,8 +339,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 #     iso = list(filter(len, iso))
 
                 handled_fields = []
-                if composite:
-                    self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
+                self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
                 if fluent:
                     self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, handled_fields, source_config)
@@ -353,7 +358,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
 
         extras_as_list = []
-        for key, value in extras.iteritems():
+        for key, value in extras.items():
             if package_dict.get(key, ''):
                 log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
             if isinstance(value, (list, dict)):
@@ -406,7 +411,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 if isinstance(tobj, Number):
                     tobj = str(tobj)
                 if isinstance(tobj, dict):
-                    for key, value in tobj.iteritems():
+                    for key, value in tobj.items():
                         if key in schema_languages:
                             if do_clean:
                                 if isinstance(value, list):
@@ -448,7 +453,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         handled_fields.append(field_name)
 
     def flatten_composite_keys(self, obj, new_obj={}, keys=[]):
-        for key, value in obj.iteritems():
+        for key, value in obj.items():
             if isinstance(value, dict):
                 self.flatten_composite_keys(obj[key], new_obj, keys + [key])
             else:
@@ -456,7 +461,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return new_obj
 
     def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
-        sep = plugins.toolkit.h.composite_separator()
+        sep = '_' # plugins.toolkit.h.composite_separator()
         field_name = field['field_name']
         if field_name in handled_fields:
             return
@@ -483,7 +488,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 field_value = field_value[0]
             field_value = self.flatten_composite_keys(field_value, {}, [])
 
-            for key, value in field_value.iteritems():
+            for key, value in field_value.items():
                 newKey = field_name + sep + key
                 package_dict['__extras'][newKey] = value
 
@@ -500,7 +505,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             for idx, subitem in enumerate(field_value):
                 # collaps subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem, {}, [])
-                for key, value in subitem.iteritems():
+                for key, value in subitem.items():
                     newKey = field_name + sep + str(idx + 1) + sep + key
                     package_dict['__extras'][newKey] = value
 
