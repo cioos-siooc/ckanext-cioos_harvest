@@ -301,7 +301,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         # Handle Scheming, Composit, and Fluent extensions
         loaded_plugins = plugins.toolkit.config.get("ckan.plugins")
         if 'scheming_datasets' in loaded_plugins:
-            composite = 'composite' in loaded_plugins
+            # composite = 'composite' in loaded_plugins
             fluent = 'fluent' in loaded_plugins
 
             log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictinary ####')
@@ -330,14 +330,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if title_translation_method:
                 extras['title_translation_method'] = title_translation_method
 
-            # interate over schema fields and update package dictinary as needed
+            # iterate over schema fields and update package dictionary as needed
             for field in schema['dataset_fields']:
-                # fn = field['field_name']
-                # iso = iso_values.get(fn, {})
-                # # remove empty strings from list
-                # if isinstance(iso, list):
-                #     iso = list(filter(len, iso))
-
                 handled_fields = []
                 self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
@@ -404,8 +398,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # init language key
             field_value = {sl: [] for sl in schema_languages}
 
-            # process fluent_tags by convert list of language dictinarys into
-            # a dictinary of language lists
+            # process fluent_tags by convert list of language dictionaries into
+            # a dictionary of language lists
             for t in fluent_tags:
                 tobj = self.from_json(t.get('keyword', t))
                 if isinstance(tobj, Number):
@@ -434,6 +428,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             package_dict['tags'] = [{'name': t} for t in tag_list]
 
         else:
+            # Populate translated fields from core. this could have been done in
+            # the spatial extensions. example 'title' -> 'title_translated'
+
             # strip trailing _translated part of field name
             if field_name.endswith(u'_translated'):
                 package_fn = field_name[:-11]
@@ -443,10 +440,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             package_val = package_dict.get(package_fn, '')
             field_value = self.from_json(package_val)
 
-            if isinstance(field_value, dict):  # assume biligual values already in data
+            if isinstance(field_value, dict):  # assume bilingual values already in data
                 package_dict[field_name] = field_value
             else:
-                # create bilingual dictinary. This will likely fail validation as it does not contain all the languages
+                # create bilingual dictionary. This will likely fail validation as it does not contain all the languages
                 package_dict[field_name] = {}
                 package_dict[field_name][default_language] = field_value
 
@@ -461,28 +458,14 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return new_obj
 
     def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
-        sep = '_' # plugins.toolkit.h.composite_separator()
+        sep = plugins.toolkit.h.scheming_composite_separator()
         field_name = field['field_name']
         if field_name in handled_fields:
             return
 
         field_value = iso_values.get(field_name, {})
-        # add __extras field to package dict as composit expects fields to be located there
-        if '__extras' not in package_dict:
-            package_dict['__extras'] = {}
 
-        # Calculate possable field names and try to populate value
-        # this is helpfull when a composite field combination maps directly
-        # to a iso_value. creates a dictinary from the values so the next block
-        # is dealing with a consistant dictiniary structure
-        if not field_value and field.get('simple_subfields'):
-            for sf in field['simple_subfields']:
-                computed_field_name = '-'.join([field_name, sf['field_name']])
-                sf_value = iso_values.get(computed_field_name)
-                if sf_value:
-                    field_value[sf['field_name']] = sf_value
-
-        # populate composite fields from multi-level dictinary
+        # populate composite fields from multi-level dictionary
         if field_value and field.get('simple_subfields'):
             if isinstance(field_value, list):
                 field_value = field_value[0]
@@ -490,7 +473,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             for key, value in field_value.items():
                 newKey = field_name + sep + key
-                package_dict['__extras'][newKey] = value
+                package_dict[newKey] = value
 
             # remove from extras so as not to duplicate fields
             if extras.get(field_name):
@@ -503,11 +486,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 field_value[0] = field_value
 
             for idx, subitem in enumerate(field_value):
-                # collaps subfields into one key value pair
+                # collapse subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem, {}, [])
                 for key, value in subitem.items():
                     newKey = field_name + sep + str(idx + 1) + sep + key
-                    package_dict['__extras'][newKey] = value
+                    package_dict[newKey] = value
 
             # remove from extras so as not to duplicate fields
             if extras.get(field_name):
