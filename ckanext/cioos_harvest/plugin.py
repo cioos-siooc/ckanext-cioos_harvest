@@ -293,6 +293,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['use-constraints-code'] = iso_values.get('use-constraints-code')
         if(iso_values.get('legal-constraints-reference-code')):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
+        if(iso_values.get('distributor')):
+            extras['distributor'] = iso_values.get('distributor')
         # if(iso_values.get('aggregation-info')):
         #     extras['aggregation-info'] = iso_values.get('aggregation-info')
             # for x in toolkit.h.cioos_load_json(extras['associated-datasets']):
