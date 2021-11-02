@@ -281,8 +281,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         extras['xml_modified_date'] = xml_modified_date
 
         # copy some fields over from iso_values if they exist
-        if(iso_values.get('metadata-reference-date')):
-            extras['metadata-reference-date'] = iso_values.get('metadata-reference-date')
         if(iso_values.get('limitations-on-public-access')):
             extras['limitations-on-public-access'] = iso_values.get('limitations-on-public-access')
         if(iso_values.get('access-constraints')):
@@ -295,22 +293,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
         if(iso_values.get('distributor')):
             extras['distributor'] = iso_values.get('distributor')
-        # if(iso_values.get('aggregation-info')):
-        #     extras['aggregation-info'] = iso_values.get('aggregation-info')
-            # for x in toolkit.h.cioos_load_json(extras['associated-datasets']):
-            #     result = toolkit.get_action('package_relationship_create')(
-            #         data_dict={"subject": extras.get('guid'),
-            #                    "object": x.get('aggregate-dataset-identifier'),
-            #                    "type": "links_to",
-            #                    "comment": x.get('association-type')
-            #                    }
-            #     )
-            #     OR
-            # package_dict['relationships_as_subject'] = [{"subject": extras.get('guid'),
-            #                                              "object": x.get('aggregate-dataset-identifier'),
-            #                                              "type": "links_to",
-            #                                              "comment": x.get('association-type')} for x in toolkit.h.cioos_load_json(extras['associated-datasets'])]
-            # log.debug('%r', package_dict['relationships_as_subject'])
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
@@ -328,9 +310,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # we want to reverse that order, so guid or title. Also use english
             # title only for name
             title_as_name = self.from_json(package_dict.get('title', '{}')).get('en', package_dict['name'])
-            # log.debug('title_as_name:%r',title_as_name)
             name = munge.munge_name(extras.get('guid', title_as_name)).lower()
-            # log.debug('name:%r',name)
             package_dict['name'] = name
 
             # populate license_id
@@ -338,9 +318,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
-
-            # # populate associated-datasets
-            # package_dict['aggregation-info'] = iso_values.get('aggregation-info')
 
             # populate trlanslation method for bilingual field
             notes_translation_method = iso_values.get('abstract_translation_method')
