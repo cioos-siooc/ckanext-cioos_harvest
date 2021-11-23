@@ -20,6 +20,20 @@ Requirements
 ------------
 Tested on ckan 2.8 but likely works for earlyer versions. This extension requires ckanext-scheming, ckanext-composite, and chanext-fluent to also be installed. If these extensions are missing this code will do very little.
 
+As of ckan 2.9 ckanext-composite requirment has been droped.
+
+config options:
+
+#### CKAN.ini
+set timeout of request.get when trying to read full xml body from xml url. Used
+in cioos ckan custom harvester
+`ckan.index_xml_url_read_timeout=500`
+
+#### Harvester Source Config
+set timeout of request.get when trying to read full xml body from xml url. Used
+in cioos ckan custom harvester
+`'url_read_timeout': 500`
+
 ------------
 Installation
 ------------

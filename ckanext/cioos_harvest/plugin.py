@@ -73,6 +73,7 @@ def _get_extra(key, package_dict):
 
 def _extract_xml_from_harvest_object(package_dict, harvest_object):
     content = harvest_object.content
+    source_config = json.loads(harvest_object.source.config)
     key = 'harvest_document_content'
     value = ''
 
@@ -88,7 +89,7 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
         if not xml_url:
             log.warn('Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved.')
         else:
-            urlopen_timeout = float(toolkit.config.get('ckan.index_xml_url_read_timeout', '500')) / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
+            urlopen_timeout = float(source_config.get('url_read_timeout') or toolkit.config.get('ckan.index_xml_url_read_timeout') or '500') / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
 
             # single file
             if xml_url and isinstance(xml_url, string_types):
