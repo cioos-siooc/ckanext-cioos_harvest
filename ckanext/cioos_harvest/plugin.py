@@ -31,7 +31,7 @@ def load_json(j):
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     try:
         try:
-            r = requests(xml_url, timeout=urlopen_timeout)
+            r = requests.get(xml_url, timeout=urlopen_timeout)
             ET.XML(r.content)  # test for valid xml
             return r
         except ET.ParseError as e:
@@ -71,8 +71,7 @@ def _get_extra(key, package_dict):
         if extra['key'] == key:
             return extra
 
-
-def _extract_xml_from_harvest_object(context, package_dict, harvest_object):
+def _extract_xml_from_harvest_object(package_dict, harvest_object):
     content = harvest_object.content
     key = 'harvest_document_content'
     value = ''
@@ -124,22 +123,30 @@ class CIOOSCKANHarvester(CKANHarvester):
         }
 
     def modify_package_dict(self, package_dict, harvest_object):
-
-        context = {
-            'model': model,
-            'session': model.Session,
-            'user': toolkit.c.user
-        }
-
-        package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
+        extras = package_dict.get('extras', [])
+        package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
         existing_extra = _get_extra('metadata_created_source', package_dict)
         if not existing_extra:
-            package_dict['extras'].append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
-
+            extras.append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
         existing_extra = _get_extra('metadata_modified_source', package_dict)
         if not existing_extra:
-            package_dict['extras'].append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
+            extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
+
+        # fix common schema fields errors
+        schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
+        for field in schema['dataset_fields']:
+            if 'repeating_subfields' in field or 'simple_subfields' in field:
+                field_name = field['field_name']
+                value = package_dict.get(field_name)
+                if value == '':
+                    value = []
+                    package_dict[field_name] = value
+                elif value:
+                    value = load_json(value)
+                    if isinstance(value, dict):
+                        value = [value]
+                    package_dict[field_name] = value
 
         return package_dict
 
@@ -295,7 +302,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['distributor'] = iso_values.get('distributor')
 
         # load remote xml content
-        package_dict = _extract_xml_from_harvest_object(context, package_dict, harvest_object)
+        package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
         # Handle Scheming, Composit, and Fluent extensions
         loaded_plugins = plugins.toolkit.config.get("ckan.plugins")
