@@ -286,7 +286,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
 
         extras['xml_location_url'] = xml_location_url
-        extras['xml_modified_date'] = xml_modified_date
+        if xml_modified_date:
+            extras['xml_modified_date'] = xml_modified_date
 
         # copy some fields over from iso_values if they exist
         if(iso_values.get('limitations-on-public-access')):
