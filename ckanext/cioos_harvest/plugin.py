@@ -6,15 +6,19 @@ from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckan.lib.search import SearchError
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
 import json
 import requests
+from requests.exceptions import HTTPError, RequestException
 from numbers import Number
 import socket
 import xml.etree.ElementTree as ET
 import re
 from six import string_types
+from urllib3.contrib import pyopenssl
+
 
 import logging
 log = logging.getLogger(__name__)
@@ -150,6 +154,80 @@ class CIOOSCKANHarvester(CKANHarvester):
                     package_dict[field_name] = value
 
         return package_dict
+
+class CKANSpatialHarvester(CKANHarvester):
+
+    def _post_content(self, url, params={}):
+
+        headers = {}
+        api_key = self.config.get('api_key')
+        if api_key:
+            headers['Authorization'] = api_key
+
+        pyopenssl.inject_into_urllib3()
+
+        try:
+            http_request = requests.post(url, headers=headers, json=params)
+        except HTTPError as e:
+            raise ContentFetchError('HTTP error: %s %s' % (e.response.status_code, e.request.url))
+        except RequestException as e:
+            raise ContentFetchError('Request error: %s' % e)
+        except Exception as e:
+            raise ContentFetchError('HTTP general exception: %s' % e)
+        return http_request.text
+
+    def info(self):
+        return {
+            'name': 'ckan_spatial',
+            'title': 'CKAN Spatial',
+            'description': 'Harvests remote CKAN instances filtering by spatial query',
+            'form_config_interface': 'Text'
+        }
+
+    def modify_search(self, pkg_dicts, remote_ckan_base_url, fq_terms):
+        # ss_params['poly'] = 'MULTIPOLYGON(((-133.4529876709 54.022521972656, -125.6746673584 53.099670410156, -120.8406829834 47.430725097656, -123.9168548584 45.585021972656, -127.0369720459 47.167053222656, -128.1356048584 50.155334472656, -131.5633392334 48.924865722656, -132.5740814209 51.429748535156, -133.4529876709 54.022521972656)))'
+        # ss_params['poly'] = 'POLYGON((-128.17701209 51.62096599, -127.92157996 51.62096599, -127.92157996 51.73507366, -128.17701209 51.73507366, -128.17701209 51.62096599))'
+        # ss_params['poly'] = 'BOX(-129,51,-127,52)'
+        ss_params = {}
+        spatial_filter_file = self.config.get('spatial_filter_file', None)
+        if spatial_filter_file:
+            f = open(spatial_filter_file, "r")
+            spatial_filter_wkt = f.read()
+        else:
+            spatial_filter_wkt = self.config.get('spatial_filter', None)
+        if spatial_filter_wkt.startswith(('POLYGON', 'MULTIPOLYGON')):
+            ss_params['poly'] = spatial_filter_wkt
+        if spatial_filter_wkt.startswith('BOX'):
+            ss_params['bbox'] = spatial_filter_wkt[4:-1]
+        ss_params['crs'] = self.config.get('spatial_crs', 4326)
+        spatial_id_list = []
+        if spatial_filter_wkt:
+            log.debug('Performing spatial search with wkt geomitry: "%s"', spatial_filter_wkt)
+            spatial_search_url = remote_ckan_base_url + '/api/2/search/dataset/geo'
+            try:
+                ss_content = self._post_content(spatial_search_url, ss_params)
+                log.debug(ss_content)
+            except ContentFetchError as e:
+                raise SearchError(
+                    'Error sending request to spatial search remote '
+                    'CKAN instance %s using URL %r. Error: %s' %
+                    (remote_ckan_base_url, spatial_search_url, e))
+            try:
+                ss_response_dict = json.loads(ss_content)
+            except ValueError:
+                raise SearchError('Spatial Search response from remote CKAN was not JSON: %r'
+                                  % ss_content)
+            try:
+                spatial_id_list = ss_response_dict.get('results', [])
+            except ValueError:
+                raise SearchError('Response JSON did not contain '
+                                  'results list: %r' % ss_response_dict)
+
+        # Filter out packages not found by spatial search
+        pkg_dicts = [p for p in pkg_dicts
+                     if p['id'] in spatial_id_list]
+
+        return pkg_dicts
 
 
 # place holder, spatial extension expects a validator to be present
