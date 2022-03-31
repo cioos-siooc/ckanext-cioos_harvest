@@ -6,15 +6,19 @@ from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckan.lib.search import SearchError
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
 import json
 import requests
+from requests.exceptions import HTTPError, RequestException
 from numbers import Number
 import socket
 import xml.etree.ElementTree as ET
 import re
 from six import string_types
+from urllib3.contrib import pyopenssl
+
 
 import logging
 log = logging.getLogger(__name__)
@@ -134,6 +138,12 @@ class CIOOSCKANHarvester(CKANHarvester):
         if not existing_extra:
             extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
 
+        # add uri for dcat if it dosn't exist
+        package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
+        existing_extra = _get_extra('uri', package_dict)
+        if not existing_extra:
+            extras.append({'key': 'uri', 'value': package_uri})
+
         # fix common schema fields errors
         schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
         for field in schema['dataset_fields']:
@@ -150,6 +160,77 @@ class CIOOSCKANHarvester(CKANHarvester):
                     package_dict[field_name] = value
 
         return package_dict
+
+class CKANSpatialHarvester(CKANHarvester):
+
+    def _post_content(self, url, params={}):
+
+        headers = {}
+        api_key = self.config.get('api_key')
+        if api_key:
+            headers['Authorization'] = api_key
+
+        pyopenssl.inject_into_urllib3()
+
+        try:
+            http_request = requests.post(url, headers=headers, json=params)
+        except HTTPError as e:
+            raise ContentFetchError('HTTP error: %s %s' % (e.response.status_code, e.request.url))
+        except RequestException as e:
+            raise ContentFetchError('Request error: %s' % e)
+        except Exception as e:
+            raise ContentFetchError('HTTP general exception: %s' % e)
+        return http_request.text
+
+    def info(self):
+        return {
+            'name': 'ckan_spatial',
+            'title': 'CKAN Spatial',
+            'description': 'Harvests remote CKAN instances filtering by spatial query',
+            'form_config_interface': 'Text'
+        }
+
+    def modify_search(self, pkg_dicts, remote_ckan_base_url, fq_terms):
+        ss_params = {}
+        spatial_filter_file = self.config.get('spatial_filter_file', None)
+        if spatial_filter_file:
+            f = open(spatial_filter_file, "r")
+            spatial_filter_wkt = f.read()
+        else:
+            spatial_filter_wkt = self.config.get('spatial_filter', None)
+        if spatial_filter_wkt.startswith(('POLYGON', 'MULTIPOLYGON')):
+            ss_params['poly'] = spatial_filter_wkt
+        if spatial_filter_wkt.startswith('BOX'):
+            ss_params['bbox'] = spatial_filter_wkt[4:-1]
+        ss_params['crs'] = self.config.get('spatial_crs', 4326)
+        spatial_id_list = []
+        if spatial_filter_wkt:
+            spatial_search_url = remote_ckan_base_url + '/api/2/search/dataset/geo'
+            try:
+                ss_content = self._post_content(spatial_search_url, ss_params)
+            except ContentFetchError as e:
+                raise SearchError(
+                    'Error sending request to spatial search remote '
+                    'CKAN instance %s using URL %r. Error: %s' %
+                    (remote_ckan_base_url, spatial_search_url, e))
+            try:
+                ss_response_dict = json.loads(ss_content)
+            except ValueError:
+                raise SearchError('Spatial Search response from remote CKAN was not JSON: %r'
+                                  % ss_content)
+            try:
+                spatial_id_list = ss_response_dict.get('results', [])
+            except ValueError:
+                raise SearchError('Response JSON did not contain '
+                                  'results list: %r' % ss_response_dict)
+
+        # Filter out packages not found by spatial search
+        pkg_dicts = [p for p in pkg_dicts
+                     if p['id'] in spatial_id_list]
+
+        log.debug('Found the follow packages during spatial search:\n %r', pkg_dicts)
+
+        return pkg_dicts
 
 
 # place holder, spatial extension expects a validator to be present
@@ -322,6 +403,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             name = munge.munge_name(extras.get('guid', title_as_name)).lower()
             package_dict['name'] = name
 
+            # add uri key for dcat extension to use. this field is used as the
+            # dataset id in rdf / jsonld output
+            package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + name
+            extras['uri'] = package_uri
+
             # populate license_id
             package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
@@ -346,13 +432,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
-            # populate resource format if missing
-            for resource in package_dict.get('resources', []):
-                if not resource.get('format'):
-                    if (resource.get('resource_locator_protocol').startswith('http') or
-                            resource.get('url').startswith('http')):
-                        resource['format'] = 'text/html'
-
             # set default values
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
@@ -370,10 +449,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         # update resource format
         resources = package_dict.get('resources', [])
-        if len(resources):
             for resource in resources:
                 url = resource.get('url', '').strip()
-                format = resource.get('format') or ''
+            protocol = resource.get('resource_locator_protocol') or resource.get('protocol')
+            format = resource.get('format') or 'text/html'
                 if url:
                     format = self.cioos_guess_resource_format(url) or format
                 resource['format'] = format
