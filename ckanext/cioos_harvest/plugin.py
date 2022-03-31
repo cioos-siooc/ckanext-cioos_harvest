@@ -134,6 +134,12 @@ class CIOOSCKANHarvester(CKANHarvester):
         if not existing_extra:
             extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
 
+        # add uri for dcat if it dosn't exist
+        package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
+        existing_extra = _get_extra('uri', package_dict)
+        if not existing_extra:
+            extras.append({'key': 'uri', 'value': package_uri})
+
         # fix common schema fields errors
         schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
         for field in schema['dataset_fields']:
@@ -322,6 +328,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             name = munge.munge_name(extras.get('guid', title_as_name)).lower()
             package_dict['name'] = name
 
+            # add uri key for dcat extension to use. this field is used as the
+            # dataset id in rdf / jsonld output
+            package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + name
+            extras['uri'] = package_uri
+
             # populate license_id
             package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
@@ -346,13 +357,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
-            # populate resource format if missing
-            for resource in package_dict.get('resources', []):
-                if not resource.get('format'):
-                    if (resource.get('resource_locator_protocol').startswith('http') or
-                            resource.get('url').startswith('http')):
-                        resource['format'] = 'text/html'
-
             # set default values
             package_dict['progress'] = extras.get('progress', 'onGoing')
             package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
@@ -370,10 +374,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         # update resource format
         resources = package_dict.get('resources', [])
-        if len(resources):
             for resource in resources:
                 url = resource.get('url', '').strip()
-                format = resource.get('format') or ''
+            protocol = resource.get('resource_locator_protocol') or resource.get('protocol')
+            format = resource.get('format') or 'text/html'
                 if url:
                     format = self.cioos_guess_resource_format(url) or format
                 resource['format'] = format
