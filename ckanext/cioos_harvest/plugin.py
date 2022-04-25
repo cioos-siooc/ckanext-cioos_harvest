@@ -449,13 +449,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         # update resource format
         resources = package_dict.get('resources', [])
-            for resource in resources:
-                url = resource.get('url', '').strip()
+        for resource in resources:
+            url = resource.get('url', '').strip()
             protocol = resource.get('resource_locator_protocol') or resource.get('protocol')
             format = resource.get('format') or 'text/html'
-                if url:
-                    format = self.cioos_guess_resource_format(url) or format
-                resource['format'] = format
+            if url:
+                format = self.cioos_guess_resource_format(url) or format
+            resource['format'] = format
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
