@@ -433,8 +433,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
             # set default values
-            package_dict['progress'] = extras.get('progress', 'onGoing')
-            package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
+            package_dict['progress'] = package_dict.get('progress', 'onGoing')
+            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded')
 
         extras_as_list = []
         for key, value in extras.items():
