@@ -433,8 +433,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
 
             # set default values
-            package_dict['progress'] = extras.get('progress', 'onGoing')
-            package_dict['frequency-of-update'] = extras.get('frequency-of-update', 'asNeeded')
+            package_dict['progress'] = package_dict.get('progress', 'onGoing')
+            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded')
 
         extras_as_list = []
         for key, value in extras.items():
@@ -449,13 +449,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         # update resource format
         resources = package_dict.get('resources', [])
-            for resource in resources:
-                url = resource.get('url', '').strip()
+        for resource in resources:
+            url = resource.get('url', '').strip()
             protocol = resource.get('resource_locator_protocol') or resource.get('protocol')
             format = resource.get('format') or 'text/html'
-                if url:
-                    format = self.cioos_guess_resource_format(url) or format
-                resource['format'] = format
+            if url:
+                format = self.cioos_guess_resource_format(url) or format
+            resource['format'] = format
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
