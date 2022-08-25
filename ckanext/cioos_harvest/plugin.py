@@ -422,15 +422,20 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if title_translation_method:
                 extras['title_translation_method'] = title_translation_method
 
+            # set default language, default to english
+            default_language = iso_values.get('metadata-language', 'en')[0:2]
+            if not default_language:
+                default_language = 'en'
+
             # iterate over schema fields and update package dictionary as needed
             for field in schema['dataset_fields']:
                 handled_fields = []
-                self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
+                self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
 
                 if fluent:
-                    self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, handled_fields, source_config)
+                    self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, default_language, handled_fields, source_config)
 
-                self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, handled_fields)
+                self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
 
             # set default values
             package_dict['progress'] = package_dict.get('progress', 'onGoing')
@@ -447,7 +452,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         package_dict['extras'] = extras_as_list
 
-        # update resource format
+        # update resource format and translated name
         resources = package_dict.get('resources', [])
         for resource in resources:
             url = resource.get('url', '').strip()
@@ -456,10 +461,18 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if url:
                 format = self.cioos_guess_resource_format(url) or format
             resource['format'] = format
+
+            if resource.get('name') and not resource.get('name_translated'):
+                name_val = self.from_json(resource.get('name'))
+                if isinstance(name_val, dict):
+                    resource['name_translated'] = name_val
+                else:
+                    resource['name_translated'] = {}
+                    resource['name_translated'][default_language] = name_val
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
-    def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, handled_fields, harvest_config):
+    def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, default_language, handled_fields, harvest_config):
         field_name = field['field_name']
         if field_name in handled_fields:
             return
@@ -468,11 +481,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         if not field.get('preset', '').startswith(u'fluent'):
             return
-
-        # set default language, default to english
-        default_language = iso_values.get('metadata-language', 'en')[0:2]
-        if not default_language:
-            default_language = 'en'
 
         # handle tag fields
         if field.get('preset', '') == u'fluent_tags':
@@ -542,7 +550,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 new_obj['_'.join(keys + [key])] = value
         return new_obj
 
-    def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
+    def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, default_language, handled_fields):
         sep = plugins.toolkit.h.scheming_composite_separator()
         field_name = field['field_name']
         if field_name in handled_fields:
@@ -582,7 +590,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 del extras[field_name]
             handled_fields.append(field_name)
 
-    def handle_scheming_harvest_dictinary(self, field, iso_values, extras, package_dict, handled_fields):
+    def handle_scheming_harvest_dictinary(self, field, iso_values, extras, package_dict, default_language, handled_fields):
         field_name = field['field_name']
         if field_name in handled_fields:
             return
