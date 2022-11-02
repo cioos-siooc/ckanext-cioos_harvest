@@ -452,7 +452,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         package_dict['extras'] = extras_as_list
 
-        # update resource format and translated name
+        # update resource format and translated relevent fields
         resources = package_dict.get('resources', [])
         for resource in resources:
             url = resource.get('url', '').strip()
@@ -469,6 +469,15 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 else:
                     resource['name_translated'] = {}
                     resource['name_translated'][default_language] = name_val
+
+            if resource.get('description') and not resource.get('description_translated'):
+                description_val = self.from_json(resource.get('description'))
+                if isinstance(description_val, dict):
+                    resource['description_translated'] = description_val
+                else:
+                    resource['description_translated'] = {}
+                    resource['description_translated'][default_language] = description_val
+
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
