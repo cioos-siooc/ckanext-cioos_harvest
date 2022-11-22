@@ -127,6 +127,26 @@ class CIOOSCKANHarvester(CKANHarvester):
             'form_config_interface': 'Text'
         }
 
+    def modify_remote_organization(self, remote_org_id, pkg_dicts, context):
+
+        package_org = pkg_dicts.get('organization')
+        if package_org and package_org.get('id') == remote_org_id:
+            remote_org_id = package_org.get('name', remote_org_id)
+
+        # if there is a organization uri then try to match on that
+        # get first item from organization-uri list if it exists
+        uri = next(iter(package_org.get('organization-uri', [])), {})
+        # we assume uri code is unique
+        code = uri.get('code')
+        if code:
+            data_dict = {
+                'fq': 'organization-uri:%s' % code.replace(':', '_')
+            }
+            org = get_action('organization_list')(base_context.copy(), data_dict)
+            if org:
+                remote_org_id = org[0]['id']
+        return remote_org_id
+
     def modify_package_dict(self, package_dict, harvest_object):
         extras = package_dict.get('extras', [])
         package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
@@ -158,6 +178,52 @@ class CIOOSCKANHarvester(CKANHarvester):
                     if isinstance(value, dict):
                         value = [value]
                     package_dict[field_name] = value
+
+        # condense uri into uri.code to make downstream templating easier
+        # DOI
+        URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
+            package_dict,
+            uri_field='unique-resource-identifier-full',
+            default_authority='doi.org')
+        package_dict['unique-resource-identifier-full']['code'] = next(iter(URIF or []), '')
+
+        # Organization URI
+        organization = package_dict['organization']
+        if organization:
+            organization = organization[0]
+            code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                organization,
+                uri_field='organization-uri')
+            organization['code'] = next(iter(code or []), '')
+            package_dict['organization'] = organization
+
+        # metadata-point-of-contact Individual and Organisation URI
+        mpocs = package_dict['metadata-point-of-contact']
+        for mpoc in mpocs:
+            code = h.cioos_get_fully_qualified_package_uri(
+                mpoc,
+                uri_field='individual-uri_')
+            mpoc['individual-uri_code'] = next(iter(code or []), '')
+
+            code = h.cioos_get_fully_qualified_package_uri(
+                mpoc,
+                uri_field='organisation-uri_')
+            mpoc['organisation-uri_code'] = next(iter(code or []), '')
+        package_dict['metadata-point-of-contact'] = mpocs
+
+        # cited-responsible-party Individual and Organisation URI
+        crps = package_dict['cited-responsible-party']
+        for crp in crps:
+            code = h.cioos_get_fully_qualified_package_uri(
+                crp,
+                uri_field='individual-uri_')
+            mpoc['individual-uri_code'] = next(iter(code or []), '')
+
+            code = h.cioos_get_fully_qualified_package_uri(
+                crp,
+                uri_field='organisation-uri_')
+            mpoc['organisation-uri_code'] = next(iter(code or []), '')
+        package_dict['cited-responsible-party'] = crps
 
         return package_dict
 
