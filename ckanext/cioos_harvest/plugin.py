@@ -127,104 +127,116 @@ class CIOOSCKANHarvester(CKANHarvester):
             'form_config_interface': 'Text'
         }
 
-    def modify_remote_organization(self, remote_org_id, pkg_dicts, context):
+    def modify_remote_organization(self, remote_org_id, pkg_dict, context):
+        try:
+            package_org = pkg_dict.get('organization')
+            if package_org and package_org.get('id') == remote_org_id:
+                remote_org_id = package_org.get('name', remote_org_id)
 
-        package_org = pkg_dicts.get('organization')
-        if package_org and package_org.get('id') == remote_org_id:
-            remote_org_id = package_org.get('name', remote_org_id)
-
-        # if there is a organization uri then try to match on that
-        # get first item from organization-uri list if it exists
-        uri = next(iter(package_org.get('organization-uri', [])), {})
-        # we assume uri code is unique
-        code = uri.get('code')
-        if code:
-            data_dict = {
-                'fq': 'organization-uri:%s' % code.replace(':', '_')
-            }
-            org = get_action('organization_list')(base_context.copy(), data_dict)
-            if org:
-                remote_org_id = org[0]['id']
+            # if there is a organization uri then try to match on that
+            # get first item from organization-uri list if it exists
+            uri = next(iter(package_org.get('organization-uri', [])), {})
+            # we assume uri code is unique
+            code = uri.get('code')
+            if code:
+                data_dict = {
+                    'fq': 'organization-uri:%s' % code.replace(':', '_')
+                }
+                org = get_action('organization_list')(base_context.copy(), data_dict)
+                if org:
+                    remote_org_id = org[0]['id']
+        except Exception as e:
+            log.exception(e)
+            raise
         return remote_org_id
 
     def modify_package_dict(self, package_dict, harvest_object):
-        extras = package_dict.get('extras', [])
-        package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
+        try:
+            extras = package_dict.get('extras', [])
+            package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
-        existing_extra = _get_extra('metadata_created_source', package_dict)
-        if not existing_extra:
-            extras.append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
-        existing_extra = _get_extra('metadata_modified_source', package_dict)
-        if not existing_extra:
-            extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
+            existing_extra = _get_extra('metadata_created_source', package_dict)
+            if not existing_extra:
+                extras.append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
+            existing_extra = _get_extra('metadata_modified_source', package_dict)
+            if not existing_extra:
+                extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
 
-        # add uri for dcat if it dosn't exist
-        package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
-        existing_extra = _get_extra('uri', package_dict)
-        if not existing_extra:
-            extras.append({'key': 'uri', 'value': package_uri})
+            # add uri for dcat if it dosn't exist
+            package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
+            existing_extra = _get_extra('uri', package_dict)
+            if not existing_extra:
+                extras.append({'key': 'uri', 'value': package_uri})
 
-        # fix common schema fields errors
-        schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
-        for field in schema['dataset_fields']:
-            if 'repeating_subfields' in field or 'simple_subfields' in field:
-                field_name = field['field_name']
-                value = package_dict.get(field_name)
-                if value == '':
-                    value = []
-                    package_dict[field_name] = value
-                elif value:
-                    value = load_json(value)
-                    if isinstance(value, dict):
-                        value = [value]
-                    package_dict[field_name] = value
+            # fix common schema fields errors
+            schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
+            for field in schema['dataset_fields']:
+                if 'repeating_subfields' in field or 'simple_subfields' in field:
+                    field_name = field['field_name']
+                    value = package_dict.get(field_name)
+                    if value == '':
+                        value = []
+                        package_dict[field_name] = value
+                    elif value:
+                        value = load_json(value)
+                        if isinstance(value, dict):
+                            value = [value]
+                        package_dict[field_name] = value
 
-        # condense uri into uri.code to make downstream templating easier
-        # DOI
-        URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
-            package_dict,
-            uri_field='unique-resource-identifier-full',
-            default_authority='doi.org')
-        package_dict['unique-resource-identifier-full']['code'] = next(iter(URIF or []), '')
+            # condense uri into uri.code to make downstream templating easier
+            # DOI
+            URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
+                package_dict,
+                uri_field='unique-resource-identifier-full',
+                default_authority='doi.org')
+            if URIF:
+                if isinstance(package_dict['unique-resource-identifier-full'], list):
+                    for index, item in enumerate(package_dict['unique-resource-identifier-full']):
+                        package_dict['unique-resource-identifier-full'][index]['code'] = URIF[index]
+                else:
+                    package_dict['unique-resource-identifier-full']['code'] = URIF[0]
 
-        # Organization URI
-        organization = package_dict['organization']
-        if organization:
-            organization = organization[0]
-            code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                organization,
-                uri_field='organization-uri')
-            organization['code'] = next(iter(code or []), '')
-            package_dict['organization'] = organization
+            # Organization URI
+            organization = package_dict['organization']
+            if organization:
+                if isinstance(organization, list):
+                    organization = organization[0]
+                code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    organization,
+                    uri_field='organization-uri')
+                organization['code'] = next(iter(code or []), '')
+                package_dict['organization'] = organization
 
-        # metadata-point-of-contact Individual and Organisation URI
-        mpocs = package_dict['metadata-point-of-contact']
-        for mpoc in mpocs:
-            code = h.cioos_get_fully_qualified_package_uri(
-                mpoc,
-                uri_field='individual-uri_')
-            mpoc['individual-uri_code'] = next(iter(code or []), '')
+            # metadata-point-of-contact Individual and Organisation URI
+            mpocs = package_dict['metadata-point-of-contact']
+            for mpoc in mpocs:
+                code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    mpoc,
+                    uri_field='individual-uri_')
+                mpoc['individual-uri_code'] = next(iter(code or []), '')
 
-            code = h.cioos_get_fully_qualified_package_uri(
-                mpoc,
-                uri_field='organisation-uri_')
-            mpoc['organisation-uri_code'] = next(iter(code or []), '')
-        package_dict['metadata-point-of-contact'] = mpocs
+                code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    mpoc,
+                    uri_field='organisation-uri_')
+                mpoc['organisation-uri_code'] = next(iter(code or []), '')
+            package_dict['metadata-point-of-contact'] = mpocs
 
-        # cited-responsible-party Individual and Organisation URI
-        crps = package_dict['cited-responsible-party']
-        for crp in crps:
-            code = h.cioos_get_fully_qualified_package_uri(
-                crp,
-                uri_field='individual-uri_')
-            mpoc['individual-uri_code'] = next(iter(code or []), '')
+            # cited-responsible-party Individual and Organisation URI
+            crps = package_dict['cited-responsible-party']
+            for crp in crps:
+                code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    crp,
+                    uri_field='individual-uri_')
+                mpoc['individual-uri_code'] = next(iter(code or []), '')
 
-            code = h.cioos_get_fully_qualified_package_uri(
-                crp,
-                uri_field='organisation-uri_')
-            mpoc['organisation-uri_code'] = next(iter(code or []), '')
-        package_dict['cited-responsible-party'] = crps
-
+                code = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    crp,
+                    uri_field='organisation-uri_')
+                mpoc['organisation-uri_code'] = next(iter(code or []), '')
+            package_dict['cited-responsible-party'] = crps
+        except Exception as e:
+            log.exception(e)
+            raise
         return package_dict
 
 class CKANSpatialHarvester(CKANHarvester):
