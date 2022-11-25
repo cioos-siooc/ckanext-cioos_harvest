@@ -123,7 +123,7 @@ class CIOOSCKANHarvester(CKANHarvester):
         return {
             'name': 'ckan_cioos',
             'title': 'CKAN CIOOS',
-            'description': 'Harvests remote CKAN instances with improved handling/indexing of external xml files',
+            'description': 'Harvests remote CKAN instances with improved handling/indexing of external xml files and organization matching',
             'form_config_interface': 'Text'
         }
 
@@ -234,6 +234,10 @@ class CIOOSCKANHarvester(CKANHarvester):
                     uri_field='organisation-uri_')
                 mpoc['organisation-uri_code'] = next(iter(code or []), '')
             package_dict['cited-responsible-party'] = crps
+
+            if len(package_dict['tags']) > 0:
+                log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
+            package_dict['tags'] = []
         except Exception as e:
             log.exception(e)
             raise
