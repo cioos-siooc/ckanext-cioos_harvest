@@ -598,14 +598,15 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                         tobj = munge.munge_tag(tobj)
                     field_value[default_language].append(tobj)
 
+            # add tags to default language fluent field
+            for item in package_dict['tags']:
+                if item not in field_value[default_language]:
+                    field_value[default_language].append(item)
+
             package_dict[field_name] = field_value
 
-            # update tags with all values from fluent_tags
-            tag_list = [t['name'] for t in package_dict['tags']]
-            for item in field_value.get('en', []) + field_value.get('fr', []):
-                if item not in tag_list:
-                    tag_list.append(item)
-            package_dict['tags'] = [{'name': t} for t in tag_list]
+            # clear tags as its garbage anyway
+            package_dict['tags'] = []
 
         else:
             # Populate translated fields from core. this could have been done in
