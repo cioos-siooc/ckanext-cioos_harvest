@@ -142,9 +142,9 @@ class CIOOSCKANHarvester(CKANHarvester):
                 data_dict = {
                     'fq': 'organization-uri:%s' % code.replace(':', '_')
                 }
-                org = get_action('organization_list')(base_context.copy(), data_dict)
+                org = toolkit.get_action('organization_list')(context.copy(), data_dict)
                 if org:
-                    remote_org_id = org[0]['id']
+                    remote_org_id = org[0]
         except Exception as e:
             log.exception(e)
             raise
