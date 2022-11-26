@@ -188,7 +188,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
                 package_dict,
                 uri_field='unique-resource-identifier-full',
-                default_authority='doi.org')
+                default_code_space='doi.org')
             if URIF:
                 if isinstance(package_dict['unique-resource-identifier-full'], list):
                     for index, item in enumerate(package_dict['unique-resource-identifier-full']):
