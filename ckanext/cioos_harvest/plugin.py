@@ -238,6 +238,38 @@ class CIOOSCKANHarvester(CKANHarvester):
             if len(package_dict['tags']) > 0:
                 log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
             package_dict['tags'] = []
+
+            for resource in package_dict.get('resources', []):
+                res_name = resource.get('name')
+                res_name_translated = resource.get('name_translated')
+                # populate multilingual resource name if not set
+                if not res_name_translated:
+                    res_name = load_json(res_name)
+                    if isinstance(res_name, dict):
+                        resource['name_translated'] = res_name
+                    else:
+                        resource['name_translated'] = {}
+                        resource['name_translated']['en'] = res_name
+                        resource['name_translated']['fr'] = res_name
+
+                res_desc = resource.get('description')
+                res_desc_translated = resource.get('description_translated')
+                # populate multilingual resource name if not set
+                if not res_desc_translated:
+                    res_desc = load_json(res_desc)
+                    if isinstance(res_desc, dict):
+                        resource['description_translated'] = res_desc
+                    else:
+                        resource['description_translated'] = {}
+                        resource['description_translated']['en'] = res_desc
+                        resource['description_translated']['fr'] = res_desc
+
+                if not resource.get('created_source'):
+                    resource['created_source'] = resource.get('created')
+
+                if not resource.get('metadata_modified_source'):
+                    resource['metadata_modified_source'] = resource.get('metadata_modified')
+
         except Exception as e:
             log.exception(e)
             raise
