@@ -18,6 +18,7 @@ import xml.etree.ElementTree as ET
 import re
 from six import string_types
 from urllib3.contrib import pyopenssl
+import hashlib
 
 
 import logging
@@ -240,6 +241,10 @@ class CIOOSCKANHarvester(CKANHarvester):
             package_dict['tags'] = []
 
             for resource in package_dict.get('resources', []):
+                res_url = resource.get('url')
+                res_url_md5 = resource.get('url_md5')
+                if res_url and not res_url_md5:
+                    resource['url_md5'] = hashlib.md5(res_url.encode('utf8', 'ignore')).hexdigest()
                 res_name = resource.get('name')
                 res_name_translated = resource.get('name_translated')
                 # populate multilingual resource name if not set
@@ -574,6 +579,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             format = resource.get('format') or 'text/html'
             if url:
                 format = self.cioos_guess_resource_format(url) or format
+                resource['url_md5'] = hashlib.md5(res_url.encode('utf8', 'ignore')).hexdigest()
             resource['format'] = format
 
             if resource.get('name') and not resource.get('name_translated'):
