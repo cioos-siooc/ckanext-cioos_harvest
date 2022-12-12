@@ -448,6 +448,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         resource_types = {
             # ERDDAP
             'ERDDAP': ('/erddap/',),
+            # OBIS
+            'OBIS': ('/ipt.iobis.org/',),
         }
 
         for resource_type, parts in resource_types.items():
