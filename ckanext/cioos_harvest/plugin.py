@@ -19,7 +19,6 @@ import re
 from six import string_types
 from urllib3.contrib import pyopenssl
 
-
 import logging
 log = logging.getLogger(__name__)
 
@@ -168,6 +167,26 @@ class CIOOSCKANHarvester(CKANHarvester):
             if not existing_extra:
                 extras.append({'key': 'uri', 'value': package_uri})
 
+            # populate publishing data catalogue list
+            dc = {
+                "name": load_json(toolkit.config.get('ckan.site_title')),
+                "description": load_json(toolkit.config.get('ckan.site_description')),
+                "url": toolkit.config.get('ckan.site_url')
+            }
+            
+            source_dc = {
+                "name":  self.config.get('source_title') or harvest_object.job.source.title,
+                "description": self.config.get('source_description'),
+                "url": harvest_object.job.source.url.strip('/')
+            }
+
+            if not package_dict.get('included_in_data_catalogue'):
+                package_dict['included_in_data_catalogue'] = [source_dc, dc]
+            else:
+                package_dict['included_in_data_catalogue'].append(dc)
+                # remove duplicities
+                package_dict['included_in_data_catalogue'] = list({item.url:item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+
             # fix common schema fields errors
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
             for field in schema['dataset_fields']:
@@ -303,6 +322,22 @@ class CKANSpatialHarvester(CKANHarvester):
             'description': 'Harvests remote CKAN instances filtering by spatial query',
             'form_config_interface': 'Text'
         }
+
+    def modify_package_dict(self, package_dict, harvest_object):
+        # populate publishing data catalogue list
+        dc = {
+            "name": load_json(toolkit.config.get('ckan.site_title')),
+            "description": load_json(toolkit.config.get('ckan.site_description')),
+            "url": toolkit.config.get('ckan.site_url')
+        }
+        if not package_dict.get('included_in_data_catalogue'):
+            package_dict['included_in_data_catalogue'] = [dc]
+        else:
+            package_dict['included_in_data_catalogue'].append(dc)
+            # remove duplicities
+            package_dict['included_in_data_catalogue'] = list({item.url:item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+
+        return package_dict
 
     def modify_search(self, pkg_dicts, remote_ckan_base_url, fq_terms):
         ss_params = {}
@@ -509,7 +544,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # composite = 'composite' in loaded_plugins
             fluent = 'fluent' in loaded_plugins
 
-            log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictinary ####')
+            log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictionary ####')
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
 
             # Package name, default harvester uses title or guid in that order.
@@ -530,7 +565,14 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
 
-            # populate trlanslation method for bilingual field
+            # populate publishing data catalogue list
+            package_dict['included_in_data_catalogue'] = [{
+                "name": load_json(toolkit.config.get('ckan.site_title')),
+                "description": load_json(toolkit.config.get('ckan.site_description')),
+                "url": toolkit.config.get('ckan.site_url')
+            }]
+
+            # populate translation method for bilingual field
             notes_translation_method = iso_values.get('abstract_translation_method')
             title_translation_method = iso_values.get('title_translation_method')
             if notes_translation_method:
