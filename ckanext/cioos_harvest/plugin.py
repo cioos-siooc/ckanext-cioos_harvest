@@ -565,6 +565,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
 
+            # populate projects
+            package_dict['projects'] = iso_values.get('keyword-project', [])
+
+            # populate datacentre
+            package_dict['datacentre'] = iso_values.get('keyword-datacentre', [])
+
             # populate publishing data catalogue list
             package_dict['included_in_data_catalogue'] = [{
                 "name": load_json(toolkit.config.get('ckan.site_title')),
