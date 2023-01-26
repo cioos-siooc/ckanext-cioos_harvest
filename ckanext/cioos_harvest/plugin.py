@@ -216,7 +216,7 @@ class CIOOSCKANHarvester(CKANHarvester):
                     package_dict['unique-resource-identifier-full']['code'] = URIF[0]
 
             # Organization URI
-            organization = package_dict['organization']
+            organization = package_dict.get('organization')
             if organization:
                 if isinstance(organization, list):
                     organization = organization[0]
@@ -227,7 +227,7 @@ class CIOOSCKANHarvester(CKANHarvester):
                 package_dict['organization'] = organization
 
             # metadata-point-of-contact Individual and Organisation URI
-            mpocs = package_dict['metadata-point-of-contact']
+            mpocs = package_dict.get('metadata-point-of-contact',[])
             for mpoc in mpocs:
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
                     mpoc,
@@ -241,7 +241,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             package_dict['metadata-point-of-contact'] = mpocs
 
             # cited-responsible-party Individual and Organisation URI
-            crps = package_dict['cited-responsible-party']
+            crps = package_dict.get('cited-responsible-party',[])
             for crp in crps:
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
                     crp,
