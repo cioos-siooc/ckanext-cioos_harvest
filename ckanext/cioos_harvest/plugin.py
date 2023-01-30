@@ -324,6 +324,13 @@ class CKANSpatialHarvester(CKANHarvester):
         }
 
     def modify_package_dict(self, package_dict, harvest_object):
+
+        # provide default values if harvesting from a ckan catalogue that does not have these in their schema
+        if not package_dict.get('projects'): 
+            package_dict['projects'] = []
+        if not package_dict.get('datacentre'): 
+            package_dict['datacentre'] = []
+
         # populate publishing data catalogue list
         dc = {
             "name": load_json(toolkit.config.get('ckan.site_title')),
