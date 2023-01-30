@@ -185,7 +185,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             else:
                 package_dict['included_in_data_catalogue'].append(dc)
                 # remove duplicities
-                package_dict['included_in_data_catalogue'] = list({item.url:item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+                package_dict['included_in_data_catalogue'] = list({item.get('url',''):item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
 
             # fix common schema fields errors
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
@@ -335,7 +335,7 @@ class CKANSpatialHarvester(CKANHarvester):
         else:
             package_dict['included_in_data_catalogue'].append(dc)
             # remove duplicities
-            package_dict['included_in_data_catalogue'] = list({item.url:item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+            package_dict['included_in_data_catalogue'] = list({item.get('url',''):item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
 
         return package_dict
 
