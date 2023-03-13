@@ -161,6 +161,12 @@ class CIOOSCKANHarvester(CKANHarvester):
             if not existing_extra:
                 extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
 
+            # provide default values if harvesting from a ckan catalogue that does not have these in their schema
+            if not package_dict.get('projects'): 
+                package_dict['projects'] = []
+            if not package_dict.get('datacentre'): 
+                package_dict['datacentre'] = []
+
             # add uri for dcat if it dosn't exist
             package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
             existing_extra = _get_extra('uri', package_dict)
