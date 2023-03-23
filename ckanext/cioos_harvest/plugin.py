@@ -629,7 +629,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         package_dict['extras'] = extras_as_list
 
-        # update resource format and translated relevent fields
+        # update resource format and translated relevant fields
         resources = package_dict.get('resources', [])
         for resource in resources:
             url = resource.get('url', '').strip()
