@@ -573,7 +573,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['uri'] = package_uri
 
             # populate license_id
-            package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
+            if not package_dict.get('license_id'):
+                package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
@@ -699,6 +700,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # add tags to default language fluent field
             for item in package_dict['tags']:
+                if item.get('name'):
+                    item = item['name']
                 if item not in field_value[default_language]:
                     field_value[default_language].append(item)
 
