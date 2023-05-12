@@ -593,9 +593,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             }]
 
             # populate translation method for bilingual field
-            package_dict['title_translation_method'] = iso_values.get('title_translation_method')
-            package_dict['notes_translation_method'] = iso_values.get('abstract_translation_method')
-            package_dict['keywords_translation_method'] = iso_values.get('keywords_translation_method')
+            if iso_values.get('title_translation_method'):
+                package_dict['title_translation_method'] = iso_values['title_translation_method']
+            if iso_values.get('abstract_translation_method'):
+                package_dict['notes_translation_method'] = iso_values['abstract_translation_method']
+            if iso_values.get('keywords_translation_method'):
+                package_dict['keywords_translation_method'] = iso_values['keywords_translation_method']
 
             # set default language, default to english
             default_language = iso_values.get('metadata-language', 'en')[0:2]
