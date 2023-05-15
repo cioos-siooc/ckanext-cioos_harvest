@@ -573,7 +573,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['uri'] = package_uri
 
             # populate license_id
-            package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
+            if not package_dict.get('license_id'):
+                package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
             # populate citation
             package_dict['citation'] = iso_values.get('citation')
@@ -592,12 +593,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             }]
 
             # populate translation method for bilingual field
-            notes_translation_method = iso_values.get('abstract_translation_method')
-            title_translation_method = iso_values.get('title_translation_method')
-            if notes_translation_method:
-                extras['notes_translation_method'] = notes_translation_method
-            if title_translation_method:
-                extras['title_translation_method'] = title_translation_method
+            if iso_values.get('title_translation_method'):
+                package_dict['title_translation_method'] = iso_values['title_translation_method']
+            if iso_values.get('abstract_translation_method'):
+                package_dict['notes_translation_method'] = iso_values['abstract_translation_method']
+            if iso_values.get('keywords_translation_method'):
+                package_dict['keywords_translation_method'] = iso_values['keywords_translation_method']
 
             # set default language, default to english
             default_language = iso_values.get('metadata-language', 'en')[0:2]
@@ -629,7 +630,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         package_dict['extras'] = extras_as_list
 
-        # update resource format and translated relevent fields
+        # update resource format and translated relevant fields
         resources = package_dict.get('resources', [])
         for resource in resources:
             url = resource.get('url', '').strip()
@@ -699,6 +700,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # add tags to default language fluent field
             for item in package_dict['tags']:
+                if item.get('name'):
+                    item = item['name']
                 if item not in field_value[default_language]:
                     field_value[default_language].append(item)
 
