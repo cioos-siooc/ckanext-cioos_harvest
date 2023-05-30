@@ -592,6 +592,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 "url": toolkit.config.get('ckan.site_url')
             }]
 
+            if source_config.get('data_catalogue_source'):
+                 package_dict['included_in_data_catalogue'] = load_json(source_config['data_catalogue_source']) +  package_dict['included_in_data_catalogue']
+
             # populate translation method for bilingual field
             if iso_values.get('title_translation_method'):
                 package_dict['title_translation_method'] = iso_values['title_translation_method']
