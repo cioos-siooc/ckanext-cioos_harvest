@@ -532,7 +532,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         extras['xml_location_url'] = xml_location_url
         if xml_modified_date:
-            extras['xml_modified_date'] = xml_modified_date
+            extras['xml_modified_date'] = xml_modified_date.replace('Z','')
 
         # copy some fields over from iso_values if they exist
         if(iso_values.get('limitations-on-public-access')):
@@ -619,8 +619,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
 
             # set default values
-            package_dict['progress'] = package_dict.get('progress', 'onGoing')
-            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded')
+            package_dict['progress'] = package_dict.get('progress', 'onGoing') or 'onGoing'
+            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded') or 'asNeeded'
 
         extras_as_list = []
         for key, value in extras.items():
