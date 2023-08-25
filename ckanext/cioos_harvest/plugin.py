@@ -547,7 +547,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
         if(iso_values.get('distributor')):
             extras['distributor'] = iso_values.get('distributor')
-
+        if(iso_values.get('dataset-language')):
+            extras['dataset-language'] = iso_values.get('dataset-language')
+        if(iso_values.get('dataset-language-other')):
+            extras['dataset-language-other'] = iso_values.get('dataset-language-other')
+            
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
