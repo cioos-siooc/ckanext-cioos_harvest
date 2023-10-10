@@ -547,7 +547,11 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
         if(iso_values.get('distributor')):
             extras['distributor'] = iso_values.get('distributor')
-
+        if(iso_values.get('dataset-language')):
+            extras['dataset-language'] = iso_values.get('dataset-language')
+        if(iso_values.get('dataset-language-other')):
+            extras['dataset-language-other'] = iso_values.get('dataset-language-other')
+            
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
@@ -633,6 +637,17 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         package_dict['extras'] = extras_as_list
 
+         ## Configuring Responsible Organization group
+        group_mapping = source_config.get('organization_mapping', {})
+        group_type = 'resorg'
+        # filter out entries with no organisation
+        parties = [ x for x in iso_values.get("cited-responsible-party",[]) if x.get('organisation-name')]
+        # generate groups
+        groups = self.handle_groups(context, harvest_object, group_mapping, group_type, parties)
+        if groups:
+            # remove duplicates by populating dictionary and then converting to list
+            package_dict['groups'] = list({x['id']: x for x in (package_dict.get('groups',[]) + groups)}.values())
+
         # update resource format and translated relevant fields
         resources = package_dict.get('resources', [])
         for resource in resources:
@@ -662,6 +677,91 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
+    def handle_groups(self, context, harvest_object, group_mapping, group_type, cats = []):
+        source_config = json.loads(harvest_object.source.config)
+        validated_groups = []
+
+        harvest_responsible_organizations = source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'True'
+        if harvest_responsible_organizations == "True":
+            # Handle org mapping using metadata cited-responsible-party
+            log.info(':::::::::::::-Handle Groups-::::::::::::: %r ', cats)
+
+        resp_org_roles = load_json(
+            source_config.get('responsible_organization_roles') 
+            or toolkit.config.get('ckan.responsible_organization_roles')
+            or '["owner", "originator", "custodian", "author", "principalInvestigator"]'
+        )
+
+        for cat in cats:
+            role = load_json(cat.get('role'))
+            if not isinstance(role, list):
+                role = [role]
+            if not set(role).isdisjoint(set(resp_org_roles)):
+                organisation_name = cat['organisation-name'].strip()
+                orgname = group_mapping.get(organisation_name, munge.munge_name(organisation_name).lower())
+                groupname = '_'.join([group_type, orgname])
+
+                printname = orgname if not None else "NONE"
+                log.debug("Group %s mapped into %s" % (organisation_name, printname))
+
+                if groupname:
+                    org = None
+                    group = None
+                    try:
+                        data_dict = {'id': groupname}
+                        group = toolkit.get_action('group_show')(context.copy(), data_dict)
+                        log.info('Found Existing Group %s' % (groupname))                           
+                        validated_groups.append({'id': group['id'], 'name': group['name']})
+                    except toolkit.ObjectNotFound as e1:
+                        log.debug('Group %s is not available' % (groupname))
+                        # check if group exists as an organization
+                        try:
+                            org = toolkit.get_action('organization_show')(context.copy(), 
+                                                                          data_dict={
+                                                                            'id': orgname,
+                                                                            'include_datasets': False,
+                                                                            'include_dataset_count': False,
+                                                                            'include_extras': True,
+                                                                            'include_users': False,
+                                                                            'include_groups': False,
+                                                                            'include_tags': False,
+                                                                            'include_followers': False,
+                                                                        })
+                            org['name'] = groupname
+                            for key in ['id', 'packages', 'created', 'users', 'groups', 'tags', 'is_organization','num_followers','package_count','approval_status']:
+                                org.pop(key, None) 
+                            org['type'] = group_type or 'group'
+                            if org.get('organization-uri'):
+                                org['group-uri'] = org['organization-uri'].copy()
+                            created_group = toolkit.get_action('group_create')(context.copy(), org)
+                            log.info('Group %s created from org %s', groupname, orgname)
+                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
+
+                        except toolkit.ObjectNotFound as e2:
+                            # no organization match so generate new group
+                            log.debug('Organization %s not found, can not generate group %s from organization' % (orgname, groupname))
+                            group = {
+                                'name': groupname,
+                                'display_name': organisation_name,
+                                'title': organisation_name,
+                                'type': group_type or 'group',
+                                'title_translated': {
+                                            'en' : organisation_name,
+                                            'fr' : organisation_name,
+                                        },
+                                'organisation-uri':  {
+                                            'authority': cat.get('organisation-uri_authority',''),
+                                            'code': cat.get('organisation-uri_code',''),
+                                            'code-space': cat.get('organisation-uri_code-space',''),
+                                            'version': cat.get('organisation-uri_version',''),
+                                        }
+                            }
+                            created_group = toolkit.get_action('group_create')(context.copy(), group)
+                            log.info('Group %s created', groupname)
+                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
+       
+        return validated_groups
+    
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, default_language, handled_fields, harvest_config):
         field_name = field['field_name']
         if field_name in handled_fields:
