@@ -6,6 +6,7 @@ from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckanext.spatial.harvesters.base import SpatialHarvester
 from ckan.lib.search import SearchError
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
@@ -736,7 +737,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                             created_group = toolkit.get_action('group_create')(context.copy(), org)
                             log.info('Group %s created from org %s', groupname, orgname)
                             validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
-
+                        except toolkit.ValidationError as e:
+                                SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (org['name'], e.error_dict), harvest_object, 'Import')
+                                continue
                         except toolkit.ObjectNotFound as e2:
                             # no organization match so generate new group
                             log.debug('Organization %s not found, can not generate group %s from organization' % (orgname, groupname))
@@ -756,10 +759,14 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                                             'version': cat.get('organisation-uri_version',''),
                                         }
                             }
-                            created_group = toolkit.get_action('group_create')(context.copy(), group)
+                            try:
+                                created_group = toolkit.get_action('group_create')(context.copy(), group)
+                            except toolkit.ValidationError as e:
+                                SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (group['name'], e.error_dict), harvest_object, 'Import')
+                                continue
+                           
                             log.info('Group %s created', groupname)
-                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
-       
+                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})       
         return validated_groups
     
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, default_language, handled_fields, harvest_config):
