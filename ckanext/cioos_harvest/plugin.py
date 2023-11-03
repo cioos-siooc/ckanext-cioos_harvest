@@ -6,6 +6,7 @@ from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObjectError
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckanext.spatial.harvesters.base import SpatialHarvester
 from ckan.lib.search import SearchError
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
@@ -13,7 +14,6 @@ import json
 import requests
 from requests.exceptions import HTTPError, RequestException
 from numbers import Number
-import socket
 import xml.etree.ElementTree as ET
 import re
 from six import string_types
@@ -79,8 +79,11 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
     source_config = json.loads(harvest_object.source.config)
     key = 'harvest_document_content'
     value = ''
+    package_content = package_dict.get(key,'')
 
-    if content.startswith('<'):
+    if package_content.startswith('<'):
+        value = package_content
+    elif content.startswith('<'):
         value = harvest_object.content
     else:
         log.warn('Unable to find harvest object "%s" '
@@ -115,6 +118,99 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
         package_dict[key] = value
     return package_dict
 
+def handle_groups(context, harvest_object, group_mapping, group_type, cats = []):
+        source_config = json.loads(harvest_object.source.config)
+        validated_groups = []
+
+        harvest_responsible_organizations = (source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'true').lower()
+        if harvest_responsible_organizations == "true":
+            # Handle org mapping using metadata cited-responsible-party
+            log.info(':::::::::::::-Handle Groups-::::::::::::: %r ', cats)
+        else:
+            log.debug(':::::::::::::-Skipping Handle Groups-::::::::::::: %r ', cats)
+            return validated_groups
+
+        resp_org_roles = load_json(
+            source_config.get('responsible_organization_roles') 
+            or toolkit.config.get('ckan.responsible_organization_roles')
+            or '["owner", "originator", "custodian", "author", "principalInvestigator"]'
+        )
+
+        for cat in cats:
+            role = load_json(cat.get('role'))
+            if not isinstance(role, list):
+                role = [role]
+            if not set(role).isdisjoint(set(resp_org_roles)):
+                organisation_name = cat['organisation-name'].strip()
+                orgname = group_mapping.get(organisation_name, munge.munge_name(organisation_name).lower())
+                groupname = '_'.join([group_type, orgname])
+
+                printname = orgname if not None else "NONE"
+                log.debug("Group %s mapped into %s" % (organisation_name, printname))
+
+                if groupname:
+                    org = None
+                    group = None
+                    try:
+                        data_dict = {'id': groupname}
+                        group = toolkit.get_action('group_show')(context.copy(), data_dict=data_dict)
+                        log.info('Found Existing Group %s' % (groupname))                           
+                        validated_groups.append({'id': group['id'], 'name': group['name']})
+                    except toolkit.ObjectNotFound as e1:
+                        log.debug('Group %s is not available' % (groupname))
+                        # check if group exists as an organization
+                        try:
+                            org = toolkit.get_action('organization_show')(context.copy(), data_dict={
+                                                                            'id': orgname,
+                                                                            'include_datasets': False,
+                                                                            'include_dataset_count': False,
+                                                                            'include_extras': True,
+                                                                            'include_users': False,
+                                                                            'include_groups': False,
+                                                                            'include_tags': False,
+                                                                            'include_followers': False,
+                                                                        })
+                            org['name'] = groupname
+                            for key in ['id', 'packages', 'created', 'users', 'groups', 'tags', 'is_organization','num_followers','package_count','approval_status']:
+                                org.pop(key, None) 
+                            org['type'] = group_type or 'group'
+                            if org.get('organization-uri'):
+                                org['group-uri'] = org['organization-uri'].copy()
+                            created_group = toolkit.get_action('group_create')(context.copy(), data_dict=org)
+                            log.info('Group %s created from org %s', groupname, orgname)
+                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
+                        except toolkit.ValidationError as e:
+                                SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (org['name'], e.error_dict), harvest_object, 'Import')
+                                continue
+                        except toolkit.ObjectNotFound as e2:
+                            # no organization match so generate new group
+                            log.debug('Organization %s not found, can not generate group %s from organization' % (orgname, groupname))
+                            group = {
+                                'name': groupname,
+                                'display_name': organisation_name,
+                                'title': organisation_name,
+                                'type': group_type or 'group',
+                                'title_translated': {
+                                            'en' : organisation_name,
+                                            'fr' : organisation_name,
+                                        },
+                                'organisation-uri':  {
+                                            'authority': cat.get('organisation-uri_authority',''),
+                                            'code': cat.get('organisation-uri_code',''),
+                                            'code-space': cat.get('organisation-uri_code-space',''),
+                                            'version': cat.get('organisation-uri_version',''),
+                                        }
+                            }
+                            try:
+                                created_group = toolkit.get_action('group_create')(context.copy(), data_dict=group)
+                            except toolkit.ValidationError as e:
+                                SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (group['name'], e.error_dict), harvest_object, 'Import')
+                                continue
+                           
+                            log.info('Group %s created', groupname)
+                            validated_groups.append({'id': created_group['id'], 'name': created_group['name']})       
+        return validated_groups
+    
 
 class CIOOSCKANHarvester(CKANHarvester):
 
@@ -141,7 +237,7 @@ class CIOOSCKANHarvester(CKANHarvester):
                 data_dict = {
                     'fq': 'organization-uri:%s' % code.replace(':', '_')
                 }
-                org = toolkit.get_action('organization_list')(context.copy(), data_dict)
+                org = toolkit.get_action('organization_list')(context.copy(), data_dict=data_dict)
                 if org:
                     remote_org_id = org[0]
         except Exception as e:
@@ -150,16 +246,37 @@ class CIOOSCKANHarvester(CKANHarvester):
         return remote_org_id
 
     def modify_package_dict(self, package_dict, harvest_object):
+        base_context = {'model': model, 'session': model.Session,
+                        'user': self._get_user_name()}
         try:
-            extras = package_dict.get('extras', [])
+            # convert extras key:value list to dictinary
+            extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
             package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
-            existing_extra = _get_extra('metadata_created_source', package_dict)
-            if not existing_extra:
-                extras.append({'key': 'metadata_created_source', 'value': package_dict.get('metadata_created')})
-            existing_extra = _get_extra('metadata_modified_source', package_dict)
-            if not existing_extra:
-                extras.append({'key': 'metadata_modified_source', 'value': package_dict.get('metadata_modified')})
+            if not extras.get('metadata_created_source'):
+                extras['metadata_created_source'] = package_dict.get('metadata_created')
+            if not extras.get('metadata_modified_source'):
+                extras['metadata_modified_source'] = package_dict.get('metadata_modified')
+
+            # populate harvest source organization
+            harvest_source = toolkit.get_action("harvest_source_show")(
+                data_dict = {
+                "id": harvest_object.source.id
+            })
+            extras['harvest_source_organization'] = harvest_source.get('organization')
+
+            # convert extras back to a list of key/value dictionaries
+            extras_as_list = []
+            for key, value in extras.items():
+                if package_dict.get(key, ''):
+                    log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+                if isinstance(value, (list, dict)):
+                    extras_as_list.append({'key': key, 'value': json.dumps(value)})
+                else:
+                    extras_as_list.append({'key': key, 'value': value})
+
+            package_dict['extras'] = extras_as_list
+
 
             # provide default values if harvesting from a ckan catalogue that does not have these in their schema
             if not package_dict.get('projects'): 
@@ -263,6 +380,21 @@ class CIOOSCKANHarvester(CKANHarvester):
             if len(package_dict['tags']) > 0:
                 log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
             package_dict['tags'] = []
+
+            source_config = json.loads(harvest_object.source.config)
+            ## Configuring Responsible Organization group
+            group_mapping = source_config.get('organization_mapping', {})
+            group_type = 'resorg'
+            # filter out entries with no organisation
+            parties = [ x for x in package_dict.get("cited-responsible-party",[]) if x.get('organisation-name')]
+            # generate groups if not already set
+            if package_dict.get('groups'):
+                log.debug('Groups Found. Skipping Responable Organization processing.')
+            else:
+                groups = handle_groups(base_context, harvest_object, group_mapping, group_type, parties)
+                if groups:
+                    # remove duplicates by populating dictionary and then converting to list
+                    package_dict['groups'] = list({x['id']: x for x in (package_dict.get('groups',[]) + groups)}.values())
 
             for resource in package_dict.get('resources', []):
                 res_name = resource.get('name')
@@ -532,7 +664,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         extras['xml_location_url'] = xml_location_url
         if xml_modified_date:
-            extras['xml_modified_date'] = xml_modified_date
+            extras['xml_modified_date'] = xml_modified_date.replace('Z','')
 
         # copy some fields over from iso_values if they exist
         if(iso_values.get('limitations-on-public-access')):
@@ -547,6 +679,18 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
         if(iso_values.get('distributor')):
             extras['distributor'] = iso_values.get('distributor')
+        if(iso_values.get('dataset-language')):
+            extras['dataset-language'] = iso_values.get('dataset-language')
+        if(iso_values.get('dataset-language-other')):
+            extras['dataset-language-other'] = iso_values.get('dataset-language-other')
+
+        # populate harvest source organization
+        harvest_source = toolkit.get_action("harvest_source_show")(
+            data_dict = {
+            "id": harvest_object.source.id
+        })
+        extras['harvest_source_organization'] = harvest_source.get('organization')   
+        
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
@@ -592,6 +736,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 "url": toolkit.config.get('ckan.site_url')
             }]
 
+            if source_config.get('data_catalogue_source'):
+                 package_dict['included_in_data_catalogue'] = load_json(source_config['data_catalogue_source']) +  package_dict['included_in_data_catalogue']
+
             # populate translation method for bilingual field
             if iso_values.get('title_translation_method'):
                 package_dict['title_translation_method'] = iso_values['title_translation_method']
@@ -616,8 +763,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
 
             # set default values
-            package_dict['progress'] = package_dict.get('progress', 'onGoing')
-            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded')
+            package_dict['progress'] = package_dict.get('progress', 'onGoing') or 'onGoing'
+            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded') or 'asNeeded'
 
         extras_as_list = []
         for key, value in extras.items():
@@ -629,6 +776,17 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 extras_as_list.append({'key': key, 'value': value})
 
         package_dict['extras'] = extras_as_list
+
+         ## Configuring Responsible Organization group
+        group_mapping = source_config.get('organization_mapping', {})
+        group_type = 'resorg'
+        # filter out entries with no organisation
+        parties = [ x for x in iso_values.get("cited-responsible-party",[]) if x.get('organisation-name')]
+        # generate groups
+        groups = handle_groups(context, harvest_object, group_mapping, group_type, parties)
+        if groups:
+            # remove duplicates by populating dictionary and then converting to list
+            package_dict['groups'] = list({x['id']: x for x in (package_dict.get('groups',[]) + groups)}.values())
 
         # update resource format and translated relevant fields
         resources = package_dict.get('resources', [])
@@ -659,6 +817,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         package_dict['resources'] = resources
         return self.trim_values(package_dict)
 
+    
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, default_language, handled_fields, harvest_config):
         field_name = field['field_name']
         if field_name in handled_fields:
