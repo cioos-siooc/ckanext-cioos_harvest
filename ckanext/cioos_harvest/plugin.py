@@ -729,6 +729,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate datacentre
             package_dict['datacentre'] = iso_values.get('keyword-datacentre', [])
 
+            # populate lineage
+            package_dict['lineage'] = iso_values.get('lineage',[])
+
             # populate publishing data catalogue list
             package_dict['included_in_data_catalogue'] = [{
                 "name": load_json(toolkit.config.get('ckan.site_title')),
