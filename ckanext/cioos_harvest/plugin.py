@@ -213,6 +213,7 @@ def handle_groups(context, harvest_object, group_mapping, group_type, cats = [])
     
 
 class CIOOSCKANHarvester(CKANHarvester):
+    plugins.implements(IHarvester)
 
     def info(self):
         return {
@@ -433,6 +434,7 @@ class CIOOSCKANHarvester(CKANHarvester):
         return package_dict
 
 class CKANSpatialHarvester(CKANHarvester):
+    plugins.implements(IHarvester)
 
     def _post_content(self, url, params={}):
 
@@ -544,6 +546,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(ISpatialHarvester, inherit=True)
     plugins.implements(plugins.IOrganizationController, inherit=True)
+
+    # Temporary fix: Add info() method to prevent AttributeError
+    # This plugin is not actually a harvester but the system seems to expect this method
+    def info(self):
+        # Return None to indicate this plugin doesn't provide a harvester type
+        return None
 
     # IOrganizationController
     def read(self, entity):
