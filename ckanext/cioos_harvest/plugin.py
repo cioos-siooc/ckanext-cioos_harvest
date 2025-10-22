@@ -31,6 +31,44 @@ def load_json(j):
     return new_val
 
 
+def find_organization_by_alias(context, organisation_name):
+    """
+    Search for an organization by checking if the organisation_name matches any organization's aliases.
+    Returns the organization ID (name) if found, otherwise None.
+
+    Args:
+        context: CKAN context dict
+        organisation_name: The name to search for in organization aliases
+
+    Returns:
+        str: Organization ID/name if found, None otherwise
+    """
+    try:
+        # Get all organizations
+        org_list = toolkit.get_action('organization_list')(context.copy(), {
+            'all_fields': True,
+            'include_extras': True
+        })
+
+        # Search through organizations for matching alias
+        for org in org_list:
+            # Check aliases extra field
+            for extra in org.get('extras', []):
+                if extra.get('key') == 'aliases':
+                    aliases_value = extra.get('value', '')
+                    # Parse aliases (can be JSON array or list)
+                    aliases = load_json(aliases_value) if isinstance(aliases_value, str) else aliases_value
+                    if isinstance(aliases, list):
+                        # Case-insensitive comparison
+                        if any(alias.strip().lower() == organisation_name.strip().lower() for alias in aliases):
+                            log.info('Found organization %s by alias match for "%s"', org['name'], organisation_name)
+                            return org['name']
+    except Exception as e:
+        log.warning('Error searching for organization by alias: %s', e)
+
+    return None
+
+
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     try:
         try:
@@ -169,7 +207,25 @@ def handle_groups(context, harvest_object, group_mapping, group_type, cats = [],
                 continue
 
             organisation_name = cat['organisation-name'].strip()
-            orgname = group_mapping.get(organisation_name, munge.munge_name(organisation_name).lower())
+
+            # Priority order for finding organization:
+            # 1. Check explicit mapping from config
+            # 2. Check if organization exists by alias
+            # 3. Fall back to munged name
+            if organisation_name in group_mapping:
+                orgname = group_mapping[organisation_name]
+                log.debug('Using explicit mapping for "%s" -> "%s"', organisation_name, orgname)
+            else:
+                # Try to find by alias
+                alias_match = find_organization_by_alias(context, organisation_name)
+                if alias_match:
+                    orgname = alias_match
+                    log.info('Matched "%s" to organization "%s" via alias', organisation_name, orgname)
+                else:
+                    # Fall back to munged name
+                    orgname = munge.munge_name(organisation_name).lower()
+                    log.debug('No alias match for "%s", using munged name "%s"', organisation_name, orgname)
+
             groupname = '_'.join([group_type, orgname])
 
             printname = orgname if not None else "NONE"
