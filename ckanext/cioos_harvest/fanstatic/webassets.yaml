@@ -1,0 +1,3 @@
+# Empty webassets configuration
+# This file exists to suppress CKAN warnings about missing webassets.yaml
+# The fanstatic directory is currently unused but registered via add_resource()
