@@ -758,8 +758,21 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # populate datacentre
             package_dict['datacentre'] = iso_values.get('keyword-datacentre', [])
 
-            # populate lineage
-            package_dict['lineage'] = iso_values.get('lineage',[])
+            # populate lineage - convert string to list of dicts as required by schema
+            lineage_value = iso_values.get('lineage', [])
+            if isinstance(lineage_value, str):
+                # Convert string lineage to required list of dicts format
+                log.warning('Converting lineage from string to list of dicts for dataset: %s',
+                           iso_values.get('guid', 'unknown'))
+                package_dict['lineage'] = [{
+                    'statment': {'en': lineage_value},
+                    'scope': 'dataset',
+                    'additional-documentation': [],
+                    'source': [],
+                    'processing-step': []
+                }]
+            else:
+                package_dict['lineage'] = lineage_value if lineage_value else []
 
             # populate publishing data catalogue list
             package_dict['included_in_data_catalogue'] = [{
