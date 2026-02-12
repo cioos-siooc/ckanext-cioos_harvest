@@ -1,13 +1,17 @@
+import collections
+
 import ckan.plugins as plugins
 from ckan import model
 import ckan.plugins.toolkit as toolkit
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.validation.validation import BaseValidator
 from ckanext.harvest.interfaces import IHarvester
-from ckanext.harvest.model import HarvestObjectError
+from ckanext.harvest.model import HarvestObjectError, HarvestObject
+from ckanext.harvest.model import HarvestObjectExtra as HOExtra
 from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
 from ckanext.spatial.harvesters.base import SpatialHarvester
 from ckan.lib.search import SearchError
+from ckan.logic import get_action
 from sqlalchemy.orm.exc import StaleDataError
 import ckan.lib.munge as munge
 import json
@@ -16,8 +20,9 @@ from requests.exceptions import HTTPError, RequestException
 from numbers import Number
 import xml.etree.ElementTree as ET
 import re
-from six import string_types
 from urllib3.contrib import pyopenssl
+
+from ckanext.cioos_harvest.harvesters.base import all_packages_for_source
 
 import logging
 log = logging.getLogger(__name__)
@@ -98,7 +103,7 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
             urlopen_timeout = float(source_config.get('url_read_timeout') or toolkit.config.get('ckan.index_xml_url_read_timeout') or '500') / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
 
             # single file
-            if xml_url and isinstance(xml_url, string_types):
+            if xml_url and isinstance(xml_url, str):
                 value = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
 
             # list of files
@@ -248,6 +253,255 @@ class CIOOSCKANHarvester(CKANHarvester):
             'description': 'Harvests remote CKAN instances with improved handling/indexing of external xml files and organization matching',
             'form_config_interface': 'Text'
         }
+
+    def validate_config(self, config):
+        """
+        Validate the harvest source configuration.
+
+        Adds validation for field_filter_include and field_filter_exclude
+        options which cannot be used together.
+        """
+        config = super().validate_config(config)
+        if not config:
+            return config
+
+        try:
+            config_obj = json.loads(config)
+
+            if 'field_filter_include' in config_obj \
+                    and 'field_filter_exclude' in config_obj:
+                raise ValueError('Harvest configuration cannot contain both '
+                                 'field_filter_include and field_filter_exclude')
+
+        except ValueError as e:
+            raise e
+
+        return config
+
+    def _get_object_extra(self, harvest_object, key):
+        """
+        Helper function for retrieving the value from a harvest object extra.
+        """
+        for extra in harvest_object.extras:
+            if extra.key == key:
+                return extra.value
+        return None
+
+    def gather_stage(self, harvest_job):
+        """
+        Override gather_stage to add field filtering and package deletion tracking.
+        """
+        log.debug('In CIOOSCKANHarvester gather_stage (%s)',
+                  harvest_job.source.url)
+        toolkit.requires_ckan_version(min_version='2.0')
+        get_all_packages = True
+
+        self._set_config(harvest_job.source.config)
+
+        # Get source URL
+        remote_ckan_base_url = harvest_job.source.url.rstrip('/')
+
+        # Filter in/out datasets from particular organizations
+        fq_terms = []
+        org_filter_include = self.config.get('organizations_filter_include', [])
+        org_filter_exclude = self.config.get('organizations_filter_exclude', [])
+        if org_filter_include:
+            fq_terms.append(' OR '.join(
+                'organization:%s' % org_name for org_name in org_filter_include))
+        elif org_filter_exclude:
+            fq_terms.extend(
+                '-organization:%s' % org_name for org_name in org_filter_exclude)
+
+        groups_filter_include = self.config.get('groups_filter_include', [])
+        groups_filter_exclude = self.config.get('groups_filter_exclude', [])
+        if groups_filter_include:
+            fq_terms.append('groups:(%s)' % ' OR '.join(groups_filter_include))
+        elif groups_filter_exclude:
+            fq_terms.append('-groups:(%s)' % ' OR '.join(groups_filter_exclude))
+
+        # Field filtering support
+        field_filter_include = self.config.get('field_filter_include', [])
+        field_filter_exclude = self.config.get('field_filter_exclude', [])
+        if field_filter_include:
+            result = collections.defaultdict(list)
+            for item in field_filter_include:
+                result[item['field']].append(item['value'])
+            fq_terms.append(' OR '.join(
+                '%s:(%s)' % (key, ' OR '.join(result[key])) for key in result.keys()
+            ))
+        elif field_filter_exclude:
+            result = collections.defaultdict(list)
+            for item in field_filter_exclude:
+                result[item['field']].append(item['value'])
+            fq_terms.extend(
+                '-%s:(%s)' % (key, ' OR '.join(result[key])) for key in result.keys()
+            )
+
+        # Ideally we can request from the remote CKAN only those datasets
+        # modified since the last completely successful harvest.
+        last_error_free_job = self.last_error_free_job(harvest_job)
+        log.debug('Last error-free job: %r', last_error_free_job)
+        if (last_error_free_job and
+                not self.config.get('force_all', False)):
+            get_all_packages = False
+
+            # Request only the datasets modified since
+            last_time = last_error_free_job.gather_started
+            # Note: SOLR works in UTC, and gather_started is also UTC, so
+            # this should work as long as local and remote clocks are
+            # relatively accurate. Going back a little earlier, just in case.
+            import datetime
+            get_changes_since = \
+                (last_time - datetime.timedelta(hours=1)).isoformat()
+            log.info('Searching for datasets modified since: %s UTC',
+                     get_changes_since)
+
+            fq_since_last_time = 'metadata_modified:[{since}Z TO *]' \
+                .format(since=get_changes_since)
+
+            try:
+                pkg_dicts = self._search_for_datasets(
+                    remote_ckan_base_url,
+                    fq_terms + [fq_since_last_time])
+
+                # Call modify_search hook if available
+                pkg_dicts = self.modify_search(pkg_dicts, remote_ckan_base_url, fq_terms + [fq_since_last_time])
+
+            except SearchError as e:
+                log.info('Searching for datasets changed since last time '
+                         'gave an error: %s', e)
+                get_all_packages = True
+
+            if not get_all_packages and not pkg_dicts:
+                log.info('No datasets have been updated on the remote '
+                         'CKAN instance since the last harvest job %s',
+                         last_time)
+                return []
+
+        # Fall-back option - request all the datasets from the remote CKAN
+        to_delete_pkg = []
+        if get_all_packages:
+            # Request all remote packages
+            try:
+                pkg_dicts = self._search_for_datasets(remote_ckan_base_url,
+                                                      fq_terms)
+
+                # Call modify_search hook if available
+                pkg_dicts = self.modify_search(pkg_dicts, remote_ckan_base_url, fq_terms)
+
+            except SearchError as e:
+                log.info('Searching for all datasets gave an error: %s', e)
+                self._save_gather_error(
+                    'Unable to search remote CKAN for datasets:%s url:%s'
+                    'terms:%s' % (e, remote_ckan_base_url, fq_terms),
+                    harvest_job)
+                return None
+
+            # Track packages for deletion (no longer on remote)
+            all_remote_pkg_ids = set([x['id'] for x in pkg_dicts])
+            # get all local packages for this harvest source
+            all_local_source_pkg = all_packages_for_source(harvest_job.source.id)
+            all_local_source_pkg_ids = set([x['id'] for x in all_local_source_pkg])
+            # id's of packages no longer available on remote
+            to_delete_id = all_local_source_pkg_ids - all_remote_pkg_ids
+            # packages no longer available on remote
+            to_delete_pkg = [x for x in all_local_source_pkg if x['id'] in to_delete_id]
+
+        if not pkg_dicts:
+            self._save_gather_error(
+                'No datasets found at CKAN: %s' % remote_ckan_base_url,
+                harvest_job)
+            return []
+
+        # Create harvest objects for each dataset
+        try:
+            package_ids = set()
+            object_ids = []
+
+            # Create harvest objects for packages to delete
+            for pkg_dict in to_delete_pkg:
+                if pkg_dict['id'] in package_ids:
+                    log.info('Discarding duplicate dataset %s - probably due '
+                             'to datasets being changed at the same time as '
+                             'when the harvester was paging through',
+                             pkg_dict['id'])
+                    continue
+                package_ids.add(pkg_dict['id'])
+
+                log.debug('Creating HarvestObject for %s %s with status "delete"',
+                          pkg_dict['name'], pkg_dict['id'])
+                obj = HarvestObject(guid=pkg_dict['id'],
+                                    extras=[HOExtra(key='status', value='delete')],
+                                    job=harvest_job,
+                                    content=json.dumps(pkg_dict))
+                obj.save()
+                object_ids.append(obj.id)
+
+            # Process rest of datasets
+            for pkg_dict in pkg_dicts:
+                if pkg_dict['id'] in package_ids:
+                    log.info('Discarding duplicate dataset %s - probably due '
+                             'to datasets being changed at the same time as '
+                             'when the harvester was paging through',
+                             pkg_dict['id'])
+                    continue
+                package_ids.add(pkg_dict['id'])
+
+                log.debug('Creating HarvestObject for %s %s',
+                          pkg_dict['name'], pkg_dict['id'])
+                obj = HarvestObject(guid=pkg_dict['id'],
+                                    job=harvest_job,
+                                    content=json.dumps(pkg_dict))
+                obj.save()
+                object_ids.append(obj.id)
+
+            return object_ids
+        except Exception as e:
+            self._save_gather_error('%r' % str(e), harvest_job)
+
+    def import_stage(self, harvest_object):
+        """
+        Override import_stage to handle package deletion.
+        """
+        log.debug('In CIOOSCKANHarvester import_stage')
+
+        base_context = {'model': model, 'session': model.Session,
+                        'user': self._get_user_name()}
+
+        if not harvest_object:
+            log.error('No harvest object received')
+            return False
+
+        if harvest_object.content is None:
+            self._save_object_error('Empty content for object %s' %
+                                    harvest_object.id,
+                                    harvest_object, 'Import')
+            return False
+
+        self._set_config(harvest_object.job.source.config)
+
+        try:
+            package_dict = json.loads(harvest_object.content)
+
+            # Check if this is a delete operation
+            status = self._get_object_extra(harvest_object, 'status')
+            if status == 'delete':
+                # Delete package
+                context = base_context.copy()
+                context.update({
+                    'ignore_auth': True,
+                })
+                get_action('package_delete')(context, {'id': package_dict['id']})
+                log.info('Deleted package {0}'.format(package_dict['id']))
+                return True
+
+            # Call parent import_stage for normal processing
+            return super().import_stage(harvest_object)
+
+        except Exception as e:
+            log.exception(e)
+            self._save_object_error('%s' % e, harvest_object, 'Import')
+            return False
 
     def modify_remote_organization(self, remote_org_id, pkg_dict, context):
         try:

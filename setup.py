@@ -43,7 +43,8 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.10',
     ],
 
 
@@ -83,6 +84,7 @@ setup(
         cioos_harvest=ckanext.cioos_harvest.plugin:Cioos_HarvestPlugin
         ckan_cioos_harvester=ckanext.cioos_harvest.plugin:CIOOSCKANHarvester
         ckan_spatial_harvester=ckanext.cioos_harvest.plugin:CKANSpatialHarvester
+        ckan_schema_harvester=ckanext.cioos_harvest.harvesters:CIOOSCKANSchemaHarvester
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
