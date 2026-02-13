@@ -594,7 +594,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             # fix common schema fields errors
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
             for field in schema['dataset_fields']:
-                if 'repeating_subfields' in field or 'simple_subfields' in field:
+                if 'repeating_subfields' in field:
                     field_name = field['field_name']
                     value = package_dict.get(field_name)
                     if value == '':
@@ -1208,31 +1208,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         field_value = iso_values.get(field_name, {})
 
-        # populate composite fields from multi-level dictionary
-        if field_value and field.get('simple_subfields'):
-            if isinstance(field_value, list):
-                field_value = field_value[0]
-            field_value = self.flatten_composite_keys(field_value, {}, [])
-
-            for key, value in field_value.items():
-                newKey = field_name + sep + key
-                package_dict[newKey] = value
-
-            # remove from extras so as not to duplicate fields
-            if extras.get(field_name):
-                del extras[field_name]
-            handled_fields.append(field_name)
-
         # populate composite repeating fields
-        elif field_value and field.get('repeating_subfields'):
+        if field_value and field.get('repeating_subfields'):
             if isinstance(field_value, dict):
-                field_value[0] = field_value
+                field_value = [field_value]
 
             for idx, subitem in enumerate(field_value):
                 # collapse subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem, {}, [])
                 for key, value in subitem.items():
-                    newKey = field_name + sep + str(idx + 1) + sep + key
+                    newKey = field_name + sep + str(idx) + sep + key
                     package_dict[newKey] = value
 
             # remove from extras so as not to duplicate fields
