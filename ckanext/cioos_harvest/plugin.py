@@ -246,6 +246,11 @@ def handle_groups(context, harvest_object, group_mapping, group_type, cats = [],
 
 class CIOOSCKANHarvester(CKANHarvester):
 
+    def __new__(cls, *args, **kwargs):
+        if '_instance' not in cls.__dict__:
+            cls._instance = object.__new__(cls)
+        return cls._instance
+
     def info(self):
         return {
             'name': 'ckan_cioos',
@@ -716,6 +721,11 @@ class CIOOSCKANHarvester(CKANHarvester):
         return package_dict
 
 class CKANSpatialHarvester(CKANHarvester):
+
+    def __new__(cls, *args, **kwargs):
+        if '_instance' not in cls.__dict__:
+            cls._instance = object.__new__(cls)
+        return cls._instance
 
     def _post_content(self, url, params={}):
 
