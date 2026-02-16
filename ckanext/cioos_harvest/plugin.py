@@ -81,7 +81,7 @@ def _get_extra(key, package_dict):
 
 def _extract_xml_from_harvest_object(package_dict, harvest_object):
     content = harvest_object.content
-    source_config = json.loads(harvest_object.source.config)
+    source_config = json.loads(harvest_object.source.config or '{}')
     key = 'harvest_document_content'
     value = ''
     package_content = package_dict.get(key,'')
@@ -124,7 +124,7 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
     return package_dict
 
 def handle_groups(context, harvest_object, group_mapping, group_type, cats = [], additional_contacts = []):
-        source_config = json.loads(harvest_object.source.config)
+        source_config = json.loads(harvest_object.source.config or '{}')
         validated_groups = []
 
         harvest_responsible_organizations = (source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'true').lower()
@@ -282,6 +282,13 @@ class CIOOSCKANHarvester(CKANHarvester):
             raise e
 
         return config
+
+    def modify_search(self, pkg_dicts, remote_ckan_base_url, fq_terms):
+        """
+        Hook for subclasses to modify search results (e.g. spatial filtering).
+        Default implementation returns results unchanged.
+        """
+        return pkg_dicts
 
     def _get_object_extra(self, harvest_object, key):
         """
@@ -667,7 +674,7 @@ class CIOOSCKANHarvester(CKANHarvester):
                 log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
             package_dict['tags'] = []
 
-            source_config = json.loads(harvest_object.source.config)
+            source_config = json.loads(harvest_object.source.config or '{}')
             ## Configuring Responsible Organization group
             group_mapping = source_config.get('organization_mapping', {})
             group_type = 'resorg'
