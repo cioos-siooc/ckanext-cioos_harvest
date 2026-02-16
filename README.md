@@ -1,68 +1,105 @@
 # ckanext-cioos_harvest
 
-This is the CIOOS-SIOOC plugin to modifie the behaviour of the spatial harvester
-extension. It's primary purpose is to mosify the dataset package data during
-spatial harvest so that it will work with the scheming, composit, repeating,
-and fluent extensions.
+CIOOS-SIOOC plugin that extends the CKAN harvest and spatial harvest
+extensions. Its primary purpose is to modify dataset packages during
+harvest so they work correctly with the scheming, fluent, and
+composite extensions used by CIOOS.
 
-Currently it adds:
-* transform from ISO19115-3 to ISO19115-1 format for harvested metadata to make 19115-3 metadata work with the spatial harvesters default 19115-1 schemas
-* during the gather stage of a spatial harvest the data package is modified by
-  * moving all scheming fields from extras into the data package root
-  * insuring that values of list and multi list scheming fields is entered as a list rather then a string
-  * place composit and composit repeating fields into the '__extras' subkey as this is where the extension expects to find them
-  * rename composit fields using the seperator found in the config file and colapse nested keys into a concatinated field name
-  * convert fluent tag fields into a dictinary of language lists rather then the default list of dictinary languages
-  * populate fluent fields with language dictinarys using the default language if no language dictinary is provided
+## What It Does
 
-------------
-Requirements
-------------
-Tested on ckan 2.8 but likely works for earlyer versions. This extension requires ckanext-scheming, ckanext-composite, and chanext-fluent to also be installed. If these extensions are missing this code will do very little.
+During the harvest import stage, the plugin:
 
-As of ckan 2.9 ckanext-composite requirment has been droped.
+- Transforms ISO 19115-3 metadata to ISO 19115-1 format so it
+  works with the spatial harvester's default 19115-1 schemas
+- Moves scheming fields from `extras` into the package root
+- Ensures list and multi-list scheming field values are stored
+  as lists rather than strings
+- Places composite and composite-repeating fields into `__extras`
+  where the composite extension expects them
+- Renames composite fields using the configured separator and
+  collapses nested keys into concatenated field names
+- Converts fluent tag fields into language dictionaries
+- Populates fluent fields with the default language if no
+  language dictionary is provided
+- Matches and creates organizations and groups from harvested
+  metadata
 
-config options:
+## Harvester Types
 
-#### CKAN.ini
-set timeout of request.get when trying to read full xml body from xml url. Used
-in cioos ckan custom harvester
-`ckan.index_xml_url_read_timeout=500`
+This extension provides three harvester types that appear in the
+CKAN harvest source creation form:
 
-#### Harvester Source Config
-set timeout of request.get when trying to read full xml body from xml url. Used
-in cioos ckan custom harvester
-`'url_read_timeout': 500`
+| Plugin Name | Harvester Class | Description |
+| --- | --- | --- |
+| `ckan_cioos_harvester` | `CIOOSCKANHarvester` | Harvests remote CKAN instances with improved handling/indexing of external XML files and organization matching |
+| `ckan_spatial_harvester` | `CKANSpatialHarvester` | Harvests remote CKAN instances filtering by spatial query (bounding box) |
+| `ckan_schema_harvester` | `CIOOSCKANSchemaHarvester` | Harvests remote CKAN instances without requiring a matching schema |
 
-------------
-Installation
-------------
+Additional harvesters are provided by
+[ckanext-cioos_spatial](../ckanext-cioos_spatial/):
 
-.. Add any additional install steps to the list below.
-   For example installing any non-Python dependencies or adding any required
-   config settings.
+| Plugin Name | Harvester Class | Description |
+| --- | --- | --- |
+| `cioos_waf_harvester` | `WAFHarvesterCIOOS` | WAF harvester with ISO 19115-3 to ISO 19139 transformation |
+| `cioos_datastream_harvester` | `DatastreamSitemapHarvester` | Harvests Datastream sitemap feeds |
+| `cioos_geonetwork_harvester` | `GeoNetworkHarvester` | Harvests GeoNetwork catalog instances |
 
-To install ckanext-cioos_harvest:
+## Requirements
 
-1. Activate your CKAN virtual environment, for example::
+- CKAN 2.11+
+- ckanext-harvest
+- ckanext-spatial
+- ckanext-scheming
+- ckanext-fluent
 
-     . /usr/lib/ckan/default/bin/activate
+## Configuration
 
-2. Install the ckanext-cioos_harvest Python package into your virtual environment::
+### ckan.ini
 
-     pip install ckanext-cioos_harvest
+Set timeout for `request.get` when reading full XML body from a
+URL (used by the CIOOS CKAN harvester):
 
-3. Add ``cioos_harvest`` to the ``ckan.plugins`` setting in your CKAN
-   config file (by default the config file is located at
-   ``/etc/ckan/default/production.ini``).
+```ini
+ckan.index_xml_url_read_timeout = 500
+```
 
-4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
+### Harvest Source Config
 
-     sudo service apache2 reload
+Per-source configuration is set as JSON in the harvest source
+configuration field. All fields are optional.
 
+```json
+{
+  "url_read_timeout": 500,
+  "source_title": "My Source",
+  "source_description": "Description of the source"
+}
+```
 
------------------
-Running the Tests
------------------
+## Installation
 
-Sorry, no test at this time
+This extension is installed automatically when mounted into the
+CIOOS CKAN Docker development container via the `src/` directory.
+
+For manual installation:
+
+1. Activate your CKAN virtual environment
+2. Install the package:
+
+   ```shell
+   pip install -e 'git+https://github.com/cioos-siooc/ckanext-cioos_harvest.git#egg=ckanext-cioos_harvest'
+   ```
+
+3. Add the plugins to `ckan.plugins` in your CKAN config:
+
+   ```ini
+   ckan.plugins = ... cioos_harvest ckan_cioos_harvester ckan_spatial_harvester ckan_schema_harvester
+   ```
+
+4. Restart CKAN
+
+## Running Harvests
+
+In the CIOOS CKAN Docker setup, harvests are run by a dedicated
+`ckan-harvest-worker` container. See the
+[main README](../../README.md#harvest-workers) for usage.
