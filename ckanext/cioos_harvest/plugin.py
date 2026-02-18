@@ -867,7 +867,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     def delete(self, entity):
         pass
 
-    def before_view(self, pkg_dict):
+    def before_dataset_view(self, pkg_dict):
         return pkg_dict
 
     # IConfigurer
