@@ -35,11 +35,6 @@ CKAN harvest source creation form:
 | `ckan_spatial_harvester` | `CKANSpatialHarvester` | Harvests remote CKAN instances filtering by spatial query (bounding box) |
 | `ckan_schema_harvester` | `CIOOSCKANSchemaHarvester` | Harvests remote CKAN instances without requiring a matching schema |
 
-Additional harvesters are provided by
-[ckanext-cioos_spatial](../ckanext-cioos_spatial/):
-
-| Plugin Name | Harvester Class | Description |
-| --- | --- | --- |
 | `cioos_waf_harvester` | `WAFHarvesterCIOOS` | WAF harvester with ISO 19115-3 to ISO 19139 transformation |
 | `cioos_datastream_harvester` | `DatastreamSitemapHarvester` | Harvests Datastream sitemap feeds |
 | `cioos_geonetwork_harvester` | `GeoNetworkHarvester` | Harvests GeoNetwork catalog instances |

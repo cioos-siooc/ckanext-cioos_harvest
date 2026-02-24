@@ -84,6 +84,9 @@ setup(
         ckan_cioos_harvester=ckanext.cioos_harvest.plugin:CIOOSCKANHarvester
         ckan_spatial_harvester=ckanext.cioos_harvest.plugin:CKANSpatialHarvester
         ckan_schema_harvester=ckanext.cioos_harvest.harvesters:CIOOSCKANSchemaHarvester
+        cioos_waf_harvester=ckanext.cioos_harvest.harvesters:WAFHarvesterCIOOS
+        cioos_datastream_harvester=ckanext.cioos_harvest.harvesters:DatastreamSitemapHarvester
+        cioos_geonetwork_harvester=ckanext.cioos_harvest.harvesters:GeoNetworkHarvester
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

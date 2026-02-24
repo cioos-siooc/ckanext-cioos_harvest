@@ -842,6 +842,8 @@ class MyValidator(BaseValidator):
 
 class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IActions)
     plugins.implements(ISpatialHarvester, inherit=True)
     plugins.implements(plugins.IOrganizationController, inherit=True)
 
@@ -875,6 +877,23 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'cioos_harvest')
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        from ckanext.cioos_harvest import helpers as h
+        return {
+            'cioos_spatial_widget_expands': h.spatial_widget_expands,
+            'cioos_spatial_default_extent': h.spatial_default_extent,
+            'cioos_spatial_get_map_initial_max_zoom': h.spatial_get_map_initial_max_zoom,
+        }
+
+    # IActions
+    def get_actions(self):
+        from ckanext.cioos_harvest import logic
+        return {
+            'spatial_query_geo': logic.spatial_query_geo,
+            'spatial_query_geo_package_search': logic.spatial_query_geo_package_search,
+        }
 
     # ISpatialHarvester
     def get_validators(self):

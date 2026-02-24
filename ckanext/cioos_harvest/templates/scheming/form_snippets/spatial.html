@@ -1,0 +1,133 @@
+{#
+  Code based on work by Florian Mayer https://github.com/florianm/ckanext-scheming/blob/master/ckanext/scheming/templates/scheming/form_snippets/spatial.html
+  Modified by Matthew Foster and others from CIOOS-SIOOC
+#}
+{#
+An input widget for polygons, such as the ckanext-spatial "spatial" field for
+the dataset extent.
+
+This widget retains the plain text input which accepts a valid GeoJSON
+geometry, and also adds a map on which one can simply draw the dataset extent.
+
+Providing alternative map input has two motivations:
+- Drawing is achievable, pasting a valid GeoJSON geometry will post a challenge
+to many non-GIS-trained users
+- Users will have additional, silent expert knowledge on the real extent
+of their dataset.
+
+This form snippet depends on a custom branch of ckanext-spatial, which
+provides (and is the appropriate home for) the JavaScript functions to
+provide an editable map.
+
+#}
+
+{% import 'macros/form.html' as form %}
+{% with
+    name=field.field_name,
+    id='field-' + field.field_name,
+    label=h.scheming_language_text(field.label),
+    placeholder=h.scheming_language_text(field.form_placeholder),
+    value=data.get(field.field_name),
+    error=errors.get(field.field_name),
+    classes=['control-medium'],
+    is_required=h.scheming_field_required(field)
+%}
+
+  {% call form.input_block(id, label, error, classes, is_required=is_required) %}
+
+  <script type="text/javascript">
+
+  var updateBbox = function(){
+      console.log('running updateBbox');
+      var pointarray = [];
+      var polyarray = [];
+
+      n = Number( $("#field-bbox-north-lat").val() );
+      s = Number( $("#field-bbox-south-lat").val() );
+      e = Number( $("#field-bbox-east-long").val() );
+      w = Number( $("#field-bbox-west-long").val() );
+
+      if(!n || !s || !e || !w){
+        return;
+      }
+
+      pointarray.push([w,s]);
+      pointarray.push([w,n]);
+      pointarray.push([e,n]);
+      pointarray.push([e,s]);
+      pointarray.push([w,s]);
+      polyarray.push(pointarray);
+      mp = {"type": "Polygon", "coordinates": polyarray};
+
+      $('#field-spatial').val(JSON.stringify(mp));
+
+  };
+
+  </script>
+
+  <table class="text-center" style="width:100%">
+      <tbody><tr align="center" valign="middle">
+        <td align="left">
+        </td>
+        <td>
+          <div class="form-group">
+            <input id="field-bbox-north-lat" type="number" name="bbox-north-lat" value="{{ data['bbox-north-lat'] | empty_and_escape }}" placeholder="North" class:"medinput" onchange="updateBbox()"/>
+          </div>
+        </td>
+        <td>
+        </td>
+      </tr>
+      <tr valign="middle" align="center">
+        <td class="col-left">
+          <div class="form-group">
+            <input id="field-bbox-west-long" type="number" name="bbox-west-long" value="{{ data['bbox-west-long'] | empty_and_escape }}" placeholder="West" class:"medinput" onchange="updateBbox()"/>
+          </div>
+        </td>
+        <td class="col-middle">
+
+        {% set map_config = h.get_common_map_config() %}
+        {%- set input_ids = {
+            'spatial':id,
+            'bbox-north':'field-bbox-north-lat',
+            'bbox-south':'field-bbox-south-lat',
+            'bbox-east':'field-bbox-east-long',
+            'bbox-west':'field-bbox-west-long'}
+        -%}
+        <div class="dataset-map-form"
+            data-module="spatial-form"
+            data-input_ids="{{ h.dump_json(input_ids) }}"
+            data-extent='{{ h.cioos_load_json(value) | tojson() | safe }}'
+            data-module-site_url="{{ h.dump_json(h.url_for('/', locale='default', qualified=true)) }}"
+            data-module-map_config="{{ h.dump_json(map_config) }}">
+          <div id="dataset-map-form-container"></div>
+        </div>
+        {% asset 'ckanext-spatial/spatial_query_js' %}
+        {% asset 'ckanext-spatial/spatial_query_css' %}
+
+      </td>
+      <td class="col-right">
+        <div class="form-group">
+          <input id="field-bbox-east-long" type="number" name="bbox-east-long" value="{{ data['bbox-east-long'] | empty_and_escape }}" placeholder="East" class:"medinput" onchange="updateBbox()"/>
+        </div>
+      </td>
+    </tr>
+    <tr align="center">
+      <td colspan="3">
+        <div class="form-group">
+          <input id="field-bbox-south-lat" type="number" name="bbox-south-lat" value="{{ data['bbox-south-lat'] | empty_and_escape }}" placeholder="South" class:"medinput" onchange="updateBbox()"/>
+        </div>
+      </td>
+    </tr>
+    </tbody></table>
+
+    {{ form.info(text="Draw and edit the dataset extent as rectangles and/or polygons on the map,
+       or paste a GeoJSON Polygon or Multipolygon geometry below", inline=false) }}
+    <div style="padding-bottom:5px;">
+      <button id="update_spatial_form_map" type="button">Update Map</button>
+      <button id="clear_spatial_form" type="button" style="float:right;">Clear</button>
+    </div>
+    <textarea id="{{ id }}" type="{{ type }}" name="{{ name }}"
+        placeholder="paste a GeoJSON Polygon or Multipolygon geometry here" rows=10 style="width:100%;"
+    >{{ (h.cioos_load_json(value) | tojson() | safe) if value }}</textarea>
+  {% endcall %}
+{% endwith %}
