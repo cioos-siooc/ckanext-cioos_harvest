@@ -1,13 +1,8 @@
 from __future__ import print_function
 
-import six
-from six.moves.urllib.parse import urljoin
-from six.moves import html_parser
 import logging
 import hashlib
 
-import dateutil.parser
-import pyparsing as parse
 import requests
 from sqlalchemy.orm import aliased
 from sqlalchemy.exc import DataError

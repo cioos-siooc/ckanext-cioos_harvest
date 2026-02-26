@@ -974,7 +974,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
         harvest_object = data_dict['harvest_object']
-        source_config = json.loads(data_dict['harvest_object'].source.config)
+        source_config = json.loads(data_dict['harvest_object'].source.config or '{}')
         xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
         xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
 
@@ -1039,8 +1039,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if not package_dict.get('license_id'):
                 package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
-            # populate citation
-            package_dict['citation'] = iso_values.get('citation')
+            # populate citation — only override if the harvested XML produced a value.
+            # If citation is absent from iso_values (returns None), keep whatever the
+            # fluent handler already placed in package_dict to avoid setting {'en': None}.
+            _citation = iso_values.get('citation')
+            if _citation is not None:
+                package_dict['citation'] = _citation
 
             # populate projects
             package_dict['projects'] = iso_values.get('keyword-project', [])
@@ -1096,6 +1100,18 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                     self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, default_language, handled_fields, source_config)
 
                 self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
+
+            # fall back to DOI URL for citation when the XML did not supply one.
+            # The fluent handler above leaves citation = {default_language: ''} when
+            # no value is found, so check for an empty/blank string and replace it.
+            citation_val = package_dict.get('citation', {})
+            if isinstance(citation_val, dict) and not citation_val.get(default_language, '').strip():
+                URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
+                    package_dict,
+                    uri_field='unique-resource-identifier-full',
+                    default_code_space='doi.org')
+                if URIF:
+                    package_dict['citation'] = {default_language: URIF[0]}
 
             # set default values
             package_dict['progress'] = package_dict.get('progress', 'onGoing') or 'onGoing'

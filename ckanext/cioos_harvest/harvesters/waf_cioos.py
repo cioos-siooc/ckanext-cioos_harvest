@@ -1,6 +1,4 @@
 import logging
-import subprocess
-import os
 
 from ckan import plugins as p
 from ckan.lib.helpers import json
@@ -13,8 +11,10 @@ log = logging.getLogger(__name__)
 
 class WAFHarvesterCIOOS(WAFHarvester, SingletonPlugin):
     '''
-    A Harvester for WAF (Web Accessible Folders) containing spatial metadata documents.
-    e.g. Apache serving a directory of ISO 19139 files.
+    A Harvester for WAF (Web Accessible Folders) containing ISO 19139 spatial metadata documents.
+    e.g. Apache serving a directory of ISO 19139 XML files.
+
+    For ISO 19115-3 (mdb:MD_Metadata) sources use WAFHarvesterISO19115_3 instead.
     '''
 
     implements(IHarvester)
@@ -100,26 +100,6 @@ class WAFHarvesterCIOOS(WAFHarvester, SingletonPlugin):
 
         # End of processing, return the modified package
         return package_dict
-
-    def transform_to_iso(self, original_document, original_format, harvest_object):
-
-        lowered = original_document.lower()
-        if '</mdb:MD_Metadata>'.lower() in lowered:
-            log.debug('Found ISO19115-3 format, transforming to ISO19139')
-
-            xsl_filename = os.path.abspath("./ckanext-spatial/ckanext/spatial/transformers/ISO19115-3/toISO19139.xsl")
-            process = subprocess.Popen(["saxonb-xslt", "-s:-", xsl_filename], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            process.stdin.write(original_document.encode('utf-8'))
-            newDoc, errors = process.communicate()
-            process.stdin.close()
-            if process.returncode != 0:
-                log.error('Saxon XSLT transformation failed (exit code %d): %s', process.returncode, errors)
-                return None
-            if errors:
-                log.warning('Saxon XSLT transformation warnings: %s', errors)
-            return newDoc
-
-        return None
 
     def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, handled_fields, harvest_config):
         field_name = field['field_name']
@@ -241,8 +221,13 @@ class WAFHarvesterCIOOS(WAFHarvester, SingletonPlugin):
         extra_field_value = extras.get(field_name, "")
 
         # move schema fields, in extras, to package dictionary
-        if extra_field_value and not package_dict.get(field_name, ''):
-            package_dict[field_name] = extra_field_value
+        # Use `field_name in extras` (not `extra_field_value`) so that fields whose
+        # extras value is None or empty string (e.g. lineage, spatial-reference-system)
+        # are still removed from extras to avoid the scheming "same name" conflict.
+        # ckanext-spatial base.get_package_dict JSON-encodes list/dict extras values,
+        # so we must parse them back before handing them to scheming validators.
+        if field_name in extras and not package_dict.get(field_name, ''):
+            package_dict[field_name] = self.from_json(extra_field_value)
             del extras[field_name]
             handled_fields.append(field_name)
         # move schema fields, in iso_values, to package dictionary
@@ -252,6 +237,6 @@ class WAFHarvesterCIOOS(WAFHarvester, SingletonPlugin):
                 iso_field_value = iso_field_value[0]
             package_dict[field_name] = iso_field_value
             # remove from extras so as not to duplicate fields
-            if extras.get(field_name):
+            if field_name in extras:
                 del extras[field_name]
             handled_fields.append(field_name)

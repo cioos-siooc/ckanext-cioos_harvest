@@ -1,14 +1,14 @@
 from lxml import etree
-from osgeo import ogr
 import re
 import json
-import pytz
 import datetime
 from ckan.lib.helpers import url_for
 from copy import copy
 from collections import OrderedDict
-import six
 import numbers
+from shapely import wkt as shapely_wkt
+from shapely.geometry import shape as shapely_shape, mapping as shapely_mapping
+from shapely.geometry import Polygon as ShapelyPolygon
 
 import logging
 import ckan.lib.munge as munge
@@ -48,8 +48,10 @@ class MappedXmlDocument_iso19139(MappedXmlObject_iso19139):
     def get_xml_tree(self):
         if self.xml_tree is None:
             parser = etree.XMLParser(remove_blank_text=True)
-            xml_str = six.ensure_str(self.xml_str)
-            self.xml_tree = etree.fromstring(xml_str, parser=parser)
+            # lxml rejects Unicode strings that still carry an XML encoding declaration.
+            # Always pass bytes so lxml can read the declaration and decode itself.
+            xml_bytes = self.xml_str if isinstance(self.xml_str, bytes) else self.xml_str.encode('utf-8')
+            self.xml_tree = etree.fromstring(xml_bytes, parser=parser)
         return self.xml_tree
 
     def infer_values(self, values):
@@ -106,9 +108,9 @@ class MappedXmlElement_iso19139(MappedXmlObject_iso19139):
             for child in self.elements:
                 value[child.name] = child.read_value(element)
             return value
-        elif type(element) == etree._ElementStringResult:
-            value = str(element)
-        elif type(element) == etree._ElementUnicodeResult:
+        elif isinstance(element, (str, bytes)):
+            # lxml XPath returns _ElementUnicodeResult (str subclass) for text()/@ results.
+            # _ElementStringResult (bytes subclass) was removed in lxml 5.0.
             value = str(element)
         else:
             value = self.element_tostring(element)
@@ -848,6 +850,34 @@ class ISOAggregationInfo_iso19139(ISOElement_iso19139):
 #     ]
 
 
+def _parse_gml_to_shapely(gml_string):
+    """Parse a GML fragment (Polygon/MultiPolygon) to a shapely geometry using lxml.
+
+    Supports GML 3.1 and GML 3.2 namespaces. Handles posList and coordinates
+    encodings for simple polygons typical in ISO 19115/19139 bounding polygon elements.
+    Returns a ShapelyPolygon or None if parsing fails.
+    """
+    GML_NS = ('http://www.opengis.net/gml', 'http://www.opengis.net/gml/3.2')
+    try:
+        content = gml_string.encode('utf-8') if isinstance(gml_string, str) else gml_string
+        tree = etree.fromstring(content)
+    except etree.XMLSyntaxError:
+        return None
+    for ns in GML_NS:
+        for tag in ('{%s}posList' % ns, '{%s}coordinates' % ns):
+            elem = tree.find('.//' + tag)
+            if elem is not None and elem.text:
+                parts = elem.text.strip().split()
+                try:
+                    coords = [(float(parts[i]), float(parts[i + 1]))
+                              for i in range(0, len(parts) - 1, 2)]
+                    if len(coords) >= 3:
+                        return ShapelyPolygon(coords)
+                except (ValueError, IndexError):
+                    pass
+    return None
+
+
 class ISODocument_iso19139(MappedXmlDocument_iso19139):
 
     # Attribute specifications from "XPaths for GEMINI" by Peter Parslow.
@@ -1428,6 +1458,8 @@ class ISODocument_iso19139(MappedXmlDocument_iso19139):
     ]
 
     def iso_date_time_to_utc(self, value):
+        if not value:
+            raise ValueError("Empty date value")
         value = value.replace("Z", "+0000")
         post_remove = 99
         if re.search(r'[+-]\d{4}', value):
@@ -1728,22 +1760,24 @@ class ISODocument_iso19139(MappedXmlDocument_iso19139):
                 if len(xmlGeom) == 1:
                     xmlGeom = xmlGeom[0]
 
+            # Try GeoJSON first, then WKT, then GML
             try:
-                geom = ogr.CreateGeometryFromGML(xmlGeom)
+                geom = shapely_shape(json.loads(xmlGeom))
             except Exception:
                 try:
-                    geom = ogr.CreateGeometryFromWkt(xmlGeom)
+                    geom = shapely_wkt.loads(xmlGeom)
                 except Exception:
-                    try:
-                        geom = ogr.CreateGeometryFromJson(xmlGeom)
-                    except Exception:
-                        log.error('Spatial field is not GML, WKT, or GeoJSON. Can not convert spatial field.')
-                        pass
+                    geom = _parse_gml_to_shapely(xmlGeom)
+                    if geom is None:
+                        log.error('Spatial field is not GeoJSON, WKT, or GML. Cannot convert spatial field.')
                         return
         if geom:
-            values['spatial'] = geom.ExportToJson()
+            values['spatial'] = json.dumps(shapely_mapping(geom))
             if not values.get('bbox'):
-                extent = geom.GetEnvelope()
+                bounds = geom.bounds  # (minx, miny, maxx, maxy)
+                # Preserve existing assignment order matching OGR GetEnvelope (minX, maxX, minY, maxY):
+                #   west, east, north, south = extent
+                extent = (bounds[0], bounds[2], bounds[1], bounds[3])
                 if extent:
                     values['bbox'].append({'west': '', 'east': '', 'north': '', 'south': ''})
                     values['bbox'][0]['west'], values['bbox'][0]['east'], values['bbox'][0]['north'], values['bbox'][0]['south'] = extent
@@ -1751,7 +1785,11 @@ class ISODocument_iso19139(MappedXmlDocument_iso19139):
     def clean_metadata_reference_date(self, values):
         dates = []
         for date in values['metadata-reference-date']:
-            date['value'] = self.iso_date_time_to_utc(date['value'])
+            try:
+                date['value'] = self.iso_date_time_to_utc(date['value'])
+            except Exception as e:
+                log.warn('Problem converting metadata-reference-date to utc format. Skipping date: %s', e)
+                continue
             dates.append(date)
         if dates:
             dates.sort(key=lambda x: x['value'])  # sort list of objects by value attribute

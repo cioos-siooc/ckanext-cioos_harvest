@@ -85,6 +85,7 @@ setup(
         ckan_spatial_harvester=ckanext.cioos_harvest.plugin:CKANSpatialHarvester
         ckan_schema_harvester=ckanext.cioos_harvest.harvesters:CIOOSCKANSchemaHarvester
         cioos_waf_harvester=ckanext.cioos_harvest.harvesters:WAFHarvesterCIOOS
+        waf_iso19115_3_harvester=ckanext.cioos_harvest.harvesters:WAFHarvesterISO19115_3
         cioos_datastream_harvester=ckanext.cioos_harvest.harvesters:DatastreamSitemapHarvester
         cioos_geonetwork_harvester=ckanext.cioos_harvest.harvesters:GeoNetworkHarvester
 
