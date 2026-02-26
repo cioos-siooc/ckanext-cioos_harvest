@@ -98,6 +98,19 @@ class WAFHarvesterCIOOS(WAFHarvester, SingletonPlugin):
 
             package_dict['extras'] = extras_as_dict
 
+        # Normalize title and notes to plain locale strings.
+        # fluent title_translated / notes_translated are populated above by
+        # handle_fluent_harvest_dictinary(), which reads the JSON-encoded dict
+        # from package_dict['title'] / package_dict['notes'].  Now that those
+        # _translated fields are set, overwrite title/notes with the plain
+        # locale string so CKAN core never sees a JSON blob in those fields.
+        package_dict['title'] = iso_title
+
+        locale = p.toolkit.config.get('ckan.locale_default', 'en')
+        iso_abstract = self.from_json(iso_values.get('abstract', ''))
+        if isinstance(iso_abstract, dict):
+            package_dict['notes'] = iso_abstract.get(locale, next(iter(iso_abstract.values()), ''))
+
         # End of processing, return the modified package
         return package_dict
 

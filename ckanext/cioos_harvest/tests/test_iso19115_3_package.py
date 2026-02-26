@@ -90,8 +90,6 @@ _SKIP_FIELDS = frozenset(
         "xml_location_url",
         "included_in_data_catalogue",
         "citation",
-        "notes_translated",
-        "title_translated",
         "keywords_translation_method",
         "notes_translation_method",
         "title_translation_method",
