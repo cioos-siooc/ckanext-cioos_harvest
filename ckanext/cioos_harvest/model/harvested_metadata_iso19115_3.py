@@ -776,7 +776,7 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
             search_paths=[
                 "mdb:identificationInfo/*[contains(local-name(), 'Identification')]/mri:citation/cit:CI_Citation/cit:identifier/mcc:MD_Identifier",
             ],
-            multiplicity="0..1",
+            multiplicity="1..*",
         ),
         ISOElement_iso19115_3(
             name="presentation-form",
