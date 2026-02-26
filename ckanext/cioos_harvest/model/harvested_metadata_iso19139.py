@@ -1592,7 +1592,7 @@ class ISODocument_iso19139(MappedXmlDocument_iso19139):
                 value['begin'] = min(blist)[:10]
                 if max(elist):
                     value['end'] = max(elist)[:10]
-                log.warn('Problem converting temporal-extent dates to utc format. Defaulting to %s and %s instead', value.get('begin',''), value.get('end',''))
+                log.warning('Problem converting temporal-extent dates to utc format. Defaulting to %s and %s instead', value.get('begin',''), value.get('end',''))
 
             values['temporal-extent'] = value
 
