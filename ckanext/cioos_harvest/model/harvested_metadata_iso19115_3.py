@@ -186,6 +186,128 @@ class ISOResponsibleParty_iso19115_3(ISOElement_iso19115_3):
     ]
 
 
+class ISOResponsibleParty_cioos_iso19115_3(ISOElement_iso19115_3):
+    """Flat parser for cit:CI_Responsibility targeting the CIOOS schema.
+
+    Produces the flat key structure expected by the CIOOS
+    ``repeating_subfields`` schema preset (e.g. ``contact-info_email``,
+    ``individual-uri_code``, ``organisation-uri_code``).  Unlike the generic
+    :class:`ISOResponsibleParty_iso19115_3`, this class does **not** nest
+    ``contact-info`` as a sub-dict and adds ORCID/ROR URI extraction.
+
+    Role aggregation (one CI_Responsibility per role in ISO 19115-3) is
+    handled separately by
+    :meth:`ISODocument_iso19115_3.infer_responsible_party_contacts`.
+    """
+
+    elements = [
+        ISOElement_iso19115_3(
+            name="individual-name",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:name/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:name/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="organisation-name",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:name/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        # Email: prefer individual contact, fall back to organisation contact
+        ISOElement_iso19115_3(
+            name="contact-info_email",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:contactInfo/cit:CI_Contact/cit:address/cit:CI_Address/cit:electronicMailAddress/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:contactInfo/cit:CI_Contact/cit:address/cit:CI_Address/cit:electronicMailAddress/gco:CharacterString/text()",
+                "cit:party/cit:CI_Organisation/cit:contactInfo/cit:CI_Contact/cit:address/cit:CI_Address/cit:electronicMailAddress/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        # Online resource URL: individual contact only (org URL intentionally omitted)
+        ISOElement_iso19115_3(
+            name="contact-info_online-resource",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:contactInfo/cit:CI_Contact/cit:onlineResource/cit:CI_OnlineResource/cit:linkage/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:contactInfo/cit:CI_Contact/cit:onlineResource/cit:CI_OnlineResource/cit:linkage/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        # Individual identifier (ORCID or similar)
+        ISOElement_iso19115_3(
+            name="individual-uri_code",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="individual-uri_authority",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:authority/cit:CI_Citation/cit:title/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:authority/cit:CI_Citation/cit:title/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="individual-uri_code-space",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:codeSpace/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:codeSpace/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="individual-uri_version",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:individual/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:version/gco:CharacterString/text()",
+                "cit:party/cit:CI_Individual/cit:partyIdentifier/mcc:MD_Identifier/mcc:version/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        # Organisation identifier (ROR or similar)
+        ISOElement_iso19115_3(
+            name="organisation-uri_code",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:partyIdentifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="organisation-uri_authority",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:partyIdentifier/mcc:MD_Identifier/mcc:authority/cit:CI_Citation/cit:title/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="organisation-uri_code-space",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:partyIdentifier/mcc:MD_Identifier/mcc:codeSpace/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="organisation-uri_version",
+            search_paths=[
+                "cit:party/cit:CI_Organisation/cit:partyIdentifier/mcc:MD_Identifier/mcc:version/gco:CharacterString/text()",
+            ],
+            multiplicity="0..1",
+        ),
+        ISOElement_iso19115_3(
+            name="role",
+            search_paths=[
+                "cit:role/cit:CI_RoleCode/@codeListValue",
+                "cit:role/cit:CI_RoleCode/text()",
+            ],
+            multiplicity="0..1",
+        ),
+    ]
+
+
 class ISODataFormat_iso19115_3(ISOElement_iso19115_3):
 
     elements = [
@@ -463,6 +585,62 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
         """Call parent infer_* chain then apply ISO 19115-3 specific transforms."""
         super(ISODocument_iso19115_3, self).infer_values(values)
         self.infer_aggregation_info(values)
+        self.infer_responsible_party_contacts(values)
+
+    def infer_responsible_party_contacts(self, values):
+        """Merge duplicate contacts that differ only in role.
+
+        ISO 19115-3 encodes one role per ``CI_Responsibility`` element.  When
+        the same individual or organisation appears with multiple roles the
+        parser produces one dict per role.  This method collapses them into a
+        single dict whose ``role`` value is a sorted list of all roles (or a
+        plain string when only one role exists).
+
+        Contacts are considered identical when they share the same combination
+        of ``individual-name``, ``organisation-name``, ``individual-uri_code``,
+        and ``organisation-uri_code``.
+        """
+        for field in ('metadata-point-of-contact', 'cited-responsible-party', 'distributor'):
+            contacts = values.get(field)
+            if not isinstance(contacts, list):
+                continue
+
+            merged = []
+            seen = {}  # dedup key → index into merged
+
+            for contact in contacts:
+                if not isinstance(contact, dict):
+                    continue
+                key = (
+                    contact.get('individual-name', '') or '',
+                    contact.get('organisation-name', '') or '',
+                    contact.get('individual-uri_code', '') or '',
+                    contact.get('organisation-uri_code', '') or '',
+                )
+                role = contact.get('role', '')
+
+                if key in seen:
+                    existing = merged[seen[key]]
+                    existing_role = existing.get('role')
+                    if isinstance(existing_role, list):
+                        if role and role not in existing_role:
+                            existing_role.append(role)
+                    elif existing_role:
+                        if role and role != existing_role:
+                            existing['role'] = [existing_role, role]
+                    else:
+                        if role:
+                            existing['role'] = role
+                else:
+                    seen[key] = len(merged)
+                    merged.append(dict(contact))
+
+            # Sort role lists for deterministic output
+            for contact in merged:
+                if isinstance(contact.get('role'), list):
+                    contact['role'] = sorted(contact['role'])
+
+            values[field] = merged
 
     def infer_aggregation_info(self, values):
         """Wrap plain-string aggregate-dataset-name values in a language dict.
@@ -527,7 +705,7 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
             ],
             multiplicity="*",
         ),
-        ISOResponsibleParty_iso19115_3(
+        ISOResponsibleParty_cioos_iso19115_3(
             name="metadata-point-of-contact",
             search_paths=[
                 "mdb:contact/cit:CI_Responsibility",
@@ -537,7 +715,7 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
             ],
             multiplicity="1..*",
         ),
-        ISOResponsibleParty_iso19115_3(
+        ISOResponsibleParty_cioos_iso19115_3(
             name="cited-responsible-party",
             search_paths=[
                 "mdb:identificationInfo/*[contains(local-name(), 'Identification')]/mri:citation/cit:CI_Citation/cit:citedResponsibleParty/cit:CI_Responsibility",
@@ -821,7 +999,7 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
             ],
             multiplicity="*",
         ),
-        ISOResponsibleParty_iso19115_3(
+        ISOResponsibleParty_cioos_iso19115_3(
             name="distributor",
             search_paths=[
                 "mdb:distributionInfo/mrd:MD_Distribution/mrd:distributor/mrd:MD_Distributor/mrd:distributorContact/cit:CI_Responsibility",

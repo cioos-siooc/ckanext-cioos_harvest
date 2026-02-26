@@ -107,6 +107,31 @@ _SKIP_FIELDS = frozenset(
     }
 )
 
+# Extras keys that appear in production ``package_show`` responses but are
+# added by ckanext-harvest infrastructure, post-harvest scripts, or database
+# triggers — never by the XML-parsing + package-dict pipeline we test here.
+_EXTRAS_SKIP_KEYS = frozenset(
+    {
+        # --- ckanext-harvest infrastructure (injected during import_stage) ---
+        "h_job_id",
+        "h_object_id",
+        "h_source_id",
+        "h_source_title",
+        "h_source_url",
+        "harvest_object_id",
+        "harvest_source_id",
+        "harvest_source_title",
+        "harvest_source_organization",
+        # --- Post-harvest enrichment scripts ---
+        "encoding",
+        "legal-constraints-reference-code",
+        "metadata_created_source",
+        "metadata_modified_source",
+        "uri",
+        "use-constraints-code",
+    }
+)
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -124,9 +149,40 @@ def _normalise(value):
     return json.loads(json.dumps(value, default=_json_default))
 
 
+def _normalise_extras(extras) -> dict:
+    """Convert the extras field to a canonical sorted dict for comparison.
+
+    Handles two forms:
+    - ``list`` of ``{"key": k, "value": v}`` dicts — produced by the pipeline
+    - ``dict`` — stored when a golden file was already normalised by this helper
+
+    Production-only extras keys (harvest infrastructure, post-harvest scripts)
+    are stripped via ``_EXTRAS_SKIP_KEYS``.  Python ``bool`` values are
+    lowercased to match CKAN's DB round-trip (``True`` → ``"true"``).
+    """
+    if isinstance(extras, dict):
+        items = extras.items()
+    else:
+        items = ((e["key"], e["value"]) for e in extras)
+
+    result = {}
+    for key, value in items:
+        if key in _EXTRAS_SKIP_KEYS:
+            continue
+        # Normalise booleans: pipeline produces spatial_harvester=True (Python
+        # bool); the DB stores it as the string 'true' after round-tripping.
+        if isinstance(value, bool):
+            value = str(value).lower()
+        result[key] = value
+    return dict(sorted(result.items()))
+
+
 def _filter(pkg: dict) -> dict:
     """Strip DB-generated and enrichment-service fields before comparison."""
-    return {k: v for k, v in pkg.items() if k not in _SKIP_FIELDS}
+    result = {k: v for k, v in pkg.items() if k not in _SKIP_FIELDS}
+    if "extras" in result:
+        result["extras"] = _normalise_extras(result["extras"])
+    return result
 
 
 def _make_mock_harvest_object(guid: str) -> MagicMock:
