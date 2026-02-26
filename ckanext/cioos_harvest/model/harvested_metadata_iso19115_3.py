@@ -506,7 +506,7 @@ class ISOAggregationInfo_iso19115_3(ISOElement_iso19115_3):
             multiplicity="0..1",
         ),
         ISOElement_iso19115_3(
-            name="aggregate-dataset-identifier",
+            name="aggregate-dataset-identifier_code",
             search_paths=[
                 "mri:name/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
             ],
