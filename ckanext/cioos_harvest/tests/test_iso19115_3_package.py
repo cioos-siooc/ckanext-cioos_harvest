@@ -74,9 +74,6 @@ _SKIP_FIELDS = frozenset(
         "num_resources",
         "num_tags",
         "isopen",
-        "license_id",
-        "license_title",
-        "resources",  # full resource dicts with DB-assigned IDs / timestamps
         "groups",  # DB-resolved group records
         "organization",  # DB-resolved organization record
         "owner_org",
@@ -89,15 +86,8 @@ _SKIP_FIELDS = frozenset(
         "harvest_document_content",
         "xml_location_url",
         "included_in_data_catalogue",
-        "citation",
-        "keywords_translation_method",
-        "notes_translation_method",
-        "title_translation_method",
         # --- Fields populated by CIOOS post-harvest scripts, not the parser ---
-        "eov",
-        "ecv",
         "datacentre",
-        "projects",
         # --- Standard CKAN author / maintainer (not mapped from ISO 19115-3) ---
         "author",
         "author_email",
