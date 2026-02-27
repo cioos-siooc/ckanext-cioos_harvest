@@ -66,12 +66,7 @@ _JSON_DIR = _FIXTURES_DIR / "02-ckan-package"
 _SKIP_FIELDS = frozenset(
     {
         # --- CKAN database records ---
-        "id",
-        "name",
         "creator_user_id",
-        "metadata_created",
-        "metadata_modified",
-        "num_resources",
         "num_tags",
         "isopen",
         "groups",  # DB-resolved group records
