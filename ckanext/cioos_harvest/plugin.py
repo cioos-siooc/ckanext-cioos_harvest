@@ -699,6 +699,7 @@ class CIOOSCKANHarvester(CKANHarvester):
                     res_name = load_json(res_name)
                     if isinstance(res_name, dict):
                         resource['name_translated'] = res_name
+                        resource['name'] = res_name.get('en') or next(iter(res_name.values()), resource.get('name', ''))
                     else:
                         resource['name_translated'] = {}
                         resource['name_translated']['en'] = res_name
@@ -706,11 +707,12 @@ class CIOOSCKANHarvester(CKANHarvester):
 
                 res_desc = resource.get('description')
                 res_desc_translated = resource.get('description_translated')
-                # populate multilingual resource name if not set
+                # populate multilingual resource description if not set
                 if not res_desc_translated:
                     res_desc = load_json(res_desc)
                     if isinstance(res_desc, dict):
                         resource['description_translated'] = res_desc
+                        resource['description'] = res_desc.get('en') or next(iter(res_desc.values()), resource.get('description', ''))
                     else:
                         resource['description_translated'] = {}
                         resource['description_translated']['en'] = res_desc
@@ -1155,6 +1157,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 name_val = self.from_json(resource.get('name'))
                 if isinstance(name_val, dict):
                     resource['name_translated'] = name_val
+                    resource['name'] = name_val.get('en') or next(iter(name_val.values()), resource['name'])
                 else:
                     resource['name_translated'] = {}
                     resource['name_translated'][default_language] = name_val
@@ -1163,6 +1166,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 description_val = self.from_json(resource.get('description'))
                 if isinstance(description_val, dict):
                     resource['description_translated'] = description_val
+                    resource['description'] = description_val.get('en') or next(iter(description_val.values()), resource['description'])
                 else:
                     resource['description_translated'] = {}
                     resource['description_translated'][default_language] = description_val

@@ -6,6 +6,7 @@ these classes contain ONLY ISO 19115-3 XPaths (mdb:, cit:, mri:, gex:, etc.
 namespaces) and do not attempt to parse ISO 19139 (gmd:) documents.
 """
 
+import json
 import logging
 
 from ckanext.cioos_harvest.model.harvested_metadata_iso19139 import (
@@ -65,13 +66,61 @@ class ISOResourceLocator_iso19115_3(ISOElement_iso19115_3):
         ),
         ISOElement_iso19115_3(
             name="name",
-            search_paths=["cit:name/gco:CharacterString/text()"],
+            search_paths=["cit:name"],
             multiplicity="0..1",
+            elements=[
+                ISOElement_iso19115_3(
+                    name="default",
+                    search_paths=["gco:CharacterString/text()"],
+                    multiplicity="0..1",
+                ),
+                ISOElement_iso19115_3(
+                    name="local",
+                    search_paths=["lan:PT_FreeText/lan:textGroup"],
+                    multiplicity="*",
+                    elements=[
+                        ISOElement_iso19115_3(
+                            name="value",
+                            search_paths=["lan:LocalisedCharacterString/text()"],
+                            multiplicity="0..1",
+                        ),
+                        ISOElement_iso19115_3(
+                            name="language_code",
+                            search_paths=["lan:LocalisedCharacterString/@locale"],
+                            multiplicity="0..1",
+                        ),
+                    ],
+                ),
+            ],
         ),
         ISOElement_iso19115_3(
             name="description",
-            search_paths=["cit:description/gco:CharacterString/text()"],
+            search_paths=["cit:description"],
             multiplicity="0..1",
+            elements=[
+                ISOElement_iso19115_3(
+                    name="default",
+                    search_paths=["gco:CharacterString/text()"],
+                    multiplicity="0..1",
+                ),
+                ISOElement_iso19115_3(
+                    name="local",
+                    search_paths=["lan:PT_FreeText/lan:textGroup"],
+                    multiplicity="*",
+                    elements=[
+                        ISOElement_iso19115_3(
+                            name="value",
+                            search_paths=["lan:LocalisedCharacterString/text()"],
+                            multiplicity="0..1",
+                        ),
+                        ISOElement_iso19115_3(
+                            name="language_code",
+                            search_paths=["lan:LocalisedCharacterString/@locale"],
+                            multiplicity="0..1",
+                        ),
+                    ],
+                ),
+            ],
         ),
         ISOElement_iso19115_3(
             name="protocol",
@@ -586,6 +635,107 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
         super(ISODocument_iso19115_3, self).infer_values(values)
         self.infer_aggregation_info(values)
         self.infer_responsible_party_contacts(values)
+        self.infer_keyword_types(values)
+        self.infer_tags_from_keywords(values)
+        self.infer_resource_locator_multilingual(values)
+
+    def infer_resource_locator_multilingual(self, values):
+        """Convert bilingual {default, local} name/description in resource-locator items to JSON lang dict strings.
+
+        ``ISOResourceLocator_iso19115_3`` captures bilingual ``name`` and
+        ``description`` fields as ``{default: ..., local: [{value, language_code}]}``
+        dicts.  ``infer_multilinguale`` only processes top-level ``values`` keys
+        and does not descend into nested lists, so this method handles the
+        conversion for resource-locator items explicitly.
+
+        The result is a JSON-encoded language dict (e.g.
+        ``'{"fr": "Base de données...", "en": "CTD Dataset..."}'``) which the
+        downstream ``plugin.py`` resource handler decodes to populate both
+        ``name_translated`` and the normalised plain ``name``/``description``.
+        """
+        default_lang = self.cleanLangKey(values.get('metadata-language', 'en'))
+        for locator in values.get('resource-locator', []):
+            for field in ('name', 'description'):
+                val = locator.get(field)
+                if isinstance(val, dict) and 'default' in val:
+                    lang_dict = self.local_to_dict(val, default_lang)
+                    locator[field] = json.dumps(lang_dict, ensure_ascii=False) if lang_dict else ''
+
+    def infer_keyword_types(self, values):
+        """Split the processed keywords list by keyword type.
+
+        After ``infer_keywords`` runs, ``values['keywords']`` is a flat list of
+        ``{'keyword': '<json-lang-dict>', 'type': '<ktype>'}`` dicts.  This
+        method filters that list by type to produce:
+
+        - ``keyword-project``  (list of plain strings) — consumed by plugin.py
+        - ``keyword-datacentre`` (list of plain strings) — consumed by plugin.py
+        - ``projects``         (same list) — picked up by
+          ``handle_scheming_harvest_dictinary`` at the harvester level
+
+        Values are extracted by decoding the JSON language dict and preferring
+        the document's default language, falling back to any available value.
+        """
+        keywords = values.get('keywords', [])
+        default_lang = (values.get('metadata-language') or 'en')[:2]
+
+        projects = []
+        datacentres = []
+
+        for kw in keywords:
+            ktype = kw.get('type') or ''
+            keyword_json = kw.get('keyword', '')
+            if not keyword_json:
+                continue
+            try:
+                lang_dict = json.loads(keyword_json)
+                if isinstance(lang_dict, dict):
+                    value = lang_dict.get(default_lang) or next(iter(lang_dict.values()), '')
+                else:
+                    value = str(lang_dict)
+            except (ValueError, TypeError):
+                value = keyword_json
+
+            if not value:
+                continue
+
+            if ktype == 'project':
+                if value not in projects:
+                    projects.append(value)
+            elif ktype == 'datacentre':
+                if value not in datacentres:
+                    datacentres.append(value)
+
+        if projects:
+            values['keyword-project'] = projects
+            values['projects'] = projects
+        if datacentres:
+            values['keyword-datacentre'] = datacentres
+
+    def infer_tags_from_keywords(self, values):
+        """Build the ``tags`` list from the processed keywords.
+
+        ``handle_fluent_harvest_dictinary`` reads ``iso_values['tags']`` to
+        populate the CKAN ``keywords`` fluent_tags field.  For ISO 19139,
+        ``tags`` is built from ``keyword-inspire-theme`` and
+        ``keyword-controlled-other`` (plain strings).  For ISO 19115-3 those
+        elements have empty search paths, so ``tags`` is always ``[]`` after
+        the base ``infer_tags`` call.
+
+        This override repopulates ``tags`` from the already-processed
+        ``values['keywords']`` list, using each entry's JSON-encoded language
+        dict string (e.g. ``'{"fr": "CTD"}'``).  The fluent handler then
+        decodes these dicts and routes each value to the correct language bucket.
+
+        All keyword types (including ``project`` and ``datacentre``) are
+        included so that they also appear in the fluent ``keywords`` field.
+        """
+        tags = []
+        for kw in values.get('keywords', []):
+            keyword_json = kw.get('keyword', '')
+            if keyword_json and keyword_json not in tags:
+                tags.append(keyword_json)
+        values['tags'] = tags
 
     def infer_responsible_party_contacts(self, values):
         """Merge duplicate contacts that differ only in role.
