@@ -506,7 +506,7 @@ class ISOAggregationInfo_iso19115_3(ISOElement_iso19115_3):
             multiplicity="0..1",
         ),
         ISOElement_iso19115_3(
-            name="aggregate-dataset-identifier_code",
+            name="aggregate-dataset-identifier",
             search_paths=[
                 "mri:name/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
             ],
@@ -663,7 +663,14 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
         The parent collapses the raw list of temporal extent dicts into a single
         merged dict {begin: ..., end: ...}. The scheming schema for temporal-extent
         uses repeating_subfields which expects a list of dicts, so we wrap it back.
+
+        Vertical-extent note: the parent's isinstance(..., numbers.Number) guard
+        discards vertical-extent when values are strings (as returned by XPath
+        text() nodes).  We save the raw list before calling super() and restore
+        it afterwards so the CIOOS repeating_subfields schema receives a list.
         """
+        ve_raw = list(values.get('vertical-extent', []))
+
         super(ISODocument_iso19115_3, self).infer_temporal_vertical_extent(values)
         # After the parent call, temporal-extent is either:
         #   - a dict {begin: '...', end: '...'} if extent was found, OR
@@ -677,6 +684,16 @@ class ISODocument_iso19115_3(ISODocument_iso19139):
         else:
             values['temporal-extent-begin'] = []
             values['temporal-extent-end'] = []
+
+        # Restore vertical-extent as a list for the repeating_subfields schema.
+        # Filter out items that have neither min nor max so empty nodes are dropped.
+        if ve_raw:
+            valid = [
+                item for item in ve_raw
+                if item.get('min') is not None or item.get('max') is not None
+            ]
+            if valid:
+                values['vertical-extent'] = valid
 
     elements = [
         ISOElement_iso19115_3(
