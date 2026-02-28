@@ -32,9 +32,7 @@ from pathlib import Path
 import pytest
 from lxml import etree
 
-from ckanext.cioos_harvest.model.harvested_metadata_iso19115_3 import (
-    ISODocument_iso19115_3,
-)
+from ckanext.cioos_harvest.model.iso19115_3 import ISODocument as ISODocument_iso19115_3
 
 log = logging.getLogger(__name__)
 
