@@ -888,6 +888,19 @@ def _infer_resource_locator_multilingual(values):
                 lang_dict = _local_to_dict(val, default_lang)
                 locator[field] = json.dumps(lang_dict, ensure_ascii=False) if lang_dict else ''
 
+def _infer_guid(values):
+    """Convert guid dict to a string with authority + code"""
+    guid = values.get('guid')
+    if isinstance(guid, dict):
+        authority = guid.get('authority', '')
+        code = guid.get('code', '')
+        if authority and code:
+            values['guid'] = f"{authority}_{code}"
+        elif code:
+            values['guid'] = code
+        else:
+            values['guid'] = ''
+
 
 # ---------------------------------------------------------------------------
 # Main parser
@@ -1105,6 +1118,7 @@ def _parse_document(root):
     _infer_keywords(values)
     _infer_multilingual(values)
     _infer_temporal_vertical_extent(values)
+    _infer_guid(values)
     _drop_empty(values)
 
     # ISO 19115-3 specific post-processing

@@ -119,8 +119,8 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         # Idempotent: the same XML record always maps to the same id/name.
         guid = iso_values.get('guid', '')
         if guid:
-            package_dict['id'] = guid.get('code')
-            package_dict['name'] = f"{guid.get('authority', '').replace('.', '-')  }_{guid.get('code', '')}"
+            package_dict['id'] = guid.split('_')[-1]  # Use the code portion of the GUID as the CKAN package id
+            package_dict['name'] = guid.replace('.', '-')
         elif package is not None:
             package_dict['name'] = package.name
         else:
@@ -173,6 +173,16 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         if isinstance(iso_abstract, dict):
             package_dict['notes'] = iso_abstract.get(
                 primary_lang, next(iter(iso_abstract.values()), ''))
+
+        # Always populate bilingual translation_method fields with at least
+        # both CIOOS portal languages, merging any parser-provided values on top.
+        _default_tm = {'en': '', 'fr': ''}
+        package_dict['title_translation_method'] = dict(
+            _default_tm, **(iso_values.get('title_translation_method') or {}))
+        package_dict['notes_translation_method'] = dict(
+            _default_tm, **(iso_values.get('abstract_translation_method') or {}))
+        package_dict['keywords_translation_method'] = dict(
+            _default_tm, **(iso_values.get('keywords_translation_method') or {}))
 
         # Post-process resources: the parser stores name/description as
         # JSON-encoded lang-dicts.  Decode them into a plain primary-language
