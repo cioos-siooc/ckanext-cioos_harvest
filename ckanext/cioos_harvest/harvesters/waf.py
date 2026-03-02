@@ -169,6 +169,18 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             package_dict['notes'] = iso_abstract.get(
                 locale, next(iter(iso_abstract.values()), ''))
 
+        # Post-process resources: the parser stores name/description as
+        # JSON-encoded lang-dicts.  Decode them into a plain default-locale
+        # string (for backward-compat) plus a _translated sibling dict.
+        for resource in package_dict.get('resources', []):
+            for field in ('name', 'description'):
+                val = self.from_json(resource.get(field, ''))
+                if isinstance(val, dict):
+                    resource[field + '_translated'] = val
+                    resource[field] = (
+                        val.get(locale) or next(iter(val.values()), '')
+                    )
+
         # Set license_id from CIOOS-specific legal constraints fields when the
         # parent SpatialHarvester left it unset (use-constraints was empty).
         if not package_dict.get('license_id'):
@@ -187,8 +199,11 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     lic = register[license_id]
                     package_dict['license_title'] = lic.title
                     package_dict['license_url'] = getattr(lic, 'url', '')
-            except Exception:
-                pass
+                else:
+                    log.warning('license_id %r not found in CKAN license register '
+                                '(check licenses_group_url configuration)', license_id)
+            except Exception as exc:
+                log.warning('Could not resolve license_title for %r: %s', license_id, exc)
 
         return package_dict
 

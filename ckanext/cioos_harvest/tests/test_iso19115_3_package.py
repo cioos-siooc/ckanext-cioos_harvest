@@ -115,6 +115,34 @@ _EXTRAS_SKIP_KEYS = frozenset(
     }
 )
 
+# Resource fields that appear in production ``package_show`` responses but are
+# populated by CKAN's database layer or by post-harvest scripts, never by the
+# XML-parsing + package-dict pipeline we test here.
+_RESOURCE_SKIP_FIELDS = frozenset(
+    {
+        # --- CKAN database records ---
+        "cache_last_updated",
+        "cache_url",
+        "created",
+        "datastore_active",
+        "hash",
+        "id",
+        "last_modified",
+        "metadata_modified",
+        "mimetype",
+        "mimetype_inner",
+        "package_id",
+        "position",
+        "resource_type",
+        "size",
+        "state",
+        "url_type",
+        # --- Post-harvest enrichment scripts ---
+        "created_source",
+        "metadata_modified_source",
+    }
+)
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -160,11 +188,18 @@ def _normalise_extras(extras) -> dict:
     return dict(sorted(result.items()))
 
 
+def _filter_resource(resource: dict) -> dict:
+    """Strip DB-generated and enrichment-service fields from a resource dict."""
+    return {k: v for k, v in resource.items() if k not in _RESOURCE_SKIP_FIELDS}
+
+
 def _filter(pkg: dict) -> dict:
     """Strip DB-generated and enrichment-service fields before comparison."""
     result = {k: v for k, v in pkg.items() if k not in _SKIP_FIELDS}
     if "extras" in result:
         result["extras"] = _normalise_extras(result["extras"])
+    if "resources" in result:
+        result["resources"] = [_filter_resource(r) for r in result["resources"]]
     return result
 
 
