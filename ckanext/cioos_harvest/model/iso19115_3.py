@@ -789,26 +789,22 @@ def _infer_responsible_party_contacts(values):
             else:
                 seen[key] = len(merged)
                 merged.append(dict(contact))
-        for contact in merged:
-            role = contact.get('role')
-            if isinstance(role, list):
-                contact['role'] = sorted(role)
         values[field] = merged
 
 
 def _infer_normalize_contact_roles(values):
-    """Ensure role is always a list in every contact-type field.
+    """Ensure role is always a list in CIOOS schema contact fields.
 
-    This runs after _infer_responsible_party_contacts so that the merge loop
-    always works with plain strings (safe for ``role not in existing_role``
-    checks), and list normalisation happens once, here, for all fields.
+    Excludes ``responsible-organisation`` whose role must remain a plain string
+    so the parent SpatialHarvester can correctly group and merge it into the
+    ``responsible-party`` extras entry (it appends ``party['role']`` directly
+    into a list — wrapping it in a list first produces list-of-lists).
     """
     for field in (
         'metadata-point-of-contact',
         'cited-responsible-party',
         'distributor',
         'author',
-        'responsible-organisation',
     ):
         for contact in values.get(field) or []:
             if not isinstance(contact, dict):
@@ -901,6 +897,45 @@ def _infer_guid(values):
         else:
             values['guid'] = ''
 
+
+def _guess_format_from_url(url):
+    """Return a CIOOS format string for *url*, or None if unknown.
+
+    Matches the same patterns as the old waf_cioos.py post-processing so that
+    resource format labels are consistent across all harvested records.
+    """
+    url_lower = url.lower()
+    url_path = url_lower.split('?')[0].split('#')[0]
+    url_extension = url_path.rsplit('.', 1)[-1] if '.' in url_path else ''
+
+    if url_extension in ('csv', 'json', 'xml', 'nc', 'zip'):
+        return url_extension.upper() if url_extension == 'csv' else url_extension
+    if 'erddap' in url_lower:
+        return 'ERDDAP'
+    if 'thredds' in url_lower:
+        return 'THREDDS'
+    if 'obis' in url_lower:
+        return 'OBIS'
+    if 'gbif' in url_lower:
+        return 'GBIF'
+    if url_extension in ('html', 'htm') or url_lower.startswith('http'):
+        return 'HTML'
+    return None
+
+
+def _infer_resource_types(values):
+    """Annotate each resource-locator entry with a CIOOS format label.
+
+    Iterates ``values['resource-locator']`` (populated during parsing) and
+    sets a ``'format'`` key on each entry so that waf.py can apply it after
+    the parent class builds the package resources.
+    """
+    for locator in values.get('resource-locator', []):
+        url = locator.get('url', '')
+        if url:
+            fmt = _guess_format_from_url(url)
+            if fmt:
+                locator['format'] = fmt
 
 # ---------------------------------------------------------------------------
 # Main parser
@@ -1119,6 +1154,7 @@ def _parse_document(root):
     _infer_multilingual(values)
     _infer_temporal_vertical_extent(values)
     _infer_guid(values)
+    _infer_resource_types(values)
     _drop_empty(values)
 
     # ISO 19115-3 specific post-processing

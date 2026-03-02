@@ -166,6 +166,10 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     extras_as_dict.append({'key': key, 'value': value})
             package_dict['extras'] = extras_as_dict
 
+        # Ensure ecv is always present (schema field, defaults to empty list).
+        if 'ecv' not in package_dict:
+            package_dict['ecv'] = []
+
         # Overwrite title/notes with plain locale strings (not JSON blobs)
         package_dict['title'] = iso_title
 
@@ -174,19 +178,32 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             package_dict['notes'] = iso_abstract.get(
                 primary_lang, next(iter(iso_abstract.values()), ''))
 
-        # Always populate bilingual translation_method fields with at least
-        # both CIOOS portal languages, merging any parser-provided values on top.
+        # translation_method fields: title and notes always carry both portal
+        # languages; keywords uses only the record's primary language (the
+        # original) so that translated-language entries are not falsely marked
+        # as having an empty translation method.
         _default_tm = {'en': '', 'fr': ''}
         package_dict['title_translation_method'] = dict(
             _default_tm, **(iso_values.get('title_translation_method') or {}))
         package_dict['notes_translation_method'] = dict(
             _default_tm, **(iso_values.get('abstract_translation_method') or {}))
-        package_dict['keywords_translation_method'] = dict(
-            _default_tm, **(iso_values.get('keywords_translation_method') or {}))
+        package_dict['keywords_translation_method'] = (
+            iso_values.get('keywords_translation_method') or {primary_lang: ''}
+        )
+
+        # Build a URL → format map from the annotated resource-locator entries.
+        # _infer_resource_types() in iso19115_3.py sets locator['format'] for
+        # every resource-locator it recognises; we apply those labels here.
+        locator_formats = {
+            loc['url']: loc['format']
+            for loc in iso_values.get('resource-locator', [])
+            if loc.get('url') and loc.get('format')
+        }
 
         # Post-process resources: the parser stores name/description as
         # JSON-encoded lang-dicts.  Decode them into a plain primary-language
         # string (for backward-compat) plus a _translated sibling dict.
+        # Also apply CIOOS-specific format labels derived from the URL.
         for resource in package_dict.get('resources', []):
             for field in ('name', 'description'):
                 val = self.from_json(resource.get(field, ''))
@@ -195,6 +212,11 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     resource[field] = (
                         val.get(primary_lang) or next(iter(val.values()), '')
                     )
+            url = resource.get('url', '')
+            if url in locator_formats:
+                resource['format'] = locator_formats[url]
+            elif resource.get('format') in (None, 'text/html', 'text/html; charset=utf-8'):
+                resource['format'] = 'HTML'
 
         # Set license_id from CIOOS-specific legal constraints fields when the
         # parent SpatialHarvester left it unset (use-constraints was empty).
@@ -277,20 +299,9 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 else:
                     field_value[default_language].append(tobj)
             package_dict[field_name] = field_value
-
-            pkg_dict_tags = package_dict.get('tags', [])
-            if pkg_dict_tags and not harvest_config.get('clean_tags'):
-                tag_list = []
-                for x in pkg_dict_tags:
-                    x['name'] = self.from_json(x['name'])
-                    if isinstance(x['name'], dict):
-                        for item in list(x['name'].values()):
-                            if item not in tag_list:
-                                tag_list.append(item)
-                    else:
-                        if x['name'] not in tag_list:
-                            tag_list.append(x['name'])
-                package_dict['tags'] = [{'name': t} for t in tag_list]
+            # With fluent_tags active, keywords are stored in the fluent
+            # field (e.g. 'keywords') — the plain 'tags' list must be empty.
+            package_dict['tags'] = []
         else:
             if field_name.endswith('_translated'):
                 package_fn = field_name[:-11]
