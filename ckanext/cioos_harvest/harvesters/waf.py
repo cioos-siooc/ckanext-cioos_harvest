@@ -104,11 +104,15 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
         package = harvest_object.package
 
-        # Resolve the plain locale title from the JSON lang-dict (used for
-        # package_dict['title'] below after the scheming-fields loop).
+        # Use the record's primary language (mdb:defaultLocale) for plain-text
+        # extraction — not the CKAN site default locale.
+        primary_lang = (iso_values.get('metadata-language') or 'en')[:2]
+
+        # Resolve the plain primary-language title from the JSON lang-dict
+        # (used for package_dict['title'] below after the scheming-fields loop).
         iso_title = self.from_json(iso_values['title'])
-        iso_title = iso_title.get(
-            p.toolkit.config.get('ckan.locale_default', 'en'), iso_title)
+        if isinstance(iso_title, dict):
+            iso_title = iso_title.get(primary_lang) or next(iter(iso_title.values()), '')
 
         # Use the metadata GUID (authority_code with dots replaced by dashes) as
         # both the CKAN package id and a stable, deterministic URL slug.
@@ -165,14 +169,13 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         # Overwrite title/notes with plain locale strings (not JSON blobs)
         package_dict['title'] = iso_title
 
-        locale = p.toolkit.config.get('ckan.locale_default', 'en')
         iso_abstract = self.from_json(iso_values.get('abstract', ''))
         if isinstance(iso_abstract, dict):
             package_dict['notes'] = iso_abstract.get(
-                locale, next(iter(iso_abstract.values()), ''))
+                primary_lang, next(iter(iso_abstract.values()), ''))
 
         # Post-process resources: the parser stores name/description as
-        # JSON-encoded lang-dicts.  Decode them into a plain default-locale
+        # JSON-encoded lang-dicts.  Decode them into a plain primary-language
         # string (for backward-compat) plus a _translated sibling dict.
         for resource in package_dict.get('resources', []):
             for field in ('name', 'description'):
@@ -180,7 +183,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 if isinstance(val, dict):
                     resource[field + '_translated'] = val
                     resource[field] = (
-                        val.get(locale) or next(iter(val.values()), '')
+                        val.get(primary_lang) or next(iter(val.values()), '')
                     )
 
         # Set license_id from CIOOS-specific legal constraints fields when the

@@ -1080,13 +1080,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if source_config.get('data_catalogue_source'):
                  package_dict['included_in_data_catalogue'] = load_json(source_config['data_catalogue_source']) +  package_dict['included_in_data_catalogue']
 
-            # populate translation method for bilingual field
-            if iso_values.get('title_translation_method'):
-                package_dict['title_translation_method'] = iso_values['title_translation_method']
-            if iso_values.get('abstract_translation_method'):
-                package_dict['notes_translation_method'] = iso_values['abstract_translation_method']
-            if iso_values.get('keywords_translation_method'):
-                package_dict['keywords_translation_method'] = iso_values['keywords_translation_method']
+            # Always populate translation_method for bilingual fields with at
+            # least both CIOOS portal languages present.  Merge any values the
+            # parser may have produced on top of the empty-string defaults.
+            _default_tm = {'en': '', 'fr': ''}
+            package_dict['title_translation_method'] = dict(
+                _default_tm, **(iso_values.get('title_translation_method') or {}))
+            package_dict['notes_translation_method'] = dict(
+                _default_tm, **(iso_values.get('abstract_translation_method') or {}))
+            package_dict['keywords_translation_method'] = dict(
+                _default_tm, **(iso_values.get('keywords_translation_method') or {}))
 
             # set default language, default to english
             default_language = iso_values.get('metadata-language', 'en')[0:2]
