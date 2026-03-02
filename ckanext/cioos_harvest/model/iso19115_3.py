@@ -246,7 +246,7 @@ def _calculate_identifier(identifier):
         code,
         identifier.get('version', ''),
     ]
-    return '_'.join(x.strip() for x in id_list if x.strip())
+    return '_'.join(x.strip().replace('.', '-') for x in id_list if x.strip())
 
 
 # ---------------------------------------------------------------------------
@@ -410,13 +410,24 @@ def _parse_resource_locator(el):
 
 
 def _parse_keyword_group(el):
-    """Parse a mri:MD_Keywords element → {keywords: [localised_raw, ...], type: str}."""
+    """Parse a mri:MD_Keywords element → {keywords: [localised_raw, ...], type: str}.
+
+    The type is taken from mri:MD_KeywordTypeCode when present; if absent, the
+    thesaurus name (mri:thesaurusName/cit:CI_Citation/cit:title) is used as a
+    fallback so that controlled-vocabulary blocks (e.g. the CIOOS EOV thesaurus)
+    are classified correctly.
+    """
+    ktype = _first_text(el,
+        "mri:type/mri:MD_KeywordTypeCode/@codeListValue",
+        "mri:type/mri:MD_KeywordTypeCode/text()",
+    )
+    if not ktype:
+        ktype = _first_text(el,
+            "mri:thesaurusName/cit:CI_Citation/cit:title/gco:CharacterString/text()",
+        )
     return {
         'keywords': [_localised_raw(kw) for kw in _x(el, "mri:keyword")],
-        'type': _first_text(el,
-            "mri:type/mri:MD_KeywordTypeCode/@codeListValue",
-            "mri:type/mri:MD_KeywordTypeCode/text()",
-        ),
+        'type': ktype,
     }
 
 
@@ -801,9 +812,36 @@ def _infer_responsible_party_contacts(values):
                 seen[key] = len(merged)
                 merged.append(dict(contact))
         for contact in merged:
-            if isinstance(contact.get('role'), list):
-                contact['role'] = sorted(contact['role'])
+            role = contact.get('role')
+            if isinstance(role, list):
+                contact['role'] = sorted(role)
         values[field] = merged
+
+
+def _infer_normalize_contact_roles(values):
+    """Ensure role is always a list in every contact-type field.
+
+    This runs after _infer_responsible_party_contacts so that the merge loop
+    always works with plain strings (safe for ``role not in existing_role``
+    checks), and list normalisation happens once, here, for all fields.
+    """
+    for field in (
+        'metadata-point-of-contact',
+        'cited-responsible-party',
+        'distributor',
+        'author',
+        'responsible-organisation',
+    ):
+        for contact in values.get(field) or []:
+            if not isinstance(contact, dict):
+                continue
+            role = contact.get('role')
+            if isinstance(role, list):
+                contact['role'] = sorted(role)
+            elif role:
+                contact['role'] = [role]
+            else:
+                contact['role'] = []
 
 
 def _infer_keyword_types(values):
@@ -811,6 +849,7 @@ def _infer_keyword_types(values):
     keywords = values.get('keywords', [])
     default_lang = (values.get('metadata-language') or 'en')[:2]
     projects = []
+    eovs = []
     datacentres = []
     for kw in keywords:
         ktype = kw.get('type') or ''
@@ -829,11 +868,26 @@ def _infer_keyword_types(values):
             projects.append(value)
         elif ktype == 'datacentre' and value not in datacentres:
             datacentres.append(value)
+        elif ktype == "eov":
+            # EOV codes are always English identifiers — resolve 'en' key only;
+            # French-text-only keyword elements are intentionally skipped.
+            try:
+                parsed = json.loads(keyword_json)
+                eov_value = parsed.get('en') if isinstance(parsed, dict) else value
+            except (ValueError, TypeError):
+                eov_value = value
+            if eov_value and eov_value not in eovs:
+                eovs.append(eov_value)
+        elif ktype:
+            log.warning('Unknown keyword type "%s" for keyword "%s". Skipping.', ktype, value)
+
     if projects:
         values['keyword-project'] = projects
         values['projects'] = projects
     if datacentres:
         values['keyword-datacentre'] = datacentres
+    if eovs:
+        values['eov'] = eovs
 
 
 def _infer_tags_from_keywords(values):
@@ -1079,6 +1133,7 @@ def _parse_document(root):
     # ISO 19115-3 specific post-processing
     _infer_aggregation_info(values)
     _infer_responsible_party_contacts(values)
+    _infer_normalize_contact_roles(values)
     _infer_keyword_types(values)
     _infer_tags_from_keywords(values)
     _infer_resource_locator_multilingual(values)

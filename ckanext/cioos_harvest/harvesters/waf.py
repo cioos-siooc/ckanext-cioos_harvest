@@ -104,22 +104,24 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
         package = harvest_object.package
 
-        # Resolve the plain locale title from the JSON lang-dict
+        # Resolve the plain locale title from the JSON lang-dict (used for
+        # package_dict['title'] below after the scheming-fields loop).
         iso_title = self.from_json(iso_values['title'])
         iso_title = iso_title.get(
             p.toolkit.config.get('ckan.locale_default', 'en'), iso_title)
 
-        if package is None or package.title != iso_title:
-            name = self._gen_new_name(iso_title)
-            if not name:
-                name = self._gen_new_name(str(iso_values['guid']))
-            if not name:
-                raise Exception(
-                    'Could not generate a unique name from the title or the GUID. '
-                    'Please choose a more unique title.')
-            package_dict['name'] = name
-        else:
+        # Use the metadata GUID (authority_code with dots replaced by dashes) as
+        # both the CKAN package id and a stable, deterministic URL slug.
+        # Idempotent: the same XML record always maps to the same id/name.
+        guid = iso_values.get('guid', '')
+        if guid:
+            package_dict['id'] = guid
+            package_dict['name'] = guid
+        elif package is not None:
             package_dict['name'] = package.name
+        else:
+            raise Exception(
+                'Could not generate a package name: metadata GUID is missing.')
 
         # Handle Scheming, Composite, and Fluent extensions
         loaded_plugins = p.toolkit.config.get("ckan.plugins")
@@ -204,6 +206,34 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                                 '(check licenses_group_url configuration)', license_id)
             except Exception as exc:
                 log.warning('Could not resolve license_title for %r: %s', license_id, exc)
+
+        # Derive metadata_created / metadata_modified from ISO 19115-3 metadata-level
+        # dates (mdb:dateInfo).  These record when the METADATA RECORD itself was
+        # first published / last revised — semantically equivalent to CKAN's own
+        # package-level created/modified timestamps.
+        #
+        # metadata-reference-date is sorted oldest-first and truncated to YYYY-MM-DD
+        # by _infer_clean_metadata_reference_date; metadata-date holds the full
+        # datetime string of the newest date.
+        _ref_dates = iso_values.get('metadata-reference-date', [])
+        _meta_date = iso_values.get('metadata-date', '')
+
+        # metadata_created: prefer explicit 'creation' type; fall back to oldest date.
+        _meta_created = next(
+            (d['value'] for d in _ref_dates if (d.get('type') or '').lower() == 'creation'),
+            _ref_dates[0]['value'] if _ref_dates else '',
+        )
+        # metadata_modified: prefer explicit 'revision' type; fall back to the full
+        # metadata-date datetime (highest precision), then newest ref-date.
+        _meta_modified = next(
+            (d['value'] for d in _ref_dates if (d.get('type') or '').lower() == 'revision'),
+            _meta_date or (_ref_dates[-1]['value'] if _ref_dates else ''),
+        )
+
+        if _meta_created:
+            package_dict['metadata_created'] = _meta_created
+        if _meta_modified:
+            package_dict['metadata_modified'] = _meta_modified
 
         return package_dict
 
