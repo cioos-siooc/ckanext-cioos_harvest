@@ -233,21 +233,6 @@ def _local_to_dict(item, default_lang_key):
     return out
 
 
-def _calculate_identifier(identifier):
-    """Build a string identifier from an identifier dict."""
-    if isinstance(identifier, str):
-        return identifier
-    code = identifier.get('code')
-    if not code:
-        return None
-    id_list = [
-        identifier.get('authority', ''),
-        identifier.get('code-space', ''),
-        code,
-        identifier.get('version', ''),
-    ]
-    return '_'.join(x.strip().replace('.', '-') for x in id_list if x.strip())
-
 
 # ---------------------------------------------------------------------------
 # Field parsers (one function per composite element class)
@@ -700,13 +685,6 @@ def _infer_multilingual(values):
             values[key] = json.dumps(lang_dict)
 
 
-def _infer_guid(values):
-    identifier = values.get('guid', {})
-    guid = _calculate_identifier(identifier)
-    if guid:
-        values['guid'] = guid
-
-
 def _infer_temporal_vertical_extent(values):
     """Merged base + ISO 19115-3 logic for temporal and vertical extents.
 
@@ -1126,7 +1104,6 @@ def _parse_document(root):
     _infer_metadata_language(values)
     _infer_keywords(values)
     _infer_multilingual(values)
-    _infer_guid(values)
     _infer_temporal_vertical_extent(values)
     _drop_empty(values)
 

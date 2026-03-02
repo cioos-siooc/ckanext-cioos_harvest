@@ -115,8 +115,8 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         # Idempotent: the same XML record always maps to the same id/name.
         guid = iso_values.get('guid', '')
         if guid:
-            package_dict['id'] = guid
-            package_dict['name'] = guid
+            package_dict['id'] = guid.get('code')
+            package_dict['name'] = f"{guid.get('authority', '').replace('.', '-')  }_{guid.get('code', '')}"
         elif package is not None:
             package_dict['name'] = package.name
         else:
@@ -143,13 +143,13 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
                 handled_fields = []
                 if composite:
-                    self.handle_composite_harvest_dictinary(
+                    self.handle_composite_harvest_dictionary(
                         field, iso_values, package_dict, handled_fields)
                 if fluent:
-                    self.handle_fluent_harvest_dictinary(
+                    self.handle_fluent_harvest_dictionary(
                         field, iso_values, package_dict, schema, handled_fields,
                         self.source_config)
-                self.handle_scheming_harvest_dictinary(
+                self.handle_scheming_harvest_dictionary(
                     field, iso_values, extras, package_dict, handled_fields)
 
             extras_as_dict = []
@@ -241,7 +241,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # Field handlers (fluent / composite / scheming)
     # ------------------------------------------------------------------
 
-    def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict,
+    def handle_fluent_harvest_dictionary(self, field, iso_values, package_dict,
                                         schema, handled_fields, harvest_config):
         field_name = field['field_name']
         if field_name in handled_fields:
@@ -300,7 +300,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 new_obj['_'.join(keys + [key])] = value
         return new_obj
 
-    def handle_composite_harvest_dictinary(self, field, iso_values, package_dict,
+    def handle_composite_harvest_dictionary(self, field, iso_values, package_dict,
                                            handled_fields):
         field_name = field['field_name']
         if field_name in handled_fields:
@@ -325,7 +325,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     package_dict['__extras'][field_name + '|' + str(idx + 1) + '|' + key] = value
             handled_fields.append(field_name)
 
-    def handle_scheming_harvest_dictinary(self, field, iso_values, extras,
+    def handle_scheming_harvest_dictionary(self, field, iso_values, extras,
                                           package_dict, handled_fields):
         field_name = field['field_name']
         if field_name in handled_fields:
