@@ -1189,6 +1189,7 @@ class ISODocument:
         self.xml_str = xml_str
         parser = etree.XMLParser(remove_blank_text=True)
         self.root = etree.fromstring(xml_str, parser=parser)
+        self.xml_tree = self.root  # ckanext-spatial base.py accesses iso_parser.xml_tree
 
     def read_values(self):
         return _parse_document(self.root)
