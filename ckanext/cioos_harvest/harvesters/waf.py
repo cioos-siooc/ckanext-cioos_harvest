@@ -98,7 +98,50 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # Package dict construction
     # ------------------------------------------------------------------
 
+    def _expand_point_bboxes(self, iso_values, guid=''):
+        """Expand degenerate point bounding boxes to tiny polygons in-place.
+
+        ISO 19115-3 allows a bounding box where west==east and south==north,
+        which legitimately describes a single-coordinate location (e.g. a
+        mooring, a station, or a single water-column sample).
+
+        ckanext-spatial's SpatialHarvester.get_package_dict() treats this as
+        an error: when xmin==xmax or ymin==ymax it calls _save_object_error()
+        with "Point extent defined instead of polygon", which marks the harvest
+        object as ERRORED in the harvester UI — even though the dataset is
+        actually imported correctly.
+
+        This method pre-processes iso_values['bbox'] before the parent
+        get_package_dict() is called, expanding each degenerate bbox outward
+        by _EPSILON degrees (~1 m at the equator, ~0.7 m at 74°N).  The
+        resulting tiny polygon is geographically indistinguishable from a point
+        at any practical resolution and passes cleanly through ckanext-spatial's
+        polygon check.
+
+        Args:
+            iso_values: The iso_values dict produced by the ISO 19115-3 parser.
+                        Modified in-place; safe because each harvest object gets
+                        a fresh dict that is never shared between records.
+            guid:       The harvest object GUID, used only for the debug log.
+        """
+        _EPSILON = 0.00001
+        for bbox in iso_values.get('bbox', []):
+            try:
+                west, east = float(bbox['west']), float(bbox['east'])
+                south, north = float(bbox['south']), float(bbox['north'])
+            except (TypeError, ValueError):
+                continue
+            if west == east or south == north:
+                log.debug('Point bbox detected for %s — expanding by epsilon to avoid '
+                          'harvest error', guid)
+                bbox['west'] = str(west - _EPSILON)
+                bbox['east'] = str(east + _EPSILON)
+                bbox['south'] = str(south - _EPSILON)
+                bbox['north'] = str(north + _EPSILON)
+
     def get_package_dict(self, iso_values, harvest_object):
+        self._expand_point_bboxes(iso_values, guid=harvest_object.guid)
+
         package_dict = super(WAFHarvesterISO19115_3, self).get_package_dict(
             iso_values, harvest_object)
 
