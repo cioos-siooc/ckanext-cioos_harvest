@@ -1047,11 +1047,25 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if not package_dict.get('license_id'):
                 package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
 
-            # populate citation — only override if the harvested XML produced a value.
-            # If citation is absent from iso_values (returns None), keep whatever the
-            # fluent handler already placed in package_dict to avoid setting {'en': None}.
+            # populate citation — inject CKAN dataset URL into each language's CSL-JSON.
+            # The parser leaves URL='' because ckan.site_url is only accessible here.
             _citation = iso_values.get('citation')
-            if _citation is not None:
+            if isinstance(_citation, dict) and _citation:
+                _pkg_url_base = (
+                    toolkit.config.get('ckan.site_url', '').rstrip('/')
+                    + '/dataset/' + package_dict.get('name', '')
+                )
+                _updated_citation = {}
+                for _lang, _csl_str in _citation.items():
+                    try:
+                        _csl = json.loads(_csl_str)
+                        if isinstance(_csl, list) and _csl:
+                            _csl[0]['URL'] = _pkg_url_base + '?local=' + _lang
+                        _updated_citation[_lang] = json.dumps(_csl, ensure_ascii=False)
+                    except Exception:
+                        _updated_citation[_lang] = _csl_str
+                package_dict['citation'] = _updated_citation
+            elif _citation is not None:
                 package_dict['citation'] = _citation
 
             # populate projects

@@ -41,6 +41,7 @@ NS = {
     "mmi":  "http://standards.iso.org/iso/19115/-3/mmi/1.0",
     "mrd":  "http://standards.iso.org/iso/19115/-3/mrd/1.0",
     "mri":  "http://standards.iso.org/iso/19115/-3/mri/1.0",
+    "mrl":  "http://standards.iso.org/iso/19115/-3/mrl/1.0",
     "mrs":  "http://standards.iso.org/iso/19115/-3/mrs/1.0",
     "srv":  "http://standards.iso.org/iso/19115/-3/srv/2.0",
 }
@@ -488,6 +489,196 @@ def _parse_data_format(el):
     }
 
 
+def _parse_lineage_citation_inner(el, default_lang):
+    """Parse a cit:CI_Citation element for use inside lineage sub-fields.
+
+    Used by additional-documentation, source.citation, and processing-step.reference.
+    Returns a plain dict (callers JSON-encode it before storing).
+
+    Fields extracted:
+        title      — localised citation title ({lang: text})
+        identifier — from cit:identifier/mcc:MD_Identifier
+        url        — link from cit:onlineResource/cit:CI_OnlineResource
+
+    Args:
+        el:           The cit:CI_Citation lxml element.
+        default_lang: Two-letter ISO 639-1 code for the record's default locale.
+    """
+    title_els = _x(el, "cit:title")
+    id_els = _x(el, "cit:identifier/mcc:MD_Identifier")
+    or_els = _x(el, "cit:onlineResource/cit:CI_OnlineResource")
+    title_raw = _localised_raw(title_els[0]) if title_els else {'default': '', 'local': []}
+    return {
+        'title': _local_to_dict(title_raw, default_lang),
+        'identifier': _parse_identifier(id_els[0]) if id_els else {},
+        'url': _text(or_els[0], "cit:linkage/gco:CharacterString/text()") if or_els else '',
+    }
+
+
+def _parse_lineage(el, default_lang):
+    """Parse a mrl:LI_Lineage element into the CIOOS schema repeating_subfields format.
+
+    Returns a dict matching the 'lineage' schema field's repeating_subfields:
+        statment               — {lang: text} for the lineage statement
+                                 (fluent_text preset; note: 'statment' is an
+                                  intentional schema field_name typo)
+        scope                  — MD_ScopeCode string (select preset);
+                                 defaults to 'dataset' when absent
+        additional-documentation — list of JSON-encoded citation dicts
+        source                 — list of JSON-encoded source dicts
+        processing-step        — list of JSON-encoded processing-step dicts
+
+    The nested collections (additional-documentation, source, processing-step)
+    are serialised as JSON strings because their schema subfields use the
+    ``scheming_multiple_text`` input validator + ``scheming_load_json`` output
+    validator: CKAN receives them as strings and decodes them on read-back.
+
+    Args:
+        el:           The mrl:LI_Lineage lxml element.
+        default_lang: Two-letter ISO 639-1 code for the record's default locale.
+    """
+    # XPath spelling is correct ('statement'); 'statment' is the schema typo.
+    stmt_els = _x(el, "mrl:statement")
+    statment = _local_to_dict(
+        _localised_raw(stmt_els[0]) if stmt_els else {'default': '', 'local': []},
+        default_lang,
+    )
+
+    scope = _first_text(el,
+        "mrl:scope/mcc:MD_Scope/mcc:level/mcc:MD_ScopeCode/@codeListValue",
+        "mrl:scope/mcc:MD_Scope/mcc:level/mcc:MD_ScopeCode/text()",
+    ) or 'dataset'
+
+    additional_docs = [
+        json.dumps(_parse_lineage_citation_inner(cit_el, default_lang))
+        for cit_el in _x(el, "mrl:additionalDocumentation/cit:CI_Citation")
+    ]
+
+    sources = []
+    for src_el in _x(el, "mrl:source/mrl:LI_Source"):
+        desc_els = _x(src_el, "mrl:description")
+        desc_raw = _localised_raw(desc_els[0]) if desc_els else {'default': '', 'local': []}
+        cit_els = _x(src_el, "mrl:sourceCitation/cit:CI_Citation")
+        sources.append(json.dumps({
+            'description': _local_to_dict(desc_raw, default_lang),
+            'citation': _parse_lineage_citation_inner(cit_els[0], default_lang) if cit_els else {},
+        }))
+
+    steps = []
+    for step_el in _x(el, "mrl:processStep/mrl:LI_ProcessStep"):
+        desc_els = _x(step_el, "mrl:description")
+        desc_raw = _localised_raw(desc_els[0]) if desc_els else {'default': '', 'local': []}
+        ref_els = _x(step_el, "mrl:reference/cit:CI_Citation")
+        steps.append(json.dumps({
+            'description': _local_to_dict(desc_raw, default_lang),
+            'reference': _parse_lineage_citation_inner(ref_els[0], default_lang) if ref_els else {},
+        }))
+
+    return {
+        'statment': statment,
+        'scope': scope,
+        'additional-documentation': additional_docs,
+        'source': sources,
+        'processing-step': steps,
+    }
+
+
+def _infer_citation(values):
+    """Build a CSL-JSON citation per language for the 'citation' fluent_markdown field.
+
+    Assembles a citation.js-compatible JSON array string per language using
+    data already parsed into ``values``:
+
+    - ``guid``                      → CSL ``id``
+    - ``cited-responsible-party``   → ``author`` list (publisher role excluded)
+    - ``dataset-reference-date``    → ``issued`` (first non-creation date)
+    - ``title`` / ``abstract``      → per-language title / abstract (JSON strings
+                                       after ``_infer_multilingual`` has run)
+    - ``_cit_edition``              → ``edition``  (private key from _parse_document)
+    - ``_cit_edition_date``         → ``edition-date`` (private key from _parse_document)
+    - publisher from cited-responsible-party (publisher role) → ``publisher``
+
+    The ``URL`` field is left empty; plugin.py injects the CKAN dataset URL
+    because ``ckan.site_url`` requires an active CKAN app context.
+
+    Args:
+        values: The iso_values dict (modified in-place).
+    """
+    default_lang = (values.get('metadata-language') or 'en')[:2]
+    guid = values.get('guid', '')
+
+    # Authors: all non-publisher cited-responsible-party entries, deduplicated
+    authors = []
+    publisher = ''
+    seen_authors = set()
+    for party in values.get('cited-responsible-party', []):
+        role = party.get('role') or ''
+        # role is a plain string before _infer_normalize_contact_roles runs
+        role_lower = role.lower() if isinstance(role, str) else ''
+        name = party.get('organisation-name') or party.get('individual-name') or ''
+        if role_lower == 'publisher':
+            if not publisher and name:
+                publisher = name
+        else:
+            if name and name not in seen_authors:
+                authors.append({'literal': name})
+                seen_authors.add(name)
+
+    # Issued: first non-creation dataset-reference-date, fall back to metadata-reference-date
+    issued = []
+    for rd in values.get('dataset-reference-date', []):
+        if (rd.get('type') or '').lower() == 'creation':
+            continue
+        date_str = (rd.get('value') or '')[:10]
+        if date_str:
+            issued = [{'date-parts': date_str.split('-')}]
+            break
+    if not issued:
+        for rd in values.get('metadata-reference-date', []):
+            date_str = (rd.get('value') or '')[:10]
+            if date_str:
+                issued = [{'date-parts': date_str.split('-')}]
+                break
+
+    # title and abstract are JSON strings after _infer_multilingual has run
+    try:
+        titles = json.loads(values.get('title') or '{}')
+    except Exception:
+        titles = {default_lang: ''}
+    try:
+        abstracts = json.loads(values.get('abstract') or '{}')
+    except Exception:
+        abstracts = {default_lang: ''}
+
+    # Pop transient private keys set by _parse_document from the CI_Citation element
+    edition = values.pop('_cit_edition', '') or ''
+    edition_date = values.pop('_cit_edition_date', '') or ''
+
+    all_langs = set(list(titles.keys()) + list(abstracts.keys()))
+    if not all_langs:
+        all_langs = {default_lang}
+
+    citation = {}
+    for lang in sorted(all_langs):
+        csl_obj = {
+            'type': 'dataset',
+            'id': guid,
+            'author': authors,
+            'issued': issued,
+            'abstract': abstracts.get(lang) or abstracts.get(default_lang, ''),
+            'edition': edition,
+            'edition-date': edition_date,
+            'publisher': publisher,
+            'title': titles.get(lang) or titles.get(default_lang, ''),
+            'language': lang,
+            'URL': '',
+        }
+        citation[lang] = json.dumps([csl_obj], ensure_ascii=False)
+
+    if citation:
+        values['citation'] = citation
+
+
 # ---------------------------------------------------------------------------
 # Post-processing functions (infer_* chain)
 # ---------------------------------------------------------------------------
@@ -836,7 +1027,7 @@ def _infer_keyword_types(values):
                      if isinstance(lang_dict, dict) else str(lang_dict))
         except (ValueError, TypeError):
             value = keyword_json
-        if not value:
+        if not value or ktype == 'default':
             continue
         if ktype == 'project' and value not in projects:
             projects.append(value)
@@ -1003,6 +1194,23 @@ def _parse_document(root):
     values['abstract'] = _localised_raw(abstract_els[0]) if abstract_els else {'default': '', 'local': []}
     values['purpose'] = ''
 
+    # Extract edition / edition-date from the resource CI_Citation as transient
+    # private keys.  _infer_citation() (called later in the post-processing
+    # chain) pops these and embeds them into the CSL-JSON citation object.
+    _cit_els = _x(root, _ID + "/mri:citation/cit:CI_Citation")
+    if _cit_els:
+        _cit = _cit_els[0]
+        values['_cit_edition'] = _first_text(_cit,
+            "cit:edition/gco:CharacterString/text()",
+        ) or ''
+        values['_cit_edition_date'] = _first_text(_cit,
+            "cit:editionDate/gco:Date/text()",
+            "cit:editionDate/gco:DateTime/text()",
+        ) or ''
+    else:
+        values['_cit_edition'] = ''
+        values['_cit_edition_date'] = ''
+
     values['responsible-organisation'] = [
         _parse_responsible_party(el) for el in _first_x(root,
             "mdb:contact/cit:CI_Responsibility[cit:party/cit:CI_Organisation]",
@@ -1118,7 +1326,15 @@ def _parse_document(root):
     values['conformity-specification'] = ''
     values['conformity-pass'] = ''
     values['conformity-explanation'] = ''
-    values['lineage'] = ''
+
+    # lineage: list of LI_Lineage dicts.  In ISO 19115-3, lineage lives at
+    # mdb:resourceLineage (a top-level sibling of mdb:identificationInfo),
+    # not inside mdb:dataQualityInfo as in ISO 19139.
+    _lineage_lang = _clean_lang_key(values.get('metadata-language', 'en') or 'en')
+    values['lineage'] = [
+        _parse_lineage(el, _lineage_lang)
+        for el in _x(root, "mdb:resourceLineage/mrl:LI_Lineage")
+    ]
 
     # --- Browse graphic / author ---
     values['browse-graphic'] = [
@@ -1154,6 +1370,7 @@ def _parse_document(root):
     _infer_multilingual(values)
     _infer_temporal_vertical_extent(values)
     _infer_guid(values)
+    _infer_citation(values)
     _infer_resource_types(values)
     _drop_empty(values)
 
