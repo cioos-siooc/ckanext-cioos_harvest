@@ -1025,10 +1025,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictionary ####')
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
 
-            # Package name, default harvester uses title or guid in that order.
-            # we want to reverse that order, so guid or title. Also use english
-            # title only for name
-            title_as_name = self.from_json(package_dict.get('title', '{}')).get('en', package_dict['name'])
+            # Package name: prefer guid over title (reverse of ckanext-spatial default).
+            # Read title from iso_values (the raw parsed values), not package_dict['title'],
+            # because the harvester's get_package_dict() may have already converted the title
+            # to a plain string by the time this ISpatialHarvester callback runs.
+            _title_parsed = self.from_json(iso_values.get('title', '{}'))
+            title_as_name = (
+                _title_parsed.get('en', package_dict['name'])
+                if isinstance(_title_parsed, dict)
+                else (_title_parsed or package_dict['name'])
+            )
             name = munge.munge_name(extras.get('guid', title_as_name)).lower()
             package_dict['name'] = name
 
@@ -1239,15 +1245,30 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             else:
                 package_fn = field_name
 
-            package_val = package_dict.get(package_fn, '')
-            field_value = self.from_json(package_val)
-
-            if isinstance(field_value, dict):  # assume bilingual values already in data
-                package_dict[field_name] = field_value
+            # If WAFHarvesterISO19115_3's fluent handler already set this field
+            # as a multilingual dict, reuse it rather than re-reading the plain
+            # package_fn value.  By the time this plugin callback runs,
+            # package_dict['title'] / ['notes'] have been converted to plain
+            # strings by the harvester, so reading them here would produce a
+            # single-language dict that fails fluent validation.
+            existing = package_dict.get(field_name)
+            if isinstance(existing, dict) and existing:
+                field_value = existing
             else:
-                # create bilingual dictionary. This will likely fail validation as it does not contain all the languages
-                package_dict[field_name] = {}
-                package_dict[field_name][default_language] = field_value
+                field_value = self.from_json(package_dict.get(package_fn, ''))
+
+            schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
+            if isinstance(field_value, dict):
+                result = dict(field_value)
+            else:
+                result = {default_language: field_value}
+            # The fluent validator uses truthiness, so missing or empty-string
+            # values fail.  Fall back to any available non-empty value.
+            fallback = next((v for v in result.values() if v), '')
+            for lang in schema_languages:
+                if not result.get(lang):
+                    result[lang] = fallback
+            package_dict[field_name] = result
 
         handled_fields.append(field_name)
 

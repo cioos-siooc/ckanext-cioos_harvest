@@ -350,12 +350,25 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 package_fn = field_name[:-11]
             else:
                 package_fn = field_name
+            schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
             package_val = package_dict.get(package_fn, '')
             field_value = self.from_json(package_val)
             if isinstance(field_value, dict):
-                package_dict[field_name] = field_value
+                result = dict(field_value)
             else:
-                package_dict[field_name] = {default_language: field_value}
+                result = {default_language[:2]: field_value}
+            # The fluent validator uses truthiness (value.get(lang)), so a missing
+            # or empty-string value for a required language fails validation even
+            # if the key is present.  For harvested records that only carry one
+            # language, fall back to any available non-empty value so the record
+            # is importable.  The fallback is intentional: monolingual records are
+            # common in historical datasets; flagging them as errors would block
+            # the whole harvest.
+            fallback = next((v for v in result.values() if v), '')
+            for lang in schema_languages:
+                if not result.get(lang):
+                    result[lang] = fallback
+            package_dict[field_name] = result
 
         handled_fields.append(field_name)
 
