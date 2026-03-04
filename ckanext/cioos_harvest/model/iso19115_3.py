@@ -1009,6 +1009,14 @@ def _infer_normalize_contact_roles(values):
                 contact['role'] = []
 
 
+# Keyword types that have no dedicated CKAN schema field — their keywords flow
+# through as regular tags via _infer_tags_from_keywords without a warning.
+_TAGS_ONLY_KEYWORD_TYPES = frozenset({
+    'taxa',
+    'Government of Canada Core Subject Thesaurus',
+})
+
+
 def _infer_keyword_types(values):
     """Split keywords by type → keyword-project, keyword-datacentre, projects."""
     keywords = values.get('keywords', [])
@@ -1043,6 +1051,10 @@ def _infer_keyword_types(values):
                 eov_value = value
             if eov_value and eov_value not in eovs:
                 eovs.append(eov_value)
+        elif ktype in _TAGS_ONLY_KEYWORD_TYPES:
+            # Known thesaurus types with no dedicated schema field — keywords
+            # are already captured as regular tags by _infer_tags_from_keywords.
+            pass
         elif ktype:
             log.warning('Unknown keyword type "%s" for keyword "%s". Skipping.', ktype, value)
 
