@@ -128,11 +128,8 @@ def handle_groups(context, harvest_object, group_mapping, group_type, cats = [],
         validated_groups = []
 
         harvest_responsible_organizations = (source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'true').lower()
-        if harvest_responsible_organizations == "true":
-            # Handle org mapping using metadata cited-responsible-party
-            log.info(':::::::::::::-Handle Groups-::::::::::::: %r ', cats)
-        else:
-            log.debug(':::::::::::::-Skipping Handle Groups-::::::::::::: %r ', cats)
+        if harvest_responsible_organizations != "true":
+            log.debug('Skipping Handle Groups: %r ', cats)
             return validated_groups
 
         resp_org_roles = load_json(
@@ -1021,8 +1018,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if 'scheming_datasets' in loaded_plugins:
             # composite = 'composite' in loaded_plugins
             fluent = 'fluent' in loaded_plugins
-
-            log.debug('#### Scheming, Composite, or Fluent extensions found, processing dictionary ####')
             schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
 
             # Package name: prefer guid over title (reverse of ckanext-spatial default).
