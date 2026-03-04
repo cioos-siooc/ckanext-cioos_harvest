@@ -6,6 +6,7 @@ from WAFHarvester.
 """
 
 import logging
+import re
 
 from ckan import model as ckan_model
 from ckan import plugins as p
@@ -18,6 +19,25 @@ import ckanext.spatial.harvesters.base as spatial_base
 from ckanext.cioos_harvest.model.iso19115_3 import ISODocument
 
 log = logging.getLogger(__name__)
+
+# CKAN tag validator allows: alphanumeric, space, and -_.,;'()
+# Characters outside that set are replaced with safe equivalents first,
+# then any remaining disallowed characters are stripped.
+_TAG_REPLACEMENTS = [
+    ('\u2013', '-'),  # en dash  →  hyphen
+    ('\u2014', '-'),  # em dash  →  hyphen
+    ('&',      'and'),
+    (':',      ' -'),
+]
+_TAG_INVALID_RE = re.compile(r"[^\w \-_.,;'()]", re.UNICODE)
+
+
+def _sanitize_tag(text):
+    """Replace/strip characters that CKAN's tag validator rejects."""
+    for char, replacement in _TAG_REPLACEMENTS:
+        text = text.replace(char, replacement)
+    text = _TAG_INVALID_RE.sub('', text)
+    return ' '.join(text.split())  # collapse any double-spaces left behind
 
 
 class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
@@ -361,9 +381,9 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 if isinstance(tobj, dict):
                     for key, value in tobj.items():
                         if key in schema_languages:
-                            field_value[key].append(value)
+                            field_value[key].append(_sanitize_tag(value))
                 else:
-                    field_value[default_language].append(tobj)
+                    field_value[default_language].append(_sanitize_tag(str(tobj)))
             package_dict[field_name] = field_value
             # With fluent_tags active, keywords are stored in the fluent
             # field (e.g. 'keywords') — the plain 'tags' list must be empty.
