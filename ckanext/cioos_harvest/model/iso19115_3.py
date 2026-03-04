@@ -827,8 +827,8 @@ def _infer_spatial(values):
             except Exception:
                 geom = _parse_gml_to_shapely(xml_geom)
                 if geom is None:
-                    log.error('Spatial field is not GeoJSON, WKT, or GML. Cannot convert.')
-                    return
+                    log.warning('Spatial element is not GeoJSON, WKT, or GML — skipping.')
+                    continue
     if geom:
         values['spatial'] = json.dumps(shapely_mapping(geom))
         if not values.get('bbox'):
