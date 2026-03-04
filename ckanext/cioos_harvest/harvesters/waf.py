@@ -209,6 +209,29 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     extras_as_dict.append({'key': key, 'value': value})
             package_dict['extras'] = extras_as_dict
 
+            # Filter eov values against the schema's allowed choices so that
+            # unknown codes (e.g. 'airWaterExchange') produce a warning instead
+            # of a hard validation error that would block the whole record.
+            eov_field = next(
+                (f for f in schema['dataset_fields'] if f['field_name'] == 'eov'),
+                None)
+            if eov_field:
+                valid_eov = {c['value'] for c in eov_field.get('choices', [])}
+                raw_eov = package_dict.get('eov') or []
+                if isinstance(raw_eov, str):
+                    raw_eov = [raw_eov]
+                filtered, skipped = [], []
+                for v in raw_eov:
+                    if v in valid_eov:
+                        filtered.append(v)
+                    else:
+                        skipped.append(v)
+                if skipped:
+                    log.warning(
+                        'Record %s: unknown EOV value(s) %s — skipping (not in schema choices)',
+                        harvest_object.guid, skipped)
+                package_dict['eov'] = filtered or ['other']
+
         # Ensure ecv is always present (schema field, defaults to empty list).
         if 'ecv' not in package_dict:
             package_dict['ecv'] = []
