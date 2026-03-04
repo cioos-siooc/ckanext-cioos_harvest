@@ -67,6 +67,10 @@ def _parse_gml_to_shapely(gml_string):
     """Parse a GML fragment (Polygon/MultiPolygon) to a shapely geometry.
 
     Supports GML 3.1 and GML 3.2 namespaces. Returns a ShapelyPolygon or None.
+
+    Handles two GML coordinate encodings:
+    - gml:posList  — flat space-separated numbers: "x1 y1 x2 y2 ..."
+    - gml:coordinates — comma-separated pairs: "x1,y1 x2,y2 ..."
     """
     GML_NS = ('http://www.opengis.net/gml', 'http://www.opengis.net/gml/3.2')
     try:
@@ -75,17 +79,31 @@ def _parse_gml_to_shapely(gml_string):
     except etree.XMLSyntaxError:
         return None
     for ns in GML_NS:
-        for tag in ('{%s}posList' % ns, '{%s}coordinates' % ns):
-            elem = tree.find('.//' + tag)
-            if elem is not None and elem.text:
-                parts = elem.text.strip().split()
-                try:
-                    coords = [(float(parts[i]), float(parts[i + 1]))
-                              for i in range(0, len(parts) - 1, 2)]
-                    if len(coords) >= 3:
-                        return ShapelyPolygon(coords)
-                except (ValueError, IndexError):
-                    pass
+        # gml:posList — flat space-separated coordinate sequence
+        elem = tree.find('.//{%s}posList' % ns)
+        if elem is not None and elem.text:
+            parts = elem.text.strip().split()
+            try:
+                coords = [(float(parts[i]), float(parts[i + 1]))
+                          for i in range(0, len(parts) - 1, 2)]
+                if len(coords) >= 3:
+                    return ShapelyPolygon(coords)
+            except (ValueError, IndexError):
+                pass
+
+        # gml:coordinates — comma-delimited tuples, space-separated: "lon,lat lon,lat ..."
+        elem = tree.find('.//{%s}coordinates' % ns)
+        if elem is not None and elem.text:
+            try:
+                coords = [
+                    (float(pair.split(',')[0]), float(pair.split(',')[1]))
+                    for pair in elem.text.strip().split()
+                    if ',' in pair
+                ]
+                if len(coords) >= 3:
+                    return ShapelyPolygon(coords)
+            except (ValueError, IndexError):
+                pass
     return None
 
 
@@ -99,16 +117,29 @@ def _x(el, xpath):
 
 
 def _text(el, xpath):
-    """Return the first non-empty string result of an XPath, or ''."""
+    """Return the first non-empty string result of an XPath, or ''.
+
+    All whitespace (including embedded newlines and tabs) is normalised to
+    single spaces so that CKAN tag/field validators never see raw line-break
+    characters from XML text content.
+    """
     for r in _x(el, xpath):
-        if isinstance(r, str) and r.strip():
-            return r.strip()
+        if isinstance(r, str):
+            cleaned = ' '.join(r.split())
+            if cleaned:
+                return cleaned
     return ''
 
 
 def _texts(el, xpath):
-    """Return all non-empty string results as a list."""
-    return [r.strip() for r in _x(el, xpath) if isinstance(r, str) and r.strip()]
+    """Return all non-empty string results as a list, whitespace normalised."""
+    result = []
+    for r in _x(el, xpath):
+        if isinstance(r, str):
+            cleaned = ' '.join(r.split())
+            if cleaned:
+                result.append(cleaned)
+    return result
 
 
 def _first_x(el, *xpaths):
@@ -1297,7 +1328,7 @@ def _parse_document(root):
             _ID + "/mri:extent/gex:EX_Extent/gex:geographicElement/gex:EX_GeographicBoundingBox")
     ]
     spatial_nodes = _x(root,
-        _ID + "/mri:extent/gex:EX_Extent/gex:geographicElement/gex:EX_BoundingPolygon/gex:polygon/node()")
+        _ID + "/mri:extent/gex:EX_Extent/gex:geographicElement/gex:EX_BoundingPolygon/gex:polygon/*")
     values['spatial'] = [
         etree.tostring(node) if not isinstance(node, str) else node
         for node in spatial_nodes
