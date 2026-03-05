@@ -326,9 +326,10 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             package_dict['license_id'] = (
                 iso_values.get('legal-constraints-reference-code')
                 or iso_values.get('use-constraints')
-                or 'CC-BY-4.0'
+                or ''
             )
-
+            if not package_dict['license_id']:
+                log.warning('No license_id found.')
         # Resolve license_title and license_url from CKAN's license register.
         license_id = package_dict.get('license_id')
         if license_id:

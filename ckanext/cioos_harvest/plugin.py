@@ -1040,7 +1040,9 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate license_id
             if not package_dict.get('license_id'):
-                package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or 'CC-BY-4.0'
+                package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or ''
+                if not package_dict['license_id']:
+                    log.warning('No license_id found.')
 
             # populate citation — inject CKAN dataset URL into each language's CSL-JSON.
             # The parser leaves URL='' because ckan.site_url is only accessible here.
