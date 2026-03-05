@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import logging
 import hashlib
+import unicodedata
 
 import requests
 from sqlalchemy.orm import aliased
@@ -22,19 +23,25 @@ import ckanext.harvest.queue as queue
 from ckanext.spatial.harvesters.waf import WAFHarvester
 from ckanext.harvest.queue import get_connection_redis
 
+from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
+
 from lxml import etree
 
 import boto3
 from copy import deepcopy
-import unicodedata
 
 log = logging.getLogger(__name__)
 
 
-class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
+class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     '''
-    A Harvester for WAF (Web Accessible Folders) containing spatial metadata documents.
-    e.g. Apache serving a directory of ISO 19139 files.
+    A Harvester for DataStream's ISO 19115-2 sitemap.
+
+    Inherits CIOOS field handling (scheming/fluent/composite) from
+    WAFHarvesterISO19115_3 but uses ckanext-spatial's standard ISODocument
+    parser (not the ISO 19115-3 parser) and adds DataStream-specific
+    processing: DOI normalization, AWS Translate auto-translation, and a
+    single "Access DataStream" resource.
     '''
 
     implements(IHarvester)
@@ -53,122 +60,361 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
             'title': 'Sitemap Harvester for datastream ISO19115-2',
             'description': 'site map listing datasets urls with avilable iso19115-2 xml'
         }
-    
+
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
+    def _validate_document(self, document_string, harvest_object, validator=None):
+        """Skip XSD validation — DataStream ISO 19115-2 documents use gmi:MI_Metadata
+        which is not covered by the ISO 19139 schemas bundled with ckanext-spatial."""
+        log.debug('Skipping XSD validation for DataStream harvester (GUID: %s)',
+                  harvest_object.guid)
+        return True, None, []
+
+    def validate_config(self, source_config):
+        """Strip validator_profiles before base validation — this harvester skips XSD validation."""
+        if source_config:
+            try:
+                config_obj = json.loads(source_config)
+                if 'validator_profiles' in config_obj:
+                    log.info(
+                        'DatastreamSitemapHarvester: ignoring validator_profiles %s '
+                        '(XSD validation is skipped for this harvester)',
+                        config_obj['validator_profiles'])
+                    config_obj.pop('validator_profiles')
+                    source_config = json.dumps(config_obj)
+            except ValueError:
+                pass
+        return super(DatastreamSitemapHarvester, self).validate_config(source_config)
+
+    # ------------------------------------------------------------------
+    # Import stage — skip ISO 19115-3 monkey-patch
+    # ------------------------------------------------------------------
+
+    def import_stage(self, harvest_object):
+        """Use standard ckanext-spatial ISODocument (not the ISO 19115-3 parser).
+
+        WAFHarvesterISO19115_3.import_stage() monkey-patches spatial_base.ISODocument
+        with the custom ISO 19115-3 parser.  DataStream XML is ISO 19115-2
+        (gmi:MI_Metadata) and must be parsed by the standard ISODocument, so we
+        bypass that monkey-patch by calling WAFHarvester.import_stage directly.
+        """
+        return WAFHarvester.import_stage(self, harvest_object)
+
+    # ------------------------------------------------------------------
+    # Translation
+    # ------------------------------------------------------------------
+
     def translate_string(self, redis_conn, string_to_translate, source_lang='en', target_lang='fr'):
-        store_name = '%s_%s_to_%s' % (self.redis_translation_store,source_lang,target_lang)
+        store_name = '%s_%s_to_%s' % (self.redis_translation_store, source_lang, target_lang)
         # check for string in redis
-        redis_trans = redis_conn.hget(store_name,string_to_translate)
-        if redis_trans: 
+        redis_trans = redis_conn.hget(store_name, string_to_translate)
+        if redis_trans:
             # replace non-breaking white space
-            redis_trans = redis_trans.replace(u'\u00A0',' ')
+            redis_trans = redis_trans.replace(u'\u00A0', ' ')
             log.debug('"%s" found in cache', string_to_translate)
             return redis_trans
 
         # if not exists, call aws translate
-        try:      
+        try:
             translate = boto3.client(service_name='translate', use_ssl=True)
             aws_trans_obj = translate.translate_text(Text=string_to_translate, SourceLanguageCode=source_lang, TargetLanguageCode=target_lang)
             aws_trans = aws_trans_obj.get('TranslatedText')
             # replace non-breaking white space
-            aws_trans = aws_trans.replace(u'\u00A0',' ')
-            
+            aws_trans = aws_trans.replace(u'\u00A0', ' ')
+
             # save translation to redis
             if aws_trans:
                 log.debug('"%s" saved to cache', string_to_translate)
-                redis_conn.hset(store_name, mapping={string_to_translate:aws_trans})
+                redis_conn.hset(store_name, mapping={string_to_translate: aws_trans})
                 return aws_trans
         except Exception as e:
-              log.error('Could not translate text %s : %e', string_to_translate, e)
+            log.error('Could not translate text "%s": %s', string_to_translate[:80], e)
 
         return None
 
+    # ------------------------------------------------------------------
+    # DOI normalisation
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalise_doi_url(identifier):
+        """Return *identifier* as a fully-qualified HTTPS URL.
+
+        DataStream XML sometimes stores the identifier as a bare DOI path
+        (e.g. ``10.25976/rbmo-8i70``) rather than a full URL.  Everything
+        downstream (resource URL, citation, unique-resource-identifier-full)
+        needs a proper URL, so we normalise here.
+
+        Rules (applied in order):
+        1. Already a URL (starts with ``http://`` or ``https://``) — return
+           as-is (but upgrade http → https for consistency).
+        2. Starts with ``doi:`` — strip the prefix and prepend
+           ``https://doi.org/``.
+        3. Anything else — assume it is a bare DOI path and prepend
+           ``https://doi.org/``.
+        """
+        if not identifier:
+            return identifier
+        identifier = identifier.strip()
+        if identifier.lower().startswith('https://'):
+            return identifier
+        if identifier.lower().startswith('http://'):
+            return 'https://' + identifier[7:]
+        if identifier.lower().startswith('doi:'):
+            return 'https://doi.org/' + identifier[4:]
+        # bare DOI path or anything else
+        log.debug('DataStream: normalising bare identifier to DOI URL: %s', identifier)
+        return 'https://doi.org/' + identifier
+
+    # ------------------------------------------------------------------
+    # Package dict construction
+    # ------------------------------------------------------------------
+
     def get_package_dict(self, iso_values, harvest_object):
-
         log.debug(" *** in waf_Datastream get_package_dict")
-        package_dict = super(DatastreamSitemapHarvester, self).get_package_dict(iso_values, harvest_object)
 
-        # All DataStream datasets have a DOI so we use that to populate the citation
-        iso_values["citation"] = '{"fr": "%s", "en": "%s"}' % (iso_values['unique-resource-identifier'], iso_values['unique-resource-identifier'])
-        package_dict['unique-resource-identifier-full'] = []
-        package_dict['unique-resource-identifier-full'].append({'code': iso_values['unique-resource-identifier']})
+        # ----------------------------------------------------------------
+        # Step 1 — Normalize language code (3-letter → 2-letter)
+        # ----------------------------------------------------------------
+        # ckanext-spatial returns 'eng' from gmd:LanguageCode; the CIOOS
+        # select field only accepts 'en' or 'fr'.
+        if iso_values.get('metadata-language'):
+            iso_values['metadata-language'] = iso_values['metadata-language'][:2]
 
-        # TODO: determin if we can set EOV to something useful
-        if not package_dict.get("eov"):
-            package_dict["eov"] = ["other"]
+        primary_lang = (iso_values.get('metadata-language') or 'en')[:2]
 
-        # call check redis for translation, call Amazon translate if needed and cache results in redis
+        # ----------------------------------------------------------------
+        # Step 2 — Normalise the DOI identifier to a full HTTPS URL
+        # ----------------------------------------------------------------
+        if iso_values.get('unique-resource-identifier'):
+            iso_values['unique-resource-identifier'] = self._normalise_doi_url(
+                iso_values['unique-resource-identifier'])
+        doi_url = iso_values.get('unique-resource-identifier', '')
+
         redis_conn = get_connection_redis()
-       
-        # suppress tags in iso_values as we are using keywords
-        if iso_values.get('tags'):
-            iso_values['tags'] = []
 
-        # Keywords auto translated
-        # in some cases there are no keywords at all
-        if iso_values.get('keywords'):
-            for item in iso_values['keywords']:
-                keyword = json.loads(item.get('keyword','{}'))  
-                en_string = None  
-                fr_string = None    
-                if isinstance(keyword, dict):
-                    en_string = keyword.get('en')
-                    fr_string = keyword.get('fr')
+        # ----------------------------------------------------------------
+        # Step 3 — Translate keywords and build iso_values['tags']
+        # ----------------------------------------------------------------
+        # The fluent_tags handler in WAFHarvesterISO19115_3 reads from
+        # iso_values['tags'] to produce package_dict['keywords'] as a flat
+        # dict {"en": [...], "fr": [...]}.  We build translated tag strings
+        # here so that handler receives bilingual entries.
+        #
+        # Save the original keyword items before clearing 'tags' — we need
+        # them after super() resets things.
+        original_keywords = iso_values.get('keywords', [])
+
+        translated_tags = []
+        has_translation = False
+        for item in original_keywords:
+            keyword_raw = item.get('keyword', [])
+            if not isinstance(keyword_raw, list):
+                keyword_raw = [keyword_raw]
+
+            for kw_raw in keyword_raw:
+                if isinstance(kw_raw, bytes):
+                    kw_raw = kw_raw.decode('utf-8')
+                try:
+                    kw_obj = json.loads(kw_raw)
+                    if not isinstance(kw_obj, dict):
+                        kw_obj = str(kw_obj)
+                except (ValueError, TypeError):
+                    kw_obj = kw_raw
+
+                if isinstance(kw_obj, dict):
+                    en_str = kw_obj.get('en', '') or ''
+                    fr_str = kw_obj.get('fr', '') or ''
+                    if isinstance(en_str, list):
+                        en_str = en_str[0] if en_str else ''
+                    if isinstance(fr_str, list):
+                        fr_str = fr_str[0] if fr_str else ''
                 else:
-                    en_string = keyword
+                    en_str = str(kw_obj) if kw_obj else ''
+                    fr_str = ''
 
-                if en_string and not fr_string:
-                    en_string = en_string.replace('"','')
-                    en_string = unicodedata.normalize("NFKD", en_string)
-                    fr_string = self.translate_string(redis_conn, en_string, 'en', 'fr')
-                    item['keyword'] = '{"en": "%s", "fr": "%s"}' % (en_string,fr_string)
-                    package_dict['keywords_translation_method'] = json.dumps({'en':'', 'fr':'Keyword ' + self.translation_method_text})
-                elif fr_string and not en_string:
-                    fr_string = fr_string.replace('"','')
-                    fr_string = unicodedata.normalize("NFKD", fr_string)
-                    en_string = self.translate_string(redis_conn, fr_string, 'fr', 'en')
-                    item['keyword'] = '{"en": "%s", "fr": "%s"}' % (en_string,fr_string)
-                    package_dict['keywords_translation_method'] = json.dumps({'fr':'', 'en':'Keyword ' + self.translation_method_text})
-        else:
-            iso_values['keywords'] = [{'keyword': '{"en": "other", "fr": "autre"}', 'type': ''}]
+                if en_str and not fr_str:
+                    en_str = unicodedata.normalize("NFKD", en_str.replace('"', ''))
+                    fr_str = self.translate_string(redis_conn, en_str, 'en', 'fr') or en_str
+                    has_translation = True
+                elif fr_str and not en_str:
+                    fr_str = unicodedata.normalize("NFKD", fr_str.replace('"', ''))
+                    en_str = self.translate_string(redis_conn, fr_str, 'fr', 'en') or fr_str
+                    has_translation = True
 
-        # Title auto translated
-        title = json.loads(package_dict["title"])
-        if title.get('en') and not title.get('fr'):
-            title['fr'] = self.translate_string(redis_conn, title['en'] , 'en', 'fr')
-            package_dict["title"] = json.dumps(title)
-            package_dict['title_translation_method'] = json.dumps({'en':'', 'fr':'Title ' + self.translation_method_text})
-        elif title.get('fr') and not title.get('en'):
-            title['en'] = self.translate_string(redis_conn, title['fr'] , 'fr', 'en')
-            package_dict["title"] = json.dumps(title)
-            package_dict['title_translation_method'] = json.dumps({'fr':'', 'en':'Title ' + self.translation_method_text})
+                if en_str or fr_str:
+                    translated_tags.append(json.dumps({'en': en_str, 'fr': fr_str}))
 
-        # Description auto translated
-        notes = json.loads(package_dict["notes"])
-        if notes.get('en') and not notes.get('fr'):
-            notes['fr'] = self.translate_string(redis_conn, notes['en'] , 'en', 'fr')
-            package_dict["notes"] = json.dumps(notes)
-            package_dict['notes_translation_method'] = json.dumps({'en':'', 'fr':'Description ' + self.translation_method_text})
-        elif notes.get('fr') and not notes.get('en'):
-            notes['en'] = self.translate_string(redis_conn, notes['fr'] , 'fr', 'en')
-            package_dict["notes"] = json.dumps(notes)
-            package_dict['notes_translation_method'] = json.dumps({'fr':'', 'en':'Description ' + self.translation_method_text})
+        if not translated_tags:
+            translated_tags = [json.dumps({'en': 'other', 'fr': 'autre'})]
 
-        # Datastream does not provide a download link in there metadata so we are
-        # adding their dataset metadata page as a resource instead.
+        # Replace iso_values['tags'] with our translated bilingual entries.
+        # The spatial base's tag processing expects dicts with a 'name' key;
+        # it would fail on our JSON strings.  WAFHarvesterISO19115_3 calls
+        # super().get_package_dict() first (which processes tags as dicts),
+        # then runs the fluent handler which reads iso_values['tags'] directly.
+        # We store the bilingual tags in a separate key and inject them into
+        # iso_values['tags'] AFTER super() to avoid breaking the spatial base.
+        iso_values['_datastream_tags'] = translated_tags
+        iso_values['tags'] = []  # suppress spatial base tag processing
+
+        if has_translation:
+            iso_values['keywords_translation_method'] = {
+                'en': '', 'fr': 'Keyword ' + self.translation_method_text}
+
+        # ----------------------------------------------------------------
+        # Step 4 — Translate title
+        # ----------------------------------------------------------------
+        title_raw = iso_values.get('title', '')
+        if isinstance(title_raw, str) and not title_raw.strip().startswith('{'):
+            en_title = title_raw
+            fr_title = self.translate_string(redis_conn, en_title, 'en', 'fr') or en_title
+            # Store as JSON dict — WAFHarvesterISO19115_3 decodes it for
+            # both the plain title and the title_translated fluent field.
+            iso_values['title'] = json.dumps({'en': en_title, 'fr': fr_title})
+            iso_values['title_translation_method'] = {
+                'en': '', 'fr': 'Title ' + self.translation_method_text}
+
+        # ----------------------------------------------------------------
+        # Step 5 — Translate abstract/notes
+        # ----------------------------------------------------------------
+        abstract_raw = iso_values.get('abstract', '')
+        if isinstance(abstract_raw, str) and not abstract_raw.strip().startswith('{'):
+            en_abstract = abstract_raw
+            fr_abstract = self.translate_string(redis_conn, en_abstract, 'en', 'fr') or en_abstract
+            iso_values['abstract'] = json.dumps({'en': en_abstract, 'fr': fr_abstract})
+            iso_values['abstract_translation_method'] = {
+                'en': '', 'fr': 'Description ' + self.translation_method_text}
+
+        # ----------------------------------------------------------------
+        # Step 6 — CIOOS field handling via WAFHarvesterISO19115_3
+        # ----------------------------------------------------------------
+        # This runs: _expand_point_bboxes, spatial base get_package_dict,
+        # scheming/fluent/composite field handlers, license resolution,
+        # ecv, metadata_created/modified, title/notes plain-string override.
+        package_dict = super(DatastreamSitemapHarvester, self).get_package_dict(
+            iso_values, harvest_object)
+
+        # ----------------------------------------------------------------
+        # Step 7 — Inject translated keywords
+        # ----------------------------------------------------------------
+        # Now that super() has run, inject our pre-translated tags into
+        # iso_values['tags'] and re-run the fluent_tags handler manually
+        # to produce the correct {"en": [...], "fr": [...]} format.
+        iso_values['tags'] = iso_values.pop('_datastream_tags', [])
+        from ckan import plugins as p
+        loaded_plugins = p.toolkit.config.get("ckan.plugins", "")
+        if 'scheming_datasets' in loaded_plugins and 'fluent' in loaded_plugins:
+            schema = p.toolkit.h.scheming_get_dataset_schema('dataset')
+            from ckanext.cioos_harvest.harvesters.waf import _sanitize_tag
+            schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
+            kw_field_value = {lang: [] for lang in schema_languages}
+            for t in iso_values['tags']:
+                tobj = self.from_json(t)
+                if isinstance(tobj, dict):
+                    for key, value in tobj.items():
+                        if key in schema_languages:
+                            kw_field_value[key].append(_sanitize_tag(value))
+                else:
+                    kw_field_value[primary_lang].append(_sanitize_tag(str(tobj)))
+            package_dict['keywords'] = kw_field_value
+        package_dict['tags'] = []
+
+        # ----------------------------------------------------------------
+        # Step 8 — Fix name / id from DOI path
+        # ----------------------------------------------------------------
+        # WAFHarvesterISO19115_3 derives name from guid.replace('.', '-')
+        # which leaves '/' un-replaced.  DataStream GUIDs are bare DOI
+        # paths (e.g. '10.25976/30dz-8f05') so we replace both '.' and '/'.
+        guid = iso_values.get('guid', '')
+        if guid:
+            name = guid.replace('.', '-').replace('/', '-')
+            package_dict['name'] = name
+            package_dict['id'] = name
+
+        # ----------------------------------------------------------------
+        # Step 9 — Citation as a bilingual dict
+        # ----------------------------------------------------------------
+        package_dict['citation'] = {'en': doi_url, 'fr': doi_url}
+
+        # ----------------------------------------------------------------
+        # Step 10 — unique-resource-identifier-full
+        # ----------------------------------------------------------------
+        package_dict['unique-resource-identifier-full'] = [{'code': doi_url}]
+
+        # ----------------------------------------------------------------
+        # Step 11 — Single "Access DataStream" resource
+        # ----------------------------------------------------------------
         package_dict['resources'] = [
             {
-                'url': iso_values['unique-resource-identifier'],
-                'name': "Access DataStream",
+                'url': doi_url,
+                'name': 'Access DataStream',
+                'name_translated': {'en': 'Access DataStream'},
                 'description': '',
+                'description_translated': {},
+                'format': 'HTML',
                 'resource_locator_protocol': '',
-                'resource_locator_function': r'',
+                'resource_locator_function': '',
             }]
 
+        # ----------------------------------------------------------------
+        # Step 12 — projects (mirrors plugin.py logic for standalone use)
+        # ----------------------------------------------------------------
+        if 'projects' not in package_dict:
+            package_dict['projects'] = iso_values.get('keyword-project', [])
 
-        # End of processing, return the modified package
+        # ----------------------------------------------------------------
+        # Step 13 — temporal-extent as a top-level list with date-only values
+        # ----------------------------------------------------------------
+        # ckanext-spatial's SpatialHarvester stores temporal extent as two
+        # separate extras ('temporal-extent-begin', 'temporal-extent-end')
+        # with full ISO datetime strings.  The CIOOS portal expects a
+        # top-level list of {'begin': 'YYYY-MM-DD', 'end': 'YYYY-MM-DD'}.
+        # Build this from iso_values (preferred) or fall back to extras.
+        if not package_dict.get('temporal-extent'):
+            te_raw = iso_values.get('temporal-extent', [])
+            if te_raw:
+                entries = []
+                for ex in te_raw:
+                    entry = {}
+                    if ex.get('begin'):
+                        entry['begin'] = ex['begin'][:10]
+                    if ex.get('end'):
+                        entry['end'] = ex['end'][:10]
+                    if entry:
+                        entries.append(entry)
+                if entries:
+                    package_dict['temporal-extent'] = entries
+            else:
+                # Fall back to the extras that ckanext-spatial added
+                begin = end = ''
+                kept_extras = []
+                for e in package_dict.get('extras', []):
+                    if e['key'] == 'temporal-extent-begin':
+                        begin = (e['value'] or '')[:10]
+                    elif e['key'] == 'temporal-extent-end':
+                        end = (e['value'] or '')[:10]
+                    else:
+                        kept_extras.append(e)
+                if begin or end:
+                    package_dict['temporal-extent'] = [{'begin': begin, 'end': end}]
+                    package_dict['extras'] = kept_extras
+
+        # ----------------------------------------------------------------
+        # Step 14 — EOV default
+        # ----------------------------------------------------------------
+        if not package_dict.get('eov'):
+            package_dict['eov'] = ['other']
+
         return package_dict
 
-    def gather_stage(self,harvest_job,collection_package_id=None):
+    # ------------------------------------------------------------------
+    # Gather stage
+    # ------------------------------------------------------------------
+
+    def gather_stage(self, harvest_job, collection_package_id=None):
         log = logging.getLogger(__name__ + '.WAF.gather')
         log.debug('WafHarvester gather_stage for job: %r', harvest_job)
 
@@ -179,22 +425,10 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
 
         self._set_source_config(harvest_job.source.config)
 
-        # # Get contents
-        # try:
-        #     response = requests.get(source_url, timeout=60)
-        #     response.raise_for_status()
-        # except requests.exceptions.RequestException as e:
-        #     self._save_gather_error('Unable to get content for URL: %s: %r' % \
-        #                                 (source_url, e),harvest_job)
-        #     return None
-        #
-        # content = response.content
-
-
         ######  Get current harvest object out of db ######
 
-        url_to_modified_db = {} ## mapping of url to last_modified in db
-        url_to_ids = {} ## mapping of url to guid in db
+        url_to_modified_db = {}  ## mapping of url to last_modified in db
+        url_to_ids = {}  ## mapping of url to guid in db
 
 
         HOExtraAlias1 = aliased(HOExtra)
@@ -221,7 +455,7 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
             sitemap_response.raise_for_status()
         except requests.exceptions.RequestException as e:
             self._save_gather_error('Unable to get content for URL: %s: %r' % \
-                                        (source_url, e),harvest_job)
+                                        (source_url, e), harvest_job)
             return None
 
         sitemape_content = sitemap_response.text
@@ -230,7 +464,7 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
         sitemap_tree = etree.fromstring(str.encode(sitemape_content))
 
         # using dataset urls, generate url to xml metadata files. aka add /iso19115.xml to end
-        url_to_modified_harvest = {} ## mapping of url to last_modified in harvest
+        url_to_modified_harvest = {}  ## mapping of url to last_modified in harvest
         try:
             for url_node in sitemap_tree.findall(".//{http://www.sitemaps.org/schemas/sitemap/0.9}url"):
                 loc_node = url_node.find(".//{http://www.sitemaps.org/schemas/sitemap/0.9}loc")
@@ -272,7 +506,7 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
 
         ids = []
         for location in new:
-            guid=hashlib.md5(location.encode('utf8','ignore')).hexdigest()
+            guid = hashlib.md5(location.encode('utf8', 'ignore')).hexdigest()
             obj = HarvestObject(job=harvest_job,
                                 extras=create_extras(location,
                                                      url_to_modified_harvest[location],
@@ -295,7 +529,7 @@ class DatastreamSitemapHarvester(WAFHarvester, SingletonPlugin):
 
         for location in delete:
             obj = HarvestObject(job=harvest_job,
-                                extras=create_extras('','', 'delete'),
+                                extras=create_extras('', '', 'delete'),
                                 guid=url_to_ids[location][0],
                                 package_id=url_to_ids[location][1],
                                )

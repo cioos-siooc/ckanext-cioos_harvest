@@ -1141,6 +1141,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         for key, value in extras.items():
             if package_dict.get(key, ''):
                 log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+                continue  # already stored as a schema field; adding it to extras too would
+                           # trigger CKAN's "There is a schema field with the same name" error
             if isinstance(value, (list, dict)):
                 extras_as_list.append({'key': key, 'value': json.dumps(value)})
             else:
@@ -1282,6 +1284,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         handled_fields.append(field_name)
 
     def flatten_composite_keys(self, obj, new_obj={}, keys=[]):
+        if not isinstance(obj, dict):
+            return new_obj
         for key, value in obj.items():
             if isinstance(value, dict):
                 self.flatten_composite_keys(obj[key], new_obj, keys + [key])
@@ -1303,6 +1307,17 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 field_value = [field_value]
 
             for idx, subitem in enumerate(field_value):
+                # lxml can yield bytes; try to decode + parse before flattening
+                if isinstance(subitem, (bytes, str)) and not isinstance(subitem, bool):
+                    try:
+                        subitem_str = subitem.decode('utf-8') if isinstance(subitem, bytes) else subitem
+                        subitem = json.loads(subitem_str)
+                    except (ValueError, TypeError):
+                        pass
+                if not isinstance(subitem, dict):
+                    log.warning('Skipping non-dict subitem for composite field %s (got %s)',
+                                field_name, type(subitem).__name__)
+                    continue
                 # collapse subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem, {}, [])
                 for key, value in subitem.items():

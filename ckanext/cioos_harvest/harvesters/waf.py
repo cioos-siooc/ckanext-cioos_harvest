@@ -69,6 +69,22 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # Validation
     # ------------------------------------------------------------------
 
+    def validate_config(self, source_config):
+        """Strip validator_profiles before base validation — this harvester skips XSD validation."""
+        if source_config:
+            try:
+                config_obj = json.loads(source_config)
+                if 'validator_profiles' in config_obj:
+                    log.info(
+                        'WAFHarvesterISO19115_3: ignoring validator_profiles %s '
+                        '(XSD validation is skipped for this harvester)',
+                        config_obj['validator_profiles'])
+                    config_obj.pop('validator_profiles')
+                    source_config = json.dumps(config_obj)
+            except ValueError:
+                pass
+        return super(WAFHarvesterISO19115_3, self).validate_config(source_config)
+
     def _validate_document(self, document_string, harvest_object, validator=None):
         """Skip ISO 19139 XSD validation — this harvester is ISO 19115-3 only."""
         log.debug('Skipping XSD validation for ISO 19115-3 harvester (GUID: %s)',

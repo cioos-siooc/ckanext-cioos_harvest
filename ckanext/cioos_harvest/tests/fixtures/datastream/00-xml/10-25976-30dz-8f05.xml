@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gmi:MI_Metadata
+        xmlns="http://www.isotc211.org/2005/gmi"
+        xmlns:srv="http://www.isotc211.org/2005/srv"
+        xmlns:gmx="http://www.isotc211.org/2005/gmx"
+        xmlns:gsr="http://www.isotc211.org/2005/gsr"
+        xmlns:gss="http://www.isotc211.org/2005/gss"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema"
+        xmlns:gts="http://www.isotc211.org/2005/gts"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xmlns:gml="http://www.opengis.net/gml/3.2"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+        xmlns:gco="http://www.isotc211.org/2005/gco"
+        xmlns:gmd="http://www.isotc211.org/2005/gmd"
+        xmlns:gmi="http://www.isotc211.org/2005/gmi"
+        xsi:schemaLocation="http://www.isotc211.org/2005/gmi https://www.ngdc.noaa.gov/metadata/published/xsd/schema.xsd">
+    <gmd:fileIdentifier>
+        <gco:CharacterString>10.25976/30dz-8f05</gco:CharacterString>
+    </gmd:fileIdentifier>
+    <gmd:language>
+        <gmd:LanguageCode
+                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#LanguageCode"
+                codeListValue="eng">en-CA
+        </gmd:LanguageCode>
+    </gmd:language>
+    <gmd:characterSet>
+        <gmd:MD_CharacterSetCode
+                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode"
+                codeListValue="UTF8">UTF8
+        </gmd:MD_CharacterSetCode>
+    </gmd:characterSet>
+    <gmd:hierarchyLevel>
+        <gmd:MD_ScopeCode
+                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ScopeCode"
+                codeListValue="dataset">dataset
+        </gmd:MD_ScopeCode>
+    </gmd:hierarchyLevel>
+
+    <gmd:contact>
+        <gmd:CI_ResponsibleParty>
+            <gmd:contactInfo>
+                <gmd:CI_Contact>
+                    <gmd:address>
+                        <gmd:CI_Address>
+                            <gmd:electronicMailAddress>
+                                <gco:CharacterString>director.tech@beaufortwater.org</gco:CharacterString>
+                            </gmd:electronicMailAddress>
+                        </gmd:CI_Address>
+                    </gmd:address>
+                </gmd:CI_Contact>
+            </gmd:contactInfo>
+            <gmd:role>
+                <gmd:CI_RoleCode
+                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_RoleCode"
+                        codeListValue="pointOfContact">pointOfContact
+                </gmd:CI_RoleCode>
+            </gmd:role>
+        </gmd:CI_ResponsibleParty>
+    </gmd:contact>
+
+    <gmd:dateStamp>
+        <gco:DateTime>2026-02-06T00:29:15.734Z</gco:DateTime>
+    </gmd:dateStamp>
+    <gmd:metadataStandardName>
+        <gco:CharacterString>ISO 19115-2 Geographic Information - Metadata Part 2 Extensions for Imagery and Gridded
+            Data
+        </gco:CharacterString>
+    </gmd:metadataStandardName>
+    <gmd:metadataStandardVersion>
+        <gco:CharacterString>ISO 19115-2:2019(E)</gco:CharacterString>
+    </gmd:metadataStandardVersion>
+
+    <gmd:spatialRepresentationInfo>
+        <gmd:MD_GridSpatialRepresentation>
+            <gmd:numberOfDimensions>
+                <gco:Integer>4</gco:Integer>
+            </gmd:numberOfDimensions>
+            <gmd:axisDimensionProperties>
+                <gmd:MD_Dimension>
+                    <gmd:dimensionName>
+                        <gmd:MD_DimensionNameTypeCode
+                                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_DimensionNameTypeCode"
+                                codeListValue="column">column
+                        </gmd:MD_DimensionNameTypeCode>
+                    </gmd:dimensionName>
+                    <gmd:dimensionSize gco:nilReason="unknown"/>
+                </gmd:MD_Dimension>
+            </gmd:axisDimensionProperties>
+            <gmd:axisDimensionProperties>
+                <gmd:MD_Dimension>
+                    <gmd:dimensionName>
+                        <gmd:MD_DimensionNameTypeCode
+                                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_DimensionNameTypeCode"
+                                codeListValue="row">row
+                        </gmd:MD_DimensionNameTypeCode>
+                    </gmd:dimensionName>
+                    <gmd:dimensionSize gco:nilReason="unknown"/>
+                </gmd:MD_Dimension>
+            </gmd:axisDimensionProperties>
+            <gmd:axisDimensionProperties>
+                <gmd:MD_Dimension>
+                    <gmd:dimensionName>
+                        <gmd:MD_DimensionNameTypeCode
+                                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_DimensionNameTypeCode"
+                                codeListValue="vertical">vertical
+                        </gmd:MD_DimensionNameTypeCode>
+                    </gmd:dimensionName>
+                    <gmd:dimensionSize gco:nilReason="unknown"/>
+                </gmd:MD_Dimension>
+            </gmd:axisDimensionProperties>
+            <gmd:axisDimensionProperties>
+                <gmd:MD_Dimension>
+                    <gmd:dimensionName>
+                        <gmd:MD_DimensionNameTypeCode
+                                codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_DimensionNameTypeCode"
+                                codeListValue="temporal">temporal
+                        </gmd:MD_DimensionNameTypeCode>
+                    </gmd:dimensionName>
+                    <gmd:dimensionSize gco:nilReason="unknown"/>
+                </gmd:MD_Dimension>
+            </gmd:axisDimensionProperties>
+            <gmd:cellGeometry>
+                <gmd:MD_CellGeometryCode codeList="" codeListValue="" codeSpace=""/>
+            </gmd:cellGeometry>
+            <gmd:transformationParameterAvailability gco:nilReason="unknown"/>
+        </gmd:MD_GridSpatialRepresentation>
+    </gmd:spatialRepresentationInfo>
+
+    <gmd:identificationInfo>
+        <gmd:MD_DataIdentification id="DataIdentification">
+            <gmd:citation>
+                <gmd:CI_Citation>
+                    <gmd:title>
+                        <gco:CharacterString>Beaufort Watershed Stewards Water Quality Monitoring Data</gco:CharacterString>
+                    </gmd:title>
+                    <gmd:date>
+                        <gmd:CI_Date>
+                            <gmd:date>
+                                <gco:DateTime>2023-01-19T20:54:15.592Z</gco:DateTime>
+                            </gmd:date>
+                            <gmd:dateType>
+                                <gmd:CI_DateTypeCode
+                                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_DateTypeCode"
+                                        codeListValue="publication">publication
+                                </gmd:CI_DateTypeCode>
+                            </gmd:dateType>
+                        </gmd:CI_Date>
+                    </gmd:date>
+                    <gmd:date>
+                        <gmd:CI_Date>
+                            <gmd:date>
+                                <gco:DateTime>2026-02-06T00:29:15.734Z</gco:DateTime>
+                            </gmd:date>
+                            <gmd:dateType>
+                                <gmd:CI_DateTypeCode
+                                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_DateTypeCode"
+                                        codeListValue="revision">revision
+                                </gmd:CI_DateTypeCode>
+                            </gmd:dateType>
+                        </gmd:CI_Date>
+                    </gmd:date>
+                    
+                    <gmd:identifier>
+                        <gmd:MD_Identifier>
+                            <gmd:authority>
+                                <gmd:CI_Citation>
+                                    <gmd:title>
+                                        <gco:CharacterString>Beaufort Watershed Stewards. 2026. "Beaufort Watershed Stewards Water Quality Monitoring Data" (dataset). 6.4.0. DataStream. https://doi.org/10.25976/30dz-8f05.</gco:CharacterString>
+                                    </gmd:title>
+                                    <gmd:date gco:nilReason="inapplicable"/>
+                                </gmd:CI_Citation>
+                            </gmd:authority>
+                            <gmd:code>
+                              <gco:CharacterString>https://doi.org/10.25976/30dz-8f05</gco:CharacterString>
+                            </gmd:code>
+                        </gmd:MD_Identifier>
+                    </gmd:identifier>
+                    <gmd:citedResponsibleParty>
+                        <gmd:CI_ResponsibleParty>
+                            <gmd:organisationName>
+                                <gco:CharacterString>DataStream</gco:CharacterString>
+                            </gmd:organisationName>
+                            <gmd:role>
+                                <gmd:CI_RoleCode
+                                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_RoleCode"
+                                        codeListValue="publisher">publisher
+                                </gmd:CI_RoleCode>
+                            </gmd:role>
+                        </gmd:CI_ResponsibleParty>
+                    </gmd:citedResponsibleParty>
+                    
+                    <gmd:citedResponsibleParty>
+                        <gmd:CI_ResponsibleParty>
+                            <gmd:organisationName>
+                                <gco:CharacterString>Beaufort Watershed Stewards</gco:CharacterString>
+                            </gmd:organisationName>
+                            <gmd:role>
+                                <gmd:CI_RoleCode
+                                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_RoleCode"
+                                        codeListValue="author">author
+                                </gmd:CI_RoleCode>
+                            </gmd:role>
+                        </gmd:CI_ResponsibleParty>
+                    </gmd:citedResponsibleParty>
+                    
+                    <gmd:citedResponsibleParty>
+                        <gmd:CI_ResponsibleParty>
+                            <gmd:organisationName>
+                                <gco:CharacterString>Beaufort Watershed Stewards</gco:CharacterString>
+                            </gmd:organisationName>
+                            <gmd:role>
+                                <gmd:CI_RoleCode
+                                        codeList="https://schemas.isotc211.org/19115/-3/cit/1.0/codelists.xml#CI_RoleCode"
+                                        codeListValue="contributor">contributor
+                                </gmd:CI_RoleCode>
+                            </gmd:role>
+                        </gmd:CI_ResponsibleParty>
+                    </gmd:citedResponsibleParty>
+                </gmd:CI_Citation>
+            </gmd:citation>
+            <gmd:abstract>
+                <gco:CharacterString>BWS monitors streams on the eastern slopes of the Beaufort Range on Vancouver Island, between the town of Royston and the unincorporated town of Fanny Bay. We also do flow measurements and ground water monitoring, all as part of our mission which is: "to work to promote the health and resilience of local watersheds in the Beaufort Range and to ensure the quality and quantity of fresh water for the future."</gco:CharacterString>
+            </gmd:abstract>
+            <gmd:credit gco:nilReason="missing"/>
+
+            <gmd:status>
+                <gmd:MD_ProgressCode
+                codeList="https://schemas.isotc211.org/19115/-3/mcc/1.0/codelists.xml#MD_ProgressCode"
+                codeListValue="onGoing">onGoing</gmd:MD_ProgressCode>
+            </gmd:status>
+            <gmd:resourceMaintenance>
+                <gmd:MD_MaintenanceInformation>
+                    <gmd:maintenanceAndUpdateFrequency>
+                        <gmd:MD_MaintenanceFrequencyCode
+                            codeList="https://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_MaintenanceFrequencyCode"
+                            codeListValue="asNeeded">asNeeded</gmd:MD_MaintenanceFrequencyCode>
+                    </gmd:maintenanceAndUpdateFrequency>
+                </gmd:MD_MaintenanceInformation>
+            </gmd:resourceMaintenance>
+
+            
+            <gmd:descriptiveKeywords>
+                <gmd:MD_Keywords>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Water quality</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>turbidity</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>temerature</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>specific conductivity</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>dissolved oxygen</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Beaufort Range</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Mud Bay Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Waterloo Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Wilfred Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>AppleCherry Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Cowie Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Tsable River</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Emily Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Hindoo Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Hart Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Spence Creek</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                    <gmd:keyword>
+                        <gco:CharacterString>Bloedel Cr</gco:CharacterString>
+                    </gmd:keyword>
+                    
+                </gmd:MD_Keywords>
+            </gmd:descriptiveKeywords>
+            
+
+            
+            <gmd:resourceConstraints>
+                <gmd:MD_LegalConstraints>
+                    
+                    <gmd:useLimitation>
+                        <gco:CharacterString>https://opendatacommons.org/licenses/by/1-0/</gco:CharacterString>
+                    </gmd:useLimitation>
+                    
+                    
+                </gmd:MD_LegalConstraints>
+            </gmd:resourceConstraints>
+            
+
+            <gmd:language>
+                <gco:CharacterString>eng</gco:CharacterString>
+            </gmd:language>
+
+            
+            <gmd:topicCategory>
+                <gmd:MD_TopicCategoryCode>inlandWaters</gmd:MD_TopicCategoryCode>
+            </gmd:topicCategory>
+            
+
+            <gmd:extent>
+                <gmd:EX_Extent>
+                  <gmd:geographicElement>
+                    <gmd:EX_GeographicBoundingBox>
+                      <gmd:extentTypeCode>
+                        <gco:Boolean>1</gco:Boolean>
+                      </gmd:extentTypeCode>
+                      <gmd:westBoundLongitude>
+                        <gco:Decimal>-124.98479</gco:Decimal>
+                      </gmd:westBoundLongitude>
+                      <gmd:eastBoundLongitude>
+                        <gco:Decimal>-124.59206</gco:Decimal>
+                      </gmd:eastBoundLongitude>
+                      <gmd:southBoundLatitude>
+                        <gco:Decimal>49.381715</gco:Decimal>
+                      </gmd:southBoundLatitude>
+                      <gmd:northBoundLatitude>
+                        <gco:Decimal>49.64169</gco:Decimal>
+                      </gmd:northBoundLatitude>
+                    </gmd:EX_GeographicBoundingBox>
+                  </gmd:geographicElement>
+                  <gmd:temporalElement>
+                    <gmd:EX_TemporalExtent>
+                      <gmd:extent>
+                        <gml:TimePeriod gml:id="TimePeriod">
+                          <gml:description>seconds</gml:description>
+                          <gml:beginPosition>2020-01-14T09:10:00+00:00</gml:beginPosition>
+                          <gml:endPosition>2025-09-30T11:55:00+00:00</gml:endPosition>
+                        </gml:TimePeriod>
+                      </gmd:extent>
+                    </gmd:EX_TemporalExtent>
+                  </gmd:temporalElement>
+                  <gmd:verticalElement>
+                    <gmd:EX_VerticalExtent>
+                      <gmd:minimumValue gco:nilReason="missing" />
+                      <gmd:maximumValue gco:nilReason="missing" />
+                      <gmd:verticalCRS gco:nilReason="missing" />
+                    </gmd:EX_VerticalExtent>
+                  </gmd:verticalElement>
+                </gmd:EX_Extent>
+              </gmd:extent>
+
+
+        </gmd:MD_DataIdentification>
+    </gmd:identificationInfo>
+    <gmd:metadataMaintenance>
+        <gmd:MD_MaintenanceInformation>
+            <gmd:maintenanceAndUpdateFrequency gco:nilReason="unknown"/>
+            <gmd:maintenanceNote>
+                <gco:CharacterString>This record was created from dataset metadata by DataStream
+                </gco:CharacterString>
+            </gmd:maintenanceNote>
+        </gmd:MD_MaintenanceInformation>
+    </gmd:metadataMaintenance>
+</gmi:MI_Metadata>
