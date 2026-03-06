@@ -213,6 +213,98 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         return None
 
     # ------------------------------------------------------------------
+    # Responsible party helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _parse_cited_responsible_party(harvest_object):
+        """Parse gmd:citedResponsibleParty elements from DataStream XML.
+
+        Extracts individual/organisation names and roles from
+        ``gmd:CI_Citation/gmd:citedResponsibleParty/gmd:CI_ResponsibleParty``.
+        Parties with identical ``(individual-name, organisation-name)`` keys are
+        merged into a single dict; if merged, ``role`` becomes a list, otherwise
+        it stays a plain string.
+
+        Returns a list of dicts with keys:
+            ``individual-name``, ``organisation-name``, ``role``
+        """
+        try:
+            content = getattr(harvest_object, 'content', None)
+            if not isinstance(content, (str, bytes)):
+                return []
+            if isinstance(content, str):
+                content = content.encode('utf-8')
+            tree = etree.fromstring(content)
+            ns = {
+                'gmd': 'http://www.isotc211.org/2005/gmd',
+                'gco': 'http://www.isotc211.org/2005/gco',
+            }
+            parties = tree.xpath(
+                './/gmd:CI_Citation/gmd:citedResponsibleParty/gmd:CI_ResponsibleParty',
+                namespaces=ns)
+
+            from collections import OrderedDict
+            merged = OrderedDict()
+            for party in parties:
+                ind_names = party.xpath(
+                    'gmd:individualName/gco:CharacterString/text()', namespaces=ns)
+                org_names = party.xpath(
+                    'gmd:organisationName/gco:CharacterString/text()', namespaces=ns)
+                roles = party.xpath(
+                    'gmd:role/gmd:CI_RoleCode/@codeListValue', namespaces=ns)
+
+                ind_name = ind_names[0].strip() if ind_names else ''
+                org_name = org_names[0].strip() if org_names else ''
+                role = roles[0].strip() if roles else ''
+
+                key = (ind_name, org_name)
+                if key in merged:
+                    existing = merged[key]['role']
+                    if isinstance(existing, list):
+                        existing.append(role)
+                    else:
+                        merged[key]['role'] = [existing, role]
+                else:
+                    merged[key] = {
+                        'individual-name': ind_name,
+                        'organisation-name': org_name,
+                        'role': role,
+                    }
+
+            return list(merged.values())
+        except Exception as exc:
+            log.debug('DataStream: could not parse citedResponsibleParty: %s', exc)
+            return []
+
+    @staticmethod
+    def _map_responsible_org_to_contact(responsible_organisation):
+        """Convert ckanext-spatial responsible-organisation to CIOOS flat format.
+
+        ckanext-spatial nested format::
+
+            {'individual-name': ..., 'organisation-name': ...,
+             'contact-info': {'email': ..., 'online-resource': ...}, 'role': ...}
+
+        CIOOS schema expected flat format::
+
+            {'individual-name': ..., 'organisation-name': ...,
+             'contact-info_email': ..., 'contact-info_online-resource': ...,
+             'role': ...}
+        """
+        result = []
+        for org in (responsible_organisation or []):
+            contact_info = org.get('contact-info') or {}
+            result.append({
+                'individual-name': org.get('individual-name', ''),
+                'organisation-name': org.get('organisation-name', ''),
+                'contact-info_email': contact_info.get('email', ''),
+                'contact-info_online-resource': contact_info.get('online-resource', ''),
+                'role': org.get('role', ''),
+            })
+        return result
+
+    # ------------------------------------------------------------------
     # DOI normalisation
     # ------------------------------------------------------------------
 
@@ -411,6 +503,25 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                     log.warning(
                         'license_id not resolved for URL %r — using URL as fallback',
                         _license_url)
+
+        # ----------------------------------------------------------------
+        # Step 6.6 — cited-responsible-party and metadata-point-of-contact
+        # ----------------------------------------------------------------
+        # ckanext-spatial's ISODocument does not populate these for
+        # gmi:MI_Metadata documents.  We parse cited-responsible-party
+        # directly from the raw XML (gmd:CI_Citation) and build
+        # metadata-point-of-contact by flattening iso_values['responsible-organisation']
+        # from the nested ckanext-spatial format into the CIOOS flat format.
+        if not package_dict.get('cited-responsible-party'):
+            _crp = self._parse_cited_responsible_party(harvest_object)
+            if _crp:
+                package_dict['cited-responsible-party'] = _crp
+
+        if not package_dict.get('metadata-point-of-contact'):
+            _resp_org = iso_values.get('responsible-organisation', [])
+            _mpoc = self._map_responsible_org_to_contact(_resp_org)
+            if _mpoc:
+                package_dict['metadata-point-of-contact'] = _mpoc
 
         # ----------------------------------------------------------------
         # Step 7 — Inject translated keywords
