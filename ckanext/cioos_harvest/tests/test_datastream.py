@@ -199,7 +199,7 @@ def _make_mock_harvest_object(guid: str) -> MagicMock:
     return ho
 
 
-def _mock_translate(redis_conn, text, source_lang='en', target_lang='fr'):
+def _mock_translate(redis_conn, text, source_lang="en", target_lang="fr"):
     """Deterministic stand-in for AWS Translate — wraps text in language tags."""
     return f"[{target_lang.upper()}:{text}]"
 
@@ -260,8 +260,9 @@ class TestDatastreamHarvester:
         # here so SpatialISODocument receives the same string the real harvester
         # would pass.
         import re
+
         xml_str = xml_path.read_bytes().decode("utf-8")
-        xml_str = re.sub(r'<\?xml.*?\?>', '', xml_str)
+        xml_str = re.sub(r"<\?xml.*?\?>", "", xml_str)
         iso_doc = SpatialISODocument(xml_str)
         iso_values = iso_doc.read_values()
 

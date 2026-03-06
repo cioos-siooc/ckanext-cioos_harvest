@@ -8,15 +8,15 @@ from WAFHarvester.
 import logging
 import re
 
-from ckan import model as ckan_model
-from ckan import plugins as p
 from ckan.lib.helpers import json
 from ckan.plugins.core import SingletonPlugin, implements
+
+import ckanext.spatial.harvesters.base as spatial_base
+from ckan import model as ckan_model
+from ckan import plugins as p
+from ckanext.cioos_harvest.model.iso19115_3 import ISODocument
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.spatial.harvesters.waf import WAFHarvester
-import ckanext.spatial.harvesters.base as spatial_base
-
-from ckanext.cioos_harvest.model.iso19115_3 import ISODocument
 
 log = logging.getLogger(__name__)
 
@@ -24,10 +24,10 @@ log = logging.getLogger(__name__)
 # Characters outside that set are replaced with safe equivalents first,
 # then any remaining disallowed characters are stripped.
 _TAG_REPLACEMENTS = [
-    ('\u2013', '-'),  # en dash  →  hyphen
-    ('\u2014', '-'),  # em dash  →  hyphen
-    ('&',      'and'),
-    (':',      ' -'),
+    ("\u2013", "-"),  # en dash  →  hyphen
+    ("\u2014", "-"),  # em dash  →  hyphen
+    ("&", "and"),
+    (":", " -"),
 ]
 _TAG_INVALID_RE = re.compile(r"[^\w \-_.,;'()]", re.UNICODE)
 
@@ -36,8 +36,8 @@ def _sanitize_tag(text):
     """Replace/strip characters that CKAN's tag validator rejects."""
     for char, replacement in _TAG_REPLACEMENTS:
         text = text.replace(char, replacement)
-    text = _TAG_INVALID_RE.sub('', text)
-    return ' '.join(text.split())  # collapse any double-spaces left behind
+    text = _TAG_INVALID_RE.sub("", text)
+    return " ".join(text.split())  # collapse any double-spaces left behind
 
 
 class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
@@ -50,18 +50,18 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     implements(IHarvester)
 
     def __new__(cls, *args, **kwargs):
-        if '_instance' not in cls.__dict__:
+        if "_instance" not in cls.__dict__:
             cls._instance = object.__new__(cls)
         return cls._instance
 
     def info(self):
         return {
-            'name': 'waf_iso19115_3_harvester',
-            'title': 'CIOOS Web Accessible Folder - ISO 19115-3',
-            'description': (
-                'A Web Accessible Folder (WAF) harvester for ISO 19115-3 XML metadata '
-                '(mdb:MD_Metadata root element). Uses a dedicated ISO 19115-3 XML parser '
-                'with no backward-compatibility paths for ISO 19139.'
+            "name": "waf_iso19115_3_harvester",
+            "title": "CIOOS Web Accessible Folder - ISO 19115-3",
+            "description": (
+                "A Web Accessible Folder (WAF) harvester for ISO 19115-3 XML metadata "
+                "(mdb:MD_Metadata root element). Uses a dedicated ISO 19115-3 XML parser "
+                "with no backward-compatibility paths for ISO 19139."
             ),
         }
 
@@ -74,12 +74,13 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         if source_config:
             try:
                 config_obj = json.loads(source_config)
-                if 'validator_profiles' in config_obj:
+                if "validator_profiles" in config_obj:
                     log.info(
-                        'WAFHarvesterISO19115_3: ignoring validator_profiles %s '
-                        '(XSD validation is skipped for this harvester)',
-                        config_obj['validator_profiles'])
-                    config_obj.pop('validator_profiles')
+                        "WAFHarvesterISO19115_3: ignoring validator_profiles %s "
+                        "(XSD validation is skipped for this harvester)",
+                        config_obj["validator_profiles"],
+                    )
+                    config_obj.pop("validator_profiles")
                     source_config = json.dumps(config_obj)
             except ValueError:
                 pass
@@ -87,8 +88,10 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
     def _validate_document(self, document_string, harvest_object, validator=None):
         """Skip ISO 19139 XSD validation — this harvester is ISO 19115-3 only."""
-        log.debug('Skipping XSD validation for ISO 19115-3 harvester (GUID: %s)',
-                  harvest_object.guid)
+        log.debug(
+            "Skipping XSD validation for ISO 19115-3 harvester (GUID: %s)",
+            harvest_object.guid,
+        )
         return True, None, []
 
     # ------------------------------------------------------------------
@@ -97,16 +100,16 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
     def import_stage(self, harvest_object):
         """Monkey-patch spatial_base.ISODocument, run the base import, then restore."""
-        original_document = self._get_object_extra(harvest_object, 'original_document')
-        content = original_document or harvest_object.content or ''
+        original_document = self._get_object_extra(harvest_object, "original_document")
+        content = original_document or harvest_object.content or ""
 
         # Move content to harvest_object.content and clear the extras that
         # would otherwise trigger the XSLT transform path in the base class.
         harvest_object.content = content
         harvest_object.save()
         for extra in harvest_object.extras:
-            if extra.key in ('original_document', 'original_format'):
-                extra.value = ''
+            if extra.key in ("original_document", "original_format"):
+                extra.value = ""
         ckan_model.Session.flush()
 
         old_cls = spatial_base.ISODocument
@@ -123,7 +126,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     def from_json(self, val):
         if isinstance(val, str):
             stripped = val.strip()
-            if stripped.startswith('{') or stripped.startswith('['):
+            if stripped.startswith("{") or stripped.startswith("["):
                 try:
                     return json.loads(val)
                 except Exception:
@@ -134,7 +137,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # Package dict construction
     # ------------------------------------------------------------------
 
-    def _expand_point_bboxes(self, iso_values, guid=''):
+    def _expand_point_bboxes(self, iso_values, guid=""):
         """Expand degenerate point bounding boxes to tiny polygons in-place.
 
         ISO 19115-3 allows a bounding box where west==east and south==north,
@@ -161,65 +164,74 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             guid:       The harvest object GUID, used only for the debug log.
         """
         _EPSILON = 0.00001
-        for bbox in iso_values.get('bbox', []):
+        for bbox in iso_values.get("bbox", []):
             try:
-                west, east = float(bbox['west']), float(bbox['east'])
-                south, north = float(bbox['south']), float(bbox['north'])
+                west, east = float(bbox["west"]), float(bbox["east"])
+                south, north = float(bbox["south"]), float(bbox["north"])
             except (TypeError, ValueError):
                 continue
             if west == east or south == north:
-                log.debug('Point bbox detected for %s — expanding by epsilon to avoid '
-                          'harvest error', guid)
-                bbox['west'] = str(west - _EPSILON)
-                bbox['east'] = str(east + _EPSILON)
-                bbox['south'] = str(south - _EPSILON)
-                bbox['north'] = str(north + _EPSILON)
+                log.debug(
+                    "Point bbox detected for %s — expanding by epsilon to avoid "
+                    "harvest error",
+                    guid,
+                )
+                bbox["west"] = str(west - _EPSILON)
+                bbox["east"] = str(east + _EPSILON)
+                bbox["south"] = str(south - _EPSILON)
+                bbox["north"] = str(north + _EPSILON)
 
     def get_package_dict(self, iso_values, harvest_object):
         self._expand_point_bboxes(iso_values, guid=harvest_object.guid)
 
         package_dict = super(WAFHarvesterISO19115_3, self).get_package_dict(
-            iso_values, harvest_object)
+            iso_values, harvest_object
+        )
 
         package = harvest_object.package
 
         # Use the record's primary language (mdb:defaultLocale) for plain-text
         # extraction — not the CKAN site default locale.
-        primary_lang = (iso_values.get('metadata-language') or 'en')[:2]
+        primary_lang = (iso_values.get("metadata-language") or "en")[:2]
 
         # Resolve the plain primary-language title from the JSON lang-dict
         # (used for package_dict['title'] below after the scheming-fields loop).
-        iso_title = self.from_json(iso_values['title'])
+        iso_title = self.from_json(iso_values["title"])
         if isinstance(iso_title, dict):
-            iso_title = iso_title.get(primary_lang) or next(iter(iso_title.values()), '')
+            iso_title = iso_title.get(primary_lang) or next(
+                iter(iso_title.values()), ""
+            )
 
         # Use the metadata GUID (authority_code with dots replaced by dashes) as
         # both the CKAN package id and a stable, deterministic URL slug.
         # Idempotent: the same XML record always maps to the same id/name.
-        guid = iso_values.get('guid', '')
+        guid = iso_values.get("guid", "")
         if guid:
-            package_dict['id'] = guid.split('_')[-1]  # Use the code portion of the GUID as the CKAN package id
-            package_dict['name'] = guid.replace('.', '-')
+            package_dict["id"] = guid.split("_")[
+                -1
+            ]  # Use the code portion of the GUID as the CKAN package id
+            package_dict["name"] = guid.replace(".", "-")
         elif package is not None:
-            package_dict['name'] = package.name
+            package_dict["name"] = package.name
         else:
             raise Exception(
-                'Could not generate a package name: metadata GUID is missing.')
+                "Could not generate a package name: metadata GUID is missing."
+            )
 
         # Handle Scheming, Composite, and Fluent extensions
         loaded_plugins = p.toolkit.config.get("ckan.plugins")
-        if 'scheming_datasets' in loaded_plugins:
-            composite = 'composite' in loaded_plugins
-            fluent = 'fluent' in loaded_plugins
+        if "scheming_datasets" in loaded_plugins:
+            composite = "composite" in loaded_plugins
+            fluent = "fluent" in loaded_plugins
 
-            log.debug('Scheming/Composite/Fluent found — processing dictionary')
-            schema = p.toolkit.h.scheming_get_dataset_schema('dataset')
+            log.debug("Scheming/Composite/Fluent found — processing dictionary")
+            schema = p.toolkit.h.scheming_get_dataset_schema("dataset")
 
             # Convert extras key:value list to dict
-            extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
+            extras = {x["key"]: x["value"] for x in package_dict.get("extras", [])}
 
-            for field in schema['dataset_fields']:
-                fn = field['field_name']
+            for field in schema["dataset_fields"]:
+                fn = field["field_name"]
                 iso = iso_values.get(fn, {})
                 if isinstance(iso, list):
                     iso = list(filter(len, iso))
@@ -227,33 +239,45 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 handled_fields = []
                 if composite:
                     self.handle_composite_harvest_dictionary(
-                        field, iso_values, package_dict, handled_fields)
+                        field, iso_values, package_dict, handled_fields
+                    )
                 if fluent:
                     self.handle_fluent_harvest_dictionary(
-                        field, iso_values, package_dict, schema, handled_fields,
-                        self.source_config)
+                        field,
+                        iso_values,
+                        package_dict,
+                        schema,
+                        handled_fields,
+                        self.source_config,
+                    )
                 self.handle_scheming_harvest_dictionary(
-                    field, iso_values, extras, package_dict, handled_fields)
+                    field, iso_values, extras, package_dict, handled_fields
+                )
 
             extras_as_dict = []
             for key, value in extras.items():
-                if package_dict.get(key, ''):
-                    log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+                if package_dict.get(key, ""):
+                    log.error(
+                        "extras %s found in package dict: key:%s value:%s",
+                        key,
+                        key,
+                        value,
+                    )
                 if isinstance(value, (list, dict)):
-                    extras_as_dict.append({'key': key, 'value': json.dumps(value)})
+                    extras_as_dict.append({"key": key, "value": json.dumps(value)})
                 else:
-                    extras_as_dict.append({'key': key, 'value': value})
-            package_dict['extras'] = extras_as_dict
+                    extras_as_dict.append({"key": key, "value": value})
+            package_dict["extras"] = extras_as_dict
 
             # Filter eov values against the schema's allowed choices so that
             # unknown codes (e.g. 'airWaterExchange') produce a warning instead
             # of a hard validation error that would block the whole record.
             eov_field = next(
-                (f for f in schema['dataset_fields'] if f['field_name'] == 'eov'),
-                None)
+                (f for f in schema["dataset_fields"] if f["field_name"] == "eov"), None
+            )
             if eov_field:
-                valid_eov = {c['value'] for c in eov_field.get('choices', [])}
-                raw_eov = package_dict.get('eov') or []
+                valid_eov = {c["value"] for c in eov_field.get("choices", [])}
+                raw_eov = package_dict.get("eov") or []
                 if isinstance(raw_eov, str):
                     raw_eov = [raw_eov]
                 filtered, skipped = [], []
@@ -264,86 +288,100 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                         skipped.append(v)
                 if skipped:
                     log.warning(
-                        'Record %s: unknown EOV value(s) %s — skipping (not in schema choices)',
-                        harvest_object.guid, skipped)
-                package_dict['eov'] = filtered or ['other']
+                        "Record %s: unknown EOV value(s) %s — skipping (not in schema choices)",
+                        harvest_object.guid,
+                        skipped,
+                    )
+                package_dict["eov"] = filtered or ["other"]
 
         # Ensure ecv is always present (schema field, defaults to empty list).
-        if 'ecv' not in package_dict:
-            package_dict['ecv'] = []
+        if "ecv" not in package_dict:
+            package_dict["ecv"] = []
 
         # Overwrite title/notes with plain locale strings (not JSON blobs)
-        package_dict['title'] = iso_title
+        package_dict["title"] = iso_title
 
-        iso_abstract = self.from_json(iso_values.get('abstract', ''))
+        iso_abstract = self.from_json(iso_values.get("abstract", ""))
         if isinstance(iso_abstract, dict):
-            package_dict['notes'] = iso_abstract.get(
-                primary_lang, next(iter(iso_abstract.values()), ''))
+            package_dict["notes"] = iso_abstract.get(
+                primary_lang, next(iter(iso_abstract.values()), "")
+            )
 
         # translation_method fields: title and notes always carry both portal
         # languages; keywords uses only the record's primary language (the
         # original) so that translated-language entries are not falsely marked
         # as having an empty translation method.
-        _default_tm = {'en': '', 'fr': ''}
-        package_dict['title_translation_method'] = dict(
-            _default_tm, **(iso_values.get('title_translation_method') or {}))
-        package_dict['notes_translation_method'] = dict(
-            _default_tm, **(iso_values.get('abstract_translation_method') or {}))
-        package_dict['keywords_translation_method'] = (
-            iso_values.get('keywords_translation_method') or {primary_lang: ''}
+        _default_tm = {"en": "", "fr": ""}
+        package_dict["title_translation_method"] = dict(
+            _default_tm, **(iso_values.get("title_translation_method") or {})
         )
+        package_dict["notes_translation_method"] = dict(
+            _default_tm, **(iso_values.get("abstract_translation_method") or {})
+        )
+        package_dict["keywords_translation_method"] = iso_values.get(
+            "keywords_translation_method"
+        ) or {primary_lang: ""}
 
         # Build a URL → format map from the annotated resource-locator entries.
         # _infer_resource_types() in iso19115_3.py sets locator['format'] for
         # every resource-locator it recognises; we apply those labels here.
         locator_formats = {
-            loc['url']: loc['format']
-            for loc in iso_values.get('resource-locator', [])
-            if loc.get('url') and loc.get('format')
+            loc["url"]: loc["format"]
+            for loc in iso_values.get("resource-locator", [])
+            if loc.get("url") and loc.get("format")
         }
 
         # Post-process resources: the parser stores name/description as
         # JSON-encoded lang-dicts.  Decode them into a plain primary-language
         # string (for backward-compat) plus a _translated sibling dict.
         # Also apply CIOOS-specific format labels derived from the URL.
-        for resource in package_dict.get('resources', []):
-            for field in ('name', 'description'):
-                val = self.from_json(resource.get(field, ''))
+        for resource in package_dict.get("resources", []):
+            for field in ("name", "description"):
+                val = self.from_json(resource.get(field, ""))
                 if isinstance(val, dict):
-                    resource[field + '_translated'] = val
-                    resource[field] = (
-                        val.get(primary_lang) or next(iter(val.values()), '')
+                    resource[field + "_translated"] = val
+                    resource[field] = val.get(primary_lang) or next(
+                        iter(val.values()), ""
                     )
-            url = resource.get('url', '')
+            url = resource.get("url", "")
             if url in locator_formats:
-                resource['format'] = locator_formats[url]
-            elif resource.get('format') in (None, 'text/html', 'text/html; charset=utf-8'):
-                resource['format'] = 'HTML'
+                resource["format"] = locator_formats[url]
+            elif resource.get("format") in (
+                None,
+                "text/html",
+                "text/html; charset=utf-8",
+            ):
+                resource["format"] = "HTML"
 
         # Set license_id from CIOOS-specific legal constraints fields when the
         # parent SpatialHarvester left it unset (use-constraints was empty).
-        if not package_dict.get('license_id'):
-            package_dict['license_id'] = (
-                iso_values.get('legal-constraints-reference-code')
-                or iso_values.get('use-constraints')
-                or ''
+        if not package_dict.get("license_id"):
+            package_dict["license_id"] = (
+                iso_values.get("legal-constraints-reference-code")
+                or iso_values.get("use-constraints")
+                or ""
             )
-            if not package_dict['license_id']:
-                log.warning('No license_id found.')
+            if not package_dict["license_id"]:
+                log.warning("No license_id found.")
         # Resolve license_title and license_url from CKAN's license register.
-        license_id = package_dict.get('license_id')
+        license_id = package_dict.get("license_id")
         if license_id:
             try:
                 register = ckan_model.Package.get_license_register()
                 if license_id in register:
                     lic = register[license_id]
-                    package_dict['license_title'] = lic.title
-                    package_dict['license_url'] = getattr(lic, 'url', '')
+                    package_dict["license_title"] = lic.title
+                    package_dict["license_url"] = getattr(lic, "url", "")
                 else:
-                    log.warning('license_id %r not found in CKAN license register '
-                                '(check licenses_group_url configuration)', license_id)
+                    log.warning(
+                        "license_id %r not found in CKAN license register "
+                        "(check licenses_group_url configuration)",
+                        license_id,
+                    )
             except Exception as exc:
-                log.warning('Could not resolve license_title for %r: %s', license_id, exc)
+                log.warning(
+                    "Could not resolve license_title for %r: %s", license_id, exc
+                )
 
         # Derive metadata_created / metadata_modified from ISO 19115-3 metadata-level
         # dates (mdb:dateInfo).  These record when the METADATA RECORD itself was
@@ -353,25 +391,33 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         # metadata-reference-date is sorted oldest-first and truncated to YYYY-MM-DD
         # by _infer_clean_metadata_reference_date; metadata-date holds the full
         # datetime string of the newest date.
-        _ref_dates = iso_values.get('metadata-reference-date', [])
-        _meta_date = iso_values.get('metadata-date', '')
+        _ref_dates = iso_values.get("metadata-reference-date", [])
+        _meta_date = iso_values.get("metadata-date", "")
 
         # metadata_created: prefer explicit 'creation' type; fall back to oldest date.
         _meta_created = next(
-            (d['value'] for d in _ref_dates if (d.get('type') or '').lower() == 'creation'),
-            _ref_dates[0]['value'] if _ref_dates else '',
+            (
+                d["value"]
+                for d in _ref_dates
+                if (d.get("type") or "").lower() == "creation"
+            ),
+            _ref_dates[0]["value"] if _ref_dates else "",
         )
         # metadata_modified: prefer explicit 'revision' type; fall back to the full
         # metadata-date datetime (highest precision), then newest ref-date.
         _meta_modified = next(
-            (d['value'] for d in _ref_dates if (d.get('type') or '').lower() == 'revision'),
-            _meta_date or (_ref_dates[-1]['value'] if _ref_dates else ''),
+            (
+                d["value"]
+                for d in _ref_dates
+                if (d.get("type") or "").lower() == "revision"
+            ),
+            _meta_date or (_ref_dates[-1]["value"] if _ref_dates else ""),
         )
 
         if _meta_created:
-            package_dict['metadata_created'] = _meta_created
+            package_dict["metadata_created"] = _meta_created
         if _meta_modified:
-            package_dict['metadata_modified'] = _meta_modified
+            package_dict["metadata_modified"] = _meta_modified
 
         return package_dict
 
@@ -379,18 +425,19 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # Field handlers (fluent / composite / scheming)
     # ------------------------------------------------------------------
 
-    def handle_fluent_harvest_dictionary(self, field, iso_values, package_dict,
-                                        schema, handled_fields, harvest_config):
-        field_name = field['field_name']
+    def handle_fluent_harvest_dictionary(
+        self, field, iso_values, package_dict, schema, handled_fields, harvest_config
+    ):
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
-        if not field.get('preset', '').startswith('fluent'):
+        if not field.get("preset", "").startswith("fluent"):
             return
 
-        default_language = iso_values.get('metadata-language', 'en') or 'en'
+        default_language = iso_values.get("metadata-language", "en") or "en"
 
-        if field.get('preset', '') == 'fluent_tags':
-            tags = iso_values.get('tags', [])
+        if field.get("preset", "") == "fluent_tags":
+            tags = iso_values.get("tags", [])
             schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
             field_value = {lang: [] for lang in schema_languages}
             for t in tags:
@@ -404,14 +451,14 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             package_dict[field_name] = field_value
             # With fluent_tags active, keywords are stored in the fluent
             # field (e.g. 'keywords') — the plain 'tags' list must be empty.
-            package_dict['tags'] = []
+            package_dict["tags"] = []
         else:
-            if field_name.endswith('_translated'):
+            if field_name.endswith("_translated"):
                 package_fn = field_name[:-11]
             else:
                 package_fn = field_name
             schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
-            package_val = package_dict.get(package_fn, '')
+            package_val = package_dict.get(package_fn, "")
             field_value = self.from_json(package_val)
             if isinstance(field_value, dict):
                 result = dict(field_value)
@@ -424,7 +471,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             # is importable.  The fallback is intentional: monolingual records are
             # common in historical datasets; flagging them as errors would block
             # the whole harvest.
-            fallback = next((v for v in result.values() if v), '')
+            fallback = next((v for v in result.values() if v), "")
             for lang in schema_languages:
                 if not result.get(lang):
                     result[lang] = fallback
@@ -437,48 +484,54 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             if isinstance(value, dict):
                 self.flatten_composite_keys(obj[key], new_obj, keys + [key])
             else:
-                new_obj['_'.join(keys + [key])] = value
+                new_obj["_".join(keys + [key])] = value
         return new_obj
 
-    def handle_composite_harvest_dictionary(self, field, iso_values, package_dict,
-                                           handled_fields):
-        field_name = field['field_name']
+    def handle_composite_harvest_dictionary(
+        self, field, iso_values, package_dict, handled_fields
+    ):
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
         field_value = iso_values.get(field_name, {})
-        if '__extras' not in package_dict:
-            package_dict['__extras'] = {}
+        if "__extras" not in package_dict:
+            package_dict["__extras"] = {}
 
-        if field_value and field.get('preset', '') == 'composite':
+        if field_value and field.get("preset", "") == "composite":
             if isinstance(field_value, list):
                 field_value = field_value[0]
             field_value = self.flatten_composite_keys(field_value)
             for key, value in field_value.items():
-                package_dict['__extras'][field_name + '|' + key] = value
+                package_dict["__extras"][field_name + "|" + key] = value
             handled_fields.append(field_name)
-        elif field_value and field.get('preset', '') == 'composite_repeating':
+        elif field_value and field.get("preset", "") == "composite_repeating":
             if isinstance(field_value, dict):
                 field_value[0] = field_value
             for idx, subitem in enumerate(field_value):
                 subitem = self.flatten_composite_keys(subitem)
                 for key, value in subitem.items():
-                    package_dict['__extras'][field_name + '|' + str(idx + 1) + '|' + key] = value
+                    package_dict["__extras"][
+                        field_name + "|" + str(idx + 1) + "|" + key
+                    ] = value
             handled_fields.append(field_name)
 
-    def handle_scheming_harvest_dictionary(self, field, iso_values, extras,
-                                          package_dict, handled_fields):
-        field_name = field['field_name']
+    def handle_scheming_harvest_dictionary(
+        self, field, iso_values, extras, package_dict, handled_fields
+    ):
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
         iso_field_value = iso_values.get(field_name, {})
-        extra_field_value = extras.get(field_name, '')
+        extra_field_value = extras.get(field_name, "")
 
-        if field_name in extras and not package_dict.get(field_name, ''):
+        if field_name in extras and not package_dict.get(field_name, ""):
             package_dict[field_name] = self.from_json(extra_field_value)
             del extras[field_name]
             handled_fields.append(field_name)
-        elif iso_field_value and not package_dict.get(field_name, ''):
-            if field.get('preset', '') == 'select' and isinstance(iso_field_value, list):
+        elif iso_field_value and not package_dict.get(field_name, ""):
+            if field.get("preset", "") == "select" and isinstance(
+                iso_field_value, list
+            ):
                 iso_field_value = iso_field_value[0]
             package_dict[field_name] = iso_field_value
             if field_name in extras:

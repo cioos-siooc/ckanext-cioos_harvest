@@ -1,30 +1,29 @@
 import collections
+import json
+import logging
+import re
+import xml.etree.ElementTree as ET
+from numbers import Number
 
+import ckan.lib.munge as munge
 import ckan.plugins as plugins
-from ckan import model
 import ckan.plugins.toolkit as toolkit
-from ckanext.spatial.interfaces import ISpatialHarvester
-from ckanext.spatial.validation.validation import BaseValidator
-from ckanext.harvest.interfaces import IHarvester
-from ckanext.harvest.model import HarvestObjectError, HarvestObject
-from ckanext.harvest.model import HarvestObjectExtra as HOExtra
-from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
-from ckanext.spatial.harvesters.base import SpatialHarvester
+import requests
 from ckan.lib.search import SearchError
 from ckan.logic import get_action
-from sqlalchemy.orm.exc import StaleDataError
-import ckan.lib.munge as munge
-import json
-import requests
 from requests.exceptions import HTTPError, RequestException
-from numbers import Number
-import xml.etree.ElementTree as ET
-import re
+from sqlalchemy.orm.exc import StaleDataError
 from urllib3.contrib import pyopenssl
 
+from ckan import model
 from ckanext.cioos_harvest.harvesters.base import all_packages_for_source
+from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckanext.harvest.model import HarvestObject, HarvestObjectError
+from ckanext.harvest.model import HarvestObjectExtra as HOExtra
+from ckanext.spatial.harvesters.base import SpatialHarvester
+from ckanext.spatial.interfaces import ISpatialHarvester
+from ckanext.spatial.validation.validation import BaseValidator
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -43,64 +42,92 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
             ET.XML(r.content)  # test for valid xml
             return r
         except ET.ParseError as e:
-            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            msg = "%s: %s. From external XML content at %s" % (
+                type(e).__name__,
+                str(e),
+                xml_url,
+            )
             log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.Timeout as e:
-            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            msg = "%s: %s. From external XML content at %s" % (
+                type(e).__name__,
+                str(e),
+                xml_url,
+            )
             log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.TooManyRedirects as e:
-            msg = 'HTTP too many redirects: %s' % e.code
+            msg = "HTTP too many redirects: %s" % e.code
             log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.RequestException as e:
-            msg = 'HTTP request exception: %s' % e.code
+            msg = "HTTP request exception: %s" % e.code
             log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except Exception as e:
-            msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
+            msg = "%s: %s. From external XML content at %s" % (
+                type(e).__name__,
+                str(e),
+                xml_url,
+            )
             log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         finally:
-            return ''
+            return ""
 
     except StaleDataError as e:
-        log.warning('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
+        log.warning(
+            "Harvest object %s is stail. Error object not created. %s"
+            % (harvest_object.id, str(e))
+        )
 
 
 def _get_extra(key, package_dict):
-    for extra in package_dict.get('extras', []):
-        if extra['key'] == key:
+    for extra in package_dict.get("extras", []):
+        if extra["key"] == key:
             return extra
+
 
 def _extract_xml_from_harvest_object(package_dict, harvest_object):
     content = harvest_object.content
-    source_config = json.loads(harvest_object.source.config or '{}')
-    key = 'harvest_document_content'
-    value = ''
-    package_content = package_dict.get(key,'')
+    source_config = json.loads(harvest_object.source.config or "{}")
+    key = "harvest_document_content"
+    value = ""
+    package_content = package_dict.get(key, "")
 
-    if package_content.startswith('<'):
+    if package_content.startswith("<"):
         value = package_content
-    elif content.startswith('<'):
+    elif content.startswith("<"):
         value = harvest_object.content
     else:
-        log.warning('Unable to find harvest object "%s" '
-                 'referenced by dataset "%s". Trying xml url',
-                 harvest_object.id, package_dict['id'])
+        log.warning(
+            'Unable to find harvest object "%s" '
+            'referenced by dataset "%s". Trying xml url',
+            harvest_object.id,
+            package_dict["id"],
+        )
 
         # try reading from xml url
-        xml_url = load_json(package_dict.get('xml_location_url'))
+        xml_url = load_json(package_dict.get("xml_location_url"))
         if not xml_url:
-            log.warning('Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved.')
+            log.warning(
+                "Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved."
+            )
         else:
-            urlopen_timeout = float(source_config.get('url_read_timeout') or toolkit.config.get('ckan.index_xml_url_read_timeout') or '500') / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
+            urlopen_timeout = (
+                float(
+                    source_config.get("url_read_timeout")
+                    or toolkit.config.get("ckan.index_xml_url_read_timeout")
+                    or "500"
+                )
+                / 1000.0
+            )  # get value in millieseconds but urllib assumes it is in seconds
 
             # single file
             if xml_url and isinstance(xml_url, str):
@@ -109,151 +136,208 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
             # list of files
             if xml_url and isinstance(xml_url, list):
                 for xml_file in xml_url:
-                    value = value + '<doc>' + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object) + '</doc>'
+                    value = (
+                        value
+                        + "<doc>"
+                        + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
+                        + "</doc>"
+                    )
 
                 if value:
-                    value = '<?xml version="1.0" encoding="utf-8"?><docs>' + value + '</docs>'
+                    value = (
+                        '<?xml version="1.0" encoding="utf-8"?><docs>'
+                        + value
+                        + "</docs>"
+                    )
 
-            value = re.sub('\s+',' ', value) # remove extra white space
-            value = re.sub('> <','><', value)
-            value = re.sub('> ','>', value)
-            value = re.sub(' <','<', value)
+            value = re.sub("\s+", " ", value)  # remove extra white space
+            value = re.sub("> <", "><", value)
+            value = re.sub("> ", ">", value)
+            value = re.sub(" <", "<", value)
     if value:
-        log.info('Success. External xml retrieved.')
+        log.info("Success. External xml retrieved.")
         package_dict[key] = value
     return package_dict
 
-def handle_groups(context, harvest_object, group_mapping, group_type, cats = [], additional_contacts = []):
-        source_config = json.loads(harvest_object.source.config or '{}')
-        validated_groups = []
 
-        harvest_responsible_organizations = (source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'true').lower()
-        if harvest_responsible_organizations != "true":
-            log.debug('Skipping Handle Groups: %r ', cats)
-            return validated_groups
+def handle_groups(
+    context, harvest_object, group_mapping, group_type, cats=[], additional_contacts=[]
+):
+    source_config = json.loads(harvest_object.source.config or "{}")
+    validated_groups = []
 
-        resp_org_roles = load_json(
-            source_config.get('responsible_organization_roles')
-            or toolkit.config.get('ckan.responsible_organization_roles')
-            or '["owner", "originator", "custodian", "author", "principalInvestigator"]'
-        )
-
-        # Additional roles that can be associated with responsible_organization even if not in citation
-        additional_resp_org_roles = load_json(
-            source_config.get('additional_responsible_organization_roles')
-            or toolkit.config.get('ckan.additional_responsible_organization_roles')
-            or '[]'
-        )
-
-        # Process both citation contacts and additional contacts
-        all_contacts = []
-
-        # Add citation contacts with their roles
-        for cat in cats:
-            role = load_json(cat.get('role'))
-            if not isinstance(role, list):
-                role = [role]
-            if not set(role).isdisjoint(set(resp_org_roles)):
-                all_contacts.append(cat)
-
-        # Add additional contacts (from metadata-point-of-contact, etc.) with their roles
-        for contact in additional_contacts:
-            role = load_json(contact.get('role'))
-            if not isinstance(role, list):
-                role = [role]
-            if not set(role).isdisjoint(set(additional_resp_org_roles)):
-                all_contacts.append(contact)
-                log.debug('Adding additional contact with role %s: %s' % (role, contact.get('organisation-name')))
-
-        # Process all collected contacts
-        for cat in all_contacts:
-            if not cat.get('organisation-name'):
-                continue
-
-            organisation_name = cat['organisation-name'].strip()
-            orgname = group_mapping.get(organisation_name, munge.munge_name(organisation_name).lower())
-            groupname = '_'.join([group_type, orgname])
-
-            printname = orgname if not None else "NONE"
-            log.debug("Group %s mapped into %s" % (organisation_name, printname))
-
-            if groupname:
-                org = None
-                group = None
-                try:
-                    data_dict = {'id': groupname}
-                    group = toolkit.get_action('group_show')(context.copy(), data_dict=data_dict)
-                    log.info('Found Existing Group %s' % (groupname))
-                    validated_groups.append({'id': group['id'], 'name': group['name']})
-                except toolkit.ObjectNotFound as e1:
-                    log.debug('Group %s is not available' % (groupname))
-                    # check if group exists as an organization
-                    try:
-                        org = toolkit.get_action('organization_show')(context.copy(), data_dict={
-                                                                        'id': orgname,
-                                                                        'include_datasets': False,
-                                                                        'include_dataset_count': False,
-                                                                        'include_extras': True,
-                                                                        'include_users': False,
-                                                                        'include_groups': False,
-                                                                        'include_tags': False,
-                                                                        'include_followers': False,
-                                                                    })
-                        org['name'] = groupname
-                        for key in ['id', 'packages', 'created', 'users', 'groups', 'tags', 'is_organization','num_followers','package_count','approval_status']:
-                            org.pop(key, None)
-                        org['type'] = group_type or 'group'
-                        if org.get('organization-uri'):
-                            org['group-uri'] = org['organization-uri'].copy()
-                        created_group = toolkit.get_action('group_create')(context.copy(), data_dict=org)
-                        log.info('Group %s created from org %s', groupname, orgname)
-                        validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
-                    except toolkit.ValidationError as e:
-                            SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (org['name'], e.error_dict), harvest_object, 'Import')
-                            continue
-                    except toolkit.ObjectNotFound as e2:
-                        # no organization match so generate new group
-                        log.debug('Organization %s not found, can not generate group %s from organization' % (orgname, groupname))
-                        group = {
-                            'name': groupname,
-                            'display_name': organisation_name,
-                            'title': organisation_name,
-                            'type': group_type or 'group',
-                            'title_translated': {
-                                        'en' : organisation_name,
-                                        'fr' : organisation_name,
-                                    },
-                            'organisation-uri':  {
-                                        'authority': cat.get('organisation-uri_authority',''),
-                                        'code': cat.get('organisation-uri_code',''),
-                                        'code-space': cat.get('organisation-uri_code-space',''),
-                                        'version': cat.get('organisation-uri_version',''),
-                                    }
-                        }
-                        try:
-                            created_group = toolkit.get_action('group_create')(context.copy(), data_dict=group)
-                        except toolkit.ValidationError as e:
-                            SpatialHarvester._save_object_error('Validation Error while creating group %s: %s' % (group['name'], e.error_dict), harvest_object, 'Import')
-                            continue
-
-                        log.info('Group %s created', groupname)
-                        validated_groups.append({'id': created_group['id'], 'name': created_group['name']})
+    harvest_responsible_organizations = (
+        source_config.get("harvest_responsible_organizations")
+        or toolkit.config.get("ckan.harvest_responsible_organizations")
+        or "true"
+    ).lower()
+    if harvest_responsible_organizations != "true":
+        log.debug("Skipping Handle Groups: %r ", cats)
         return validated_groups
-    
+
+    resp_org_roles = load_json(
+        source_config.get("responsible_organization_roles")
+        or toolkit.config.get("ckan.responsible_organization_roles")
+        or '["owner", "originator", "custodian", "author", "principalInvestigator"]'
+    )
+
+    # Additional roles that can be associated with responsible_organization even if not in citation
+    additional_resp_org_roles = load_json(
+        source_config.get("additional_responsible_organization_roles")
+        or toolkit.config.get("ckan.additional_responsible_organization_roles")
+        or "[]"
+    )
+
+    # Process both citation contacts and additional contacts
+    all_contacts = []
+
+    # Add citation contacts with their roles
+    for cat in cats:
+        role = load_json(cat.get("role"))
+        if not isinstance(role, list):
+            role = [role]
+        if not set(role).isdisjoint(set(resp_org_roles)):
+            all_contacts.append(cat)
+
+    # Add additional contacts (from metadata-point-of-contact, etc.) with their roles
+    for contact in additional_contacts:
+        role = load_json(contact.get("role"))
+        if not isinstance(role, list):
+            role = [role]
+        if not set(role).isdisjoint(set(additional_resp_org_roles)):
+            all_contacts.append(contact)
+            log.debug(
+                "Adding additional contact with role %s: %s"
+                % (role, contact.get("organisation-name"))
+            )
+
+    # Process all collected contacts
+    for cat in all_contacts:
+        if not cat.get("organisation-name"):
+            continue
+
+        organisation_name = cat["organisation-name"].strip()
+        orgname = group_mapping.get(
+            organisation_name, munge.munge_name(organisation_name).lower()
+        )
+        groupname = "_".join([group_type, orgname])
+
+        printname = orgname if not None else "NONE"
+        log.debug("Group %s mapped into %s" % (organisation_name, printname))
+
+        if groupname:
+            org = None
+            group = None
+            try:
+                data_dict = {"id": groupname}
+                group = toolkit.get_action("group_show")(
+                    context.copy(), data_dict=data_dict
+                )
+                log.info("Found Existing Group %s" % (groupname))
+                validated_groups.append({"id": group["id"], "name": group["name"]})
+            except toolkit.ObjectNotFound:
+                log.debug("Group %s is not available" % (groupname))
+                # check if group exists as an organization
+                try:
+                    org = toolkit.get_action("organization_show")(
+                        context.copy(),
+                        data_dict={
+                            "id": orgname,
+                            "include_datasets": False,
+                            "include_dataset_count": False,
+                            "include_extras": True,
+                            "include_users": False,
+                            "include_groups": False,
+                            "include_tags": False,
+                            "include_followers": False,
+                        },
+                    )
+                    org["name"] = groupname
+                    for key in [
+                        "id",
+                        "packages",
+                        "created",
+                        "users",
+                        "groups",
+                        "tags",
+                        "is_organization",
+                        "num_followers",
+                        "package_count",
+                        "approval_status",
+                    ]:
+                        org.pop(key, None)
+                    org["type"] = group_type or "group"
+                    if org.get("organization-uri"):
+                        org["group-uri"] = org["organization-uri"].copy()
+                    created_group = toolkit.get_action("group_create")(
+                        context.copy(), data_dict=org
+                    )
+                    log.info("Group %s created from org %s", groupname, orgname)
+                    validated_groups.append(
+                        {"id": created_group["id"], "name": created_group["name"]}
+                    )
+                except toolkit.ValidationError as e:
+                    SpatialHarvester._save_object_error(
+                        "Validation Error while creating group %s: %s"
+                        % (org["name"], e.error_dict),
+                        harvest_object,
+                        "Import",
+                    )
+                    continue
+                except toolkit.ObjectNotFound:
+                    # no organization match so generate new group
+                    log.debug(
+                        "Organization %s not found, can not generate group %s from organization"
+                        % (orgname, groupname)
+                    )
+                    group = {
+                        "name": groupname,
+                        "display_name": organisation_name,
+                        "title": organisation_name,
+                        "type": group_type or "group",
+                        "title_translated": {
+                            "en": organisation_name,
+                            "fr": organisation_name,
+                        },
+                        "organisation-uri": {
+                            "authority": cat.get("organisation-uri_authority", ""),
+                            "code": cat.get("organisation-uri_code", ""),
+                            "code-space": cat.get("organisation-uri_code-space", ""),
+                            "version": cat.get("organisation-uri_version", ""),
+                        },
+                    }
+                    try:
+                        created_group = toolkit.get_action("group_create")(
+                            context.copy(), data_dict=group
+                        )
+                    except toolkit.ValidationError as e:
+                        SpatialHarvester._save_object_error(
+                            "Validation Error while creating group %s: %s"
+                            % (group["name"], e.error_dict),
+                            harvest_object,
+                            "Import",
+                        )
+                        continue
+
+                    log.info("Group %s created", groupname)
+                    validated_groups.append(
+                        {"id": created_group["id"], "name": created_group["name"]}
+                    )
+    return validated_groups
+
 
 class CIOOSCKANHarvester(CKANHarvester):
-
     def __new__(cls, *args, **kwargs):
-        if '_instance' not in cls.__dict__:
+        if "_instance" not in cls.__dict__:
             cls._instance = object.__new__(cls)
         return cls._instance
 
     def info(self):
         return {
-            'name': 'ckan_cioos',
-            'title': 'CKAN CIOOS',
-            'description': 'Harvests remote CKAN instances with improved handling/indexing of external xml files and organization matching',
-            'form_config_interface': 'Text'
+            "name": "ckan_cioos",
+            "title": "CKAN CIOOS",
+            "description": "Harvests remote CKAN instances with improved handling/indexing of external xml files and organization matching",
+            "form_config_interface": "Text",
         }
 
     def validate_config(self, config):
@@ -270,10 +354,14 @@ class CIOOSCKANHarvester(CKANHarvester):
         try:
             config_obj = json.loads(config)
 
-            if 'field_filter_include' in config_obj \
-                    and 'field_filter_exclude' in config_obj:
-                raise ValueError('Harvest configuration cannot contain both '
-                                 'field_filter_include and field_filter_exclude')
+            if (
+                "field_filter_include" in config_obj
+                and "field_filter_exclude" in config_obj
+            ):
+                raise ValueError(
+                    "Harvest configuration cannot contain both "
+                    "field_filter_include and field_filter_exclude"
+                )
 
         except ValueError as e:
             raise e
@@ -300,58 +388,62 @@ class CIOOSCKANHarvester(CKANHarvester):
         """
         Override gather_stage to add field filtering and package deletion tracking.
         """
-        log.debug('In CIOOSCKANHarvester gather_stage (%s)',
-                  harvest_job.source.url)
-        toolkit.requires_ckan_version(min_version='2.0')
+        log.debug("In CIOOSCKANHarvester gather_stage (%s)", harvest_job.source.url)
+        toolkit.requires_ckan_version(min_version="2.0")
         get_all_packages = True
 
         self._set_config(harvest_job.source.config)
 
         # Get source URL
-        remote_ckan_base_url = harvest_job.source.url.rstrip('/')
+        remote_ckan_base_url = harvest_job.source.url.rstrip("/")
 
         # Filter in/out datasets from particular organizations
         fq_terms = []
-        org_filter_include = self.config.get('organizations_filter_include', [])
-        org_filter_exclude = self.config.get('organizations_filter_exclude', [])
+        org_filter_include = self.config.get("organizations_filter_include", [])
+        org_filter_exclude = self.config.get("organizations_filter_exclude", [])
         if org_filter_include:
-            fq_terms.append(' OR '.join(
-                'organization:%s' % org_name for org_name in org_filter_include))
+            fq_terms.append(
+                " OR ".join(
+                    "organization:%s" % org_name for org_name in org_filter_include
+                )
+            )
         elif org_filter_exclude:
             fq_terms.extend(
-                '-organization:%s' % org_name for org_name in org_filter_exclude)
+                "-organization:%s" % org_name for org_name in org_filter_exclude
+            )
 
-        groups_filter_include = self.config.get('groups_filter_include', [])
-        groups_filter_exclude = self.config.get('groups_filter_exclude', [])
+        groups_filter_include = self.config.get("groups_filter_include", [])
+        groups_filter_exclude = self.config.get("groups_filter_exclude", [])
         if groups_filter_include:
-            fq_terms.append('groups:(%s)' % ' OR '.join(groups_filter_include))
+            fq_terms.append("groups:(%s)" % " OR ".join(groups_filter_include))
         elif groups_filter_exclude:
-            fq_terms.append('-groups:(%s)' % ' OR '.join(groups_filter_exclude))
+            fq_terms.append("-groups:(%s)" % " OR ".join(groups_filter_exclude))
 
         # Field filtering support
-        field_filter_include = self.config.get('field_filter_include', [])
-        field_filter_exclude = self.config.get('field_filter_exclude', [])
+        field_filter_include = self.config.get("field_filter_include", [])
+        field_filter_exclude = self.config.get("field_filter_exclude", [])
         if field_filter_include:
             result = collections.defaultdict(list)
             for item in field_filter_include:
-                result[item['field']].append(item['value'])
-            fq_terms.append(' OR '.join(
-                '%s:(%s)' % (key, ' OR '.join(result[key])) for key in result.keys()
-            ))
+                result[item["field"]].append(item["value"])
+            fq_terms.append(
+                " OR ".join(
+                    "%s:(%s)" % (key, " OR ".join(result[key])) for key in result.keys()
+                )
+            )
         elif field_filter_exclude:
             result = collections.defaultdict(list)
             for item in field_filter_exclude:
-                result[item['field']].append(item['value'])
+                result[item["field"]].append(item["value"])
             fq_terms.extend(
-                '-%s:(%s)' % (key, ' OR '.join(result[key])) for key in result.keys()
+                "-%s:(%s)" % (key, " OR ".join(result[key])) for key in result.keys()
             )
 
         # Ideally we can request from the remote CKAN only those datasets
         # modified since the last completely successful harvest.
         last_error_free_job = self.last_error_free_job(harvest_job)
-        log.debug('Last error-free job: %r', last_error_free_job)
-        if (last_error_free_job and
-                not self.config.get('force_all', False)):
+        log.debug("Last error-free job: %r", last_error_free_job)
+        if last_error_free_job and not self.config.get("force_all", False):
             get_all_packages = False
 
             # Request only the datasets modified since
@@ -360,31 +452,37 @@ class CIOOSCKANHarvester(CKANHarvester):
             # this should work as long as local and remote clocks are
             # relatively accurate. Going back a little earlier, just in case.
             import datetime
-            get_changes_since = \
-                (last_time - datetime.timedelta(hours=1)).isoformat()
-            log.info('Searching for datasets modified since: %s UTC',
-                     get_changes_since)
 
-            fq_since_last_time = 'metadata_modified:[{since}Z TO *]' \
-                .format(since=get_changes_since)
+            get_changes_since = (last_time - datetime.timedelta(hours=1)).isoformat()
+            log.info("Searching for datasets modified since: %s UTC", get_changes_since)
+
+            fq_since_last_time = "metadata_modified:[{since}Z TO *]".format(
+                since=get_changes_since
+            )
 
             try:
                 pkg_dicts = self._search_for_datasets(
-                    remote_ckan_base_url,
-                    fq_terms + [fq_since_last_time])
+                    remote_ckan_base_url, fq_terms + [fq_since_last_time]
+                )
 
                 # Call modify_search hook if available
-                pkg_dicts = self.modify_search(pkg_dicts, remote_ckan_base_url, fq_terms + [fq_since_last_time])
+                pkg_dicts = self.modify_search(
+                    pkg_dicts, remote_ckan_base_url, fq_terms + [fq_since_last_time]
+                )
 
             except SearchError as e:
-                log.info('Searching for datasets changed since last time '
-                         'gave an error: %s', e)
+                log.info(
+                    "Searching for datasets changed since last time gave an error: %s",
+                    e,
+                )
                 get_all_packages = True
 
             if not get_all_packages and not pkg_dicts:
-                log.info('No datasets have been updated on the remote '
-                         'CKAN instance since the last harvest job %s',
-                         last_time)
+                log.info(
+                    "No datasets have been updated on the remote "
+                    "CKAN instance since the last harvest job %s",
+                    last_time,
+                )
                 return []
 
         # Fall-back option - request all the datasets from the remote CKAN
@@ -392,34 +490,36 @@ class CIOOSCKANHarvester(CKANHarvester):
         if get_all_packages:
             # Request all remote packages
             try:
-                pkg_dicts = self._search_for_datasets(remote_ckan_base_url,
-                                                      fq_terms)
+                pkg_dicts = self._search_for_datasets(remote_ckan_base_url, fq_terms)
 
                 # Call modify_search hook if available
-                pkg_dicts = self.modify_search(pkg_dicts, remote_ckan_base_url, fq_terms)
+                pkg_dicts = self.modify_search(
+                    pkg_dicts, remote_ckan_base_url, fq_terms
+                )
 
             except SearchError as e:
-                log.info('Searching for all datasets gave an error: %s', e)
+                log.info("Searching for all datasets gave an error: %s", e)
                 self._save_gather_error(
-                    'Unable to search remote CKAN for datasets:%s url:%s'
-                    'terms:%s' % (e, remote_ckan_base_url, fq_terms),
-                    harvest_job)
+                    "Unable to search remote CKAN for datasets:%s url:%s"
+                    "terms:%s" % (e, remote_ckan_base_url, fq_terms),
+                    harvest_job,
+                )
                 return None
 
             # Track packages for deletion (no longer on remote)
-            all_remote_pkg_ids = set([x['id'] for x in pkg_dicts])
+            all_remote_pkg_ids = set([x["id"] for x in pkg_dicts])
             # get all local packages for this harvest source
             all_local_source_pkg = all_packages_for_source(harvest_job.source.id)
-            all_local_source_pkg_ids = set([x['id'] for x in all_local_source_pkg])
+            all_local_source_pkg_ids = set([x["id"] for x in all_local_source_pkg])
             # id's of packages no longer available on remote
             to_delete_id = all_local_source_pkg_ids - all_remote_pkg_ids
             # packages no longer available on remote
-            to_delete_pkg = [x for x in all_local_source_pkg if x['id'] in to_delete_id]
+            to_delete_pkg = [x for x in all_local_source_pkg if x["id"] in to_delete_id]
 
         if not pkg_dicts:
             self._save_gather_error(
-                'No datasets found at CKAN: %s' % remote_ckan_base_url,
-                harvest_job)
+                "No datasets found at CKAN: %s" % remote_ckan_base_url, harvest_job
+            )
             return []
 
         # Create harvest objects for each dataset
@@ -429,62 +529,77 @@ class CIOOSCKANHarvester(CKANHarvester):
 
             # Create harvest objects for packages to delete
             for pkg_dict in to_delete_pkg:
-                if pkg_dict['id'] in package_ids:
-                    log.info('Discarding duplicate dataset %s - probably due '
-                             'to datasets being changed at the same time as '
-                             'when the harvester was paging through',
-                             pkg_dict['id'])
+                if pkg_dict["id"] in package_ids:
+                    log.info(
+                        "Discarding duplicate dataset %s - probably due "
+                        "to datasets being changed at the same time as "
+                        "when the harvester was paging through",
+                        pkg_dict["id"],
+                    )
                     continue
-                package_ids.add(pkg_dict['id'])
+                package_ids.add(pkg_dict["id"])
 
-                log.debug('Creating HarvestObject for %s %s with status "delete"',
-                          pkg_dict['name'], pkg_dict['id'])
-                obj = HarvestObject(guid=pkg_dict['id'],
-                                    extras=[HOExtra(key='status', value='delete')],
-                                    job=harvest_job,
-                                    content=json.dumps(pkg_dict))
+                log.debug(
+                    'Creating HarvestObject for %s %s with status "delete"',
+                    pkg_dict["name"],
+                    pkg_dict["id"],
+                )
+                obj = HarvestObject(
+                    guid=pkg_dict["id"],
+                    extras=[HOExtra(key="status", value="delete")],
+                    job=harvest_job,
+                    content=json.dumps(pkg_dict),
+                )
                 obj.save()
                 object_ids.append(obj.id)
 
             # Process rest of datasets
             for pkg_dict in pkg_dicts:
-                if pkg_dict['id'] in package_ids:
-                    log.info('Discarding duplicate dataset %s - probably due '
-                             'to datasets being changed at the same time as '
-                             'when the harvester was paging through',
-                             pkg_dict['id'])
+                if pkg_dict["id"] in package_ids:
+                    log.info(
+                        "Discarding duplicate dataset %s - probably due "
+                        "to datasets being changed at the same time as "
+                        "when the harvester was paging through",
+                        pkg_dict["id"],
+                    )
                     continue
-                package_ids.add(pkg_dict['id'])
+                package_ids.add(pkg_dict["id"])
 
-                log.debug('Creating HarvestObject for %s %s',
-                          pkg_dict['name'], pkg_dict['id'])
-                obj = HarvestObject(guid=pkg_dict['id'],
-                                    job=harvest_job,
-                                    content=json.dumps(pkg_dict))
+                log.debug(
+                    "Creating HarvestObject for %s %s", pkg_dict["name"], pkg_dict["id"]
+                )
+                obj = HarvestObject(
+                    guid=pkg_dict["id"], job=harvest_job, content=json.dumps(pkg_dict)
+                )
                 obj.save()
                 object_ids.append(obj.id)
 
             return object_ids
         except Exception as e:
-            self._save_gather_error('%r' % str(e), harvest_job)
+            self._save_gather_error("%r" % str(e), harvest_job)
 
     def import_stage(self, harvest_object):
         """
         Override import_stage to handle package deletion.
         """
-        log.debug('In CIOOSCKANHarvester import_stage')
+        log.debug("In CIOOSCKANHarvester import_stage")
 
-        base_context = {'model': model, 'session': model.Session,
-                        'user': self._get_user_name()}
+        base_context = {
+            "model": model,
+            "session": model.Session,
+            "user": self._get_user_name(),
+        }
 
         if not harvest_object:
-            log.error('No harvest object received')
+            log.error("No harvest object received")
             return False
 
         if harvest_object.content is None:
-            self._save_object_error('Empty content for object %s' %
-                                    harvest_object.id,
-                                    harvest_object, 'Import')
+            self._save_object_error(
+                "Empty content for object %s" % harvest_object.id,
+                harvest_object,
+                "Import",
+            )
             return False
 
         self._set_config(harvest_object.job.source.config)
@@ -493,15 +608,17 @@ class CIOOSCKANHarvester(CKANHarvester):
             package_dict = json.loads(harvest_object.content)
 
             # Check if this is a delete operation
-            status = self._get_object_extra(harvest_object, 'status')
-            if status == 'delete':
+            status = self._get_object_extra(harvest_object, "status")
+            if status == "delete":
                 # Delete package
                 context = base_context.copy()
-                context.update({
-                    'ignore_auth': True,
-                })
-                get_action('package_delete')(context, {'id': package_dict['id']})
-                log.info('Deleted package {0}'.format(package_dict['id']))
+                context.update(
+                    {
+                        "ignore_auth": True,
+                    }
+                )
+                get_action("package_delete")(context, {"id": package_dict["id"]})
+                log.info("Deleted package {0}".format(package_dict["id"]))
                 return True
 
             # Call parent import_stage for normal processing
@@ -509,25 +626,25 @@ class CIOOSCKANHarvester(CKANHarvester):
 
         except Exception as e:
             log.exception(e)
-            self._save_object_error('%s' % e, harvest_object, 'Import')
+            self._save_object_error("%s" % e, harvest_object, "Import")
             return False
 
     def modify_remote_organization(self, remote_org_id, pkg_dict, context):
         try:
-            package_org = pkg_dict.get('organization')
-            if package_org and package_org.get('id') == remote_org_id:
-                remote_org_id = package_org.get('name', remote_org_id)
+            package_org = pkg_dict.get("organization")
+            if package_org and package_org.get("id") == remote_org_id:
+                remote_org_id = package_org.get("name", remote_org_id)
 
             # if there is a organization uri then try to match on that
             # get first item from organization-uri list if it exists
-            uri = next(iter(package_org.get('organization-uri', [])), {})
+            uri = next(iter(package_org.get("organization-uri", [])), {})
             # we assume uri code is unique
-            code = uri.get('code')
+            code = uri.get("code")
             if code:
-                data_dict = {
-                    'fq': 'organization-uri:%s' % code.replace(':', '_')
-                }
-                org = toolkit.get_action('organization_list')(context.copy(), data_dict=data_dict)
+                data_dict = {"fq": "organization-uri:%s" % code.replace(":", "_")}
+                org = toolkit.get_action("organization_list")(
+                    context.copy(), data_dict=data_dict
+                )
                 if org:
                     remote_org_id = org[0]
         except Exception as e:
@@ -536,77 +653,97 @@ class CIOOSCKANHarvester(CKANHarvester):
         return remote_org_id
 
     def modify_package_dict(self, package_dict, harvest_object):
-        base_context = {'model': model, 'session': model.Session,
-                        'user': self._get_user_name()}
+        base_context = {
+            "model": model,
+            "session": model.Session,
+            "user": self._get_user_name(),
+        }
         try:
             # convert extras key:value list to dictinary
-            extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
-            package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
+            extras = {x["key"]: x["value"] for x in package_dict.get("extras", [])}
+            package_dict = _extract_xml_from_harvest_object(
+                package_dict, harvest_object
+            )
 
-            if not extras.get('metadata_created_source'):
-                extras['metadata_created_source'] = package_dict.get('metadata_created')
-            if not extras.get('metadata_modified_source'):
-                extras['metadata_modified_source'] = package_dict.get('metadata_modified')
+            if not extras.get("metadata_created_source"):
+                extras["metadata_created_source"] = package_dict.get("metadata_created")
+            if not extras.get("metadata_modified_source"):
+                extras["metadata_modified_source"] = package_dict.get(
+                    "metadata_modified"
+                )
 
             # populate harvest source organization
             harvest_source = toolkit.get_action("harvest_source_show")(
-                data_dict = {
-                "id": harvest_object.source.id
-            })
-            extras['harvest_source_organization'] = harvest_source.get('organization')
+                data_dict={"id": harvest_object.source.id}
+            )
+            extras["harvest_source_organization"] = harvest_source.get("organization")
 
             # convert extras back to a list of key/value dictionaries
             extras_as_list = []
             for key, value in extras.items():
-                if package_dict.get(key, ''):
-                    log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+                if package_dict.get(key, ""):
+                    log.error(
+                        "extras %s found in package dict: key:%s value:%s",
+                        key,
+                        key,
+                        value,
+                    )
                 if isinstance(value, (list, dict)):
-                    extras_as_list.append({'key': key, 'value': json.dumps(value)})
+                    extras_as_list.append({"key": key, "value": json.dumps(value)})
                 else:
-                    extras_as_list.append({'key': key, 'value': value})
+                    extras_as_list.append({"key": key, "value": value})
 
-            package_dict['extras'] = extras_as_list
-
+            package_dict["extras"] = extras_as_list
 
             # provide default values if harvesting from a ckan catalogue that does not have these in their schema
-            if not package_dict.get('projects'): 
-                package_dict['projects'] = []
-            if not package_dict.get('datacentre'): 
-                package_dict['datacentre'] = []
+            if not package_dict.get("projects"):
+                package_dict["projects"] = []
+            if not package_dict.get("datacentre"):
+                package_dict["datacentre"] = []
 
             # add uri for dcat if it dosn't exist
-            package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + package_dict.get('name')
-            existing_extra = _get_extra('uri', package_dict)
+            package_uri = (
+                toolkit.config.get("ckan.site_url")
+                + "/dataset/"
+                + package_dict.get("name")
+            )
+            existing_extra = _get_extra("uri", package_dict)
             if not existing_extra:
-                extras.append({'key': 'uri', 'value': package_uri})
+                extras.append({"key": "uri", "value": package_uri})
 
             # populate publishing data catalogue list
             dc = {
-                "name": load_json(toolkit.config.get('ckan.site_title')),
-                "description": load_json(toolkit.config.get('ckan.site_description')),
-                "url": toolkit.config.get('ckan.site_url')
-            }
-            
-            source_dc = {
-                "name":  self.config.get('source_title') or harvest_object.job.source.title,
-                "description": self.config.get('source_description'),
-                "url": harvest_object.job.source.url.strip('/')
+                "name": load_json(toolkit.config.get("ckan.site_title")),
+                "description": load_json(toolkit.config.get("ckan.site_description")),
+                "url": toolkit.config.get("ckan.site_url"),
             }
 
-            if not package_dict.get('included_in_data_catalogue'):
-                package_dict['included_in_data_catalogue'] = [source_dc, dc]
+            source_dc = {
+                "name": self.config.get("source_title")
+                or harvest_object.job.source.title,
+                "description": self.config.get("source_description"),
+                "url": harvest_object.job.source.url.strip("/"),
+            }
+
+            if not package_dict.get("included_in_data_catalogue"):
+                package_dict["included_in_data_catalogue"] = [source_dc, dc]
             else:
-                package_dict['included_in_data_catalogue'].append(dc)
+                package_dict["included_in_data_catalogue"].append(dc)
                 # remove duplicities
-                package_dict['included_in_data_catalogue'] = list({item.get('url',''):item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+                package_dict["included_in_data_catalogue"] = list(
+                    {
+                        item.get("url", ""): item
+                        for item in package_dict["included_in_data_catalogue"][::-1]
+                    }.values()
+                )
 
             # fix common schema fields errors
-            schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
-            for field in schema['dataset_fields']:
-                if 'repeating_subfields' in field:
-                    field_name = field['field_name']
+            schema = plugins.toolkit.h.scheming_get_dataset_schema("dataset")
+            for field in schema["dataset_fields"]:
+                if "repeating_subfields" in field:
+                    field_name = field["field_name"]
                     value = package_dict.get(field_name)
-                    if value == '':
+                    if value == "":
                         value = []
                         package_dict[field_name] = value
                     elif value:
@@ -619,219 +756,262 @@ class CIOOSCKANHarvester(CKANHarvester):
             # DOI
             URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
                 package_dict,
-                uri_field='unique-resource-identifier-full',
-                default_code_space='doi.org')
+                uri_field="unique-resource-identifier-full",
+                default_code_space="doi.org",
+            )
             if URIF:
-                if isinstance(package_dict['unique-resource-identifier-full'], list):
-                    for index, item in enumerate(package_dict['unique-resource-identifier-full']):
-                        package_dict['unique-resource-identifier-full'][index]['code'] = URIF[index]
+                if isinstance(package_dict["unique-resource-identifier-full"], list):
+                    for index, item in enumerate(
+                        package_dict["unique-resource-identifier-full"]
+                    ):
+                        package_dict["unique-resource-identifier-full"][index][
+                            "code"
+                        ] = URIF[index]
                 else:
-                    package_dict['unique-resource-identifier-full']['code'] = URIF[0]
+                    package_dict["unique-resource-identifier-full"]["code"] = URIF[0]
 
             # Organization URI
-            organization = package_dict.get('organization')
+            organization = package_dict.get("organization")
             if organization:
                 if isinstance(organization, list):
                     organization = organization[0]
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                    organization,
-                    uri_field='organization-uri')
-                organization['code'] = next(iter(code or []), '')
-                package_dict['organization'] = organization
+                    organization, uri_field="organization-uri"
+                )
+                organization["code"] = next(iter(code or []), "")
+                package_dict["organization"] = organization
 
             # metadata-point-of-contact Individual and Organisation URI
-            mpocs = package_dict.get('metadata-point-of-contact',[])
+            mpocs = package_dict.get("metadata-point-of-contact", [])
             for mpoc in mpocs:
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                    mpoc,
-                    uri_field='individual-uri_')
-                mpoc['individual-uri_code'] = next(iter(code or []), '')
+                    mpoc, uri_field="individual-uri_"
+                )
+                mpoc["individual-uri_code"] = next(iter(code or []), "")
 
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                    mpoc,
-                    uri_field='organisation-uri_')
-                mpoc['organisation-uri_code'] = next(iter(code or []), '')
-            package_dict['metadata-point-of-contact'] = mpocs
+                    mpoc, uri_field="organisation-uri_"
+                )
+                mpoc["organisation-uri_code"] = next(iter(code or []), "")
+            package_dict["metadata-point-of-contact"] = mpocs
 
             # cited-responsible-party Individual and Organisation URI
-            crps = package_dict.get('cited-responsible-party',[])
+            crps = package_dict.get("cited-responsible-party", [])
             for crp in crps:
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                    crp,
-                    uri_field='individual-uri_')
-                mpoc['individual-uri_code'] = next(iter(code or []), '')
+                    crp, uri_field="individual-uri_"
+                )
+                mpoc["individual-uri_code"] = next(iter(code or []), "")
 
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
-                    crp,
-                    uri_field='organisation-uri_')
-                mpoc['organisation-uri_code'] = next(iter(code or []), '')
-            package_dict['cited-responsible-party'] = crps
+                    crp, uri_field="organisation-uri_"
+                )
+                mpoc["organisation-uri_code"] = next(iter(code or []), "")
+            package_dict["cited-responsible-party"] = crps
 
-            if len(package_dict['tags']) > 0:
-                log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
-            package_dict['tags'] = []
+            if len(package_dict["tags"]) > 0:
+                log.warning(
+                    "Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r",
+                    package_dict["tags"],
+                )
+            package_dict["tags"] = []
 
-            source_config = json.loads(harvest_object.source.config or '{}')
+            source_config = json.loads(harvest_object.source.config or "{}")
             ## Configuring Responsible Organization group
-            group_mapping = source_config.get('organization_mapping', {})
-            group_type = 'resorg'
+            group_mapping = source_config.get("organization_mapping", {})
+            group_type = "resorg"
             # filter out entries with no organisation
-            parties = [ x for x in package_dict.get("cited-responsible-party",[]) if x.get('organisation-name')]
+            parties = [
+                x
+                for x in package_dict.get("cited-responsible-party", [])
+                if x.get("organisation-name")
+            ]
             # filter out entries with no organisation from metadata-point-of-contact
-            additional_parties = [ x for x in package_dict.get("metadata-point-of-contact",[]) if x.get('organisation-name')]
+            additional_parties = [
+                x
+                for x in package_dict.get("metadata-point-of-contact", [])
+                if x.get("organisation-name")
+            ]
             # generate groups if not already set
-            if package_dict.get('groups'):
-                log.debug('Groups Found. Skipping Responable Organization processing.')
+            if package_dict.get("groups"):
+                log.debug("Groups Found. Skipping Responable Organization processing.")
             else:
-                groups = handle_groups(base_context, harvest_object, group_mapping, group_type, parties, additional_parties)
+                groups = handle_groups(
+                    base_context,
+                    harvest_object,
+                    group_mapping,
+                    group_type,
+                    parties,
+                    additional_parties,
+                )
                 if groups:
                     # remove duplicates by populating dictionary and then converting to list
-                    package_dict['groups'] = list({x['id']: x for x in (package_dict.get('groups',[]) + groups)}.values())
+                    package_dict["groups"] = list(
+                        {
+                            x["id"]: x
+                            for x in (package_dict.get("groups", []) + groups)
+                        }.values()
+                    )
 
-            for resource in package_dict.get('resources', []):
-                res_name = resource.get('name')
-                res_name_translated = resource.get('name_translated')
+            for resource in package_dict.get("resources", []):
+                res_name = resource.get("name")
+                res_name_translated = resource.get("name_translated")
                 # populate multilingual resource name if not set
                 if not res_name_translated:
                     res_name = load_json(res_name)
                     if isinstance(res_name, dict):
-                        resource['name_translated'] = res_name
-                        resource['name'] = res_name.get('en') or next(iter(res_name.values()), resource.get('name', ''))
+                        resource["name_translated"] = res_name
+                        resource["name"] = res_name.get("en") or next(
+                            iter(res_name.values()), resource.get("name", "")
+                        )
                     else:
-                        resource['name_translated'] = {}
-                        resource['name_translated']['en'] = res_name
-                        resource['name_translated']['fr'] = res_name
+                        resource["name_translated"] = {}
+                        resource["name_translated"]["en"] = res_name
+                        resource["name_translated"]["fr"] = res_name
 
-                res_desc = resource.get('description')
-                res_desc_translated = resource.get('description_translated')
+                res_desc = resource.get("description")
+                res_desc_translated = resource.get("description_translated")
                 # populate multilingual resource description if not set
                 if not res_desc_translated:
                     res_desc = load_json(res_desc)
                     if isinstance(res_desc, dict):
-                        resource['description_translated'] = res_desc
-                        resource['description'] = res_desc.get('en') or next(iter(res_desc.values()), resource.get('description', ''))
+                        resource["description_translated"] = res_desc
+                        resource["description"] = res_desc.get("en") or next(
+                            iter(res_desc.values()), resource.get("description", "")
+                        )
                     else:
-                        resource['description_translated'] = {}
-                        resource['description_translated']['en'] = res_desc
-                        resource['description_translated']['fr'] = res_desc
+                        resource["description_translated"] = {}
+                        resource["description_translated"]["en"] = res_desc
+                        resource["description_translated"]["fr"] = res_desc
 
-                if not resource.get('created_source'):
-                    resource['created_source'] = resource.get('created')
+                if not resource.get("created_source"):
+                    resource["created_source"] = resource.get("created")
 
-                if not resource.get('metadata_modified_source'):
-                    resource['metadata_modified_source'] = resource.get('metadata_modified')
+                if not resource.get("metadata_modified_source"):
+                    resource["metadata_modified_source"] = resource.get(
+                        "metadata_modified"
+                    )
 
         except Exception as e:
             log.exception(e)
             raise
         return package_dict
 
-class CKANSpatialHarvester(CKANHarvester):
 
+class CKANSpatialHarvester(CKANHarvester):
     def __new__(cls, *args, **kwargs):
-        if '_instance' not in cls.__dict__:
+        if "_instance" not in cls.__dict__:
             cls._instance = object.__new__(cls)
         return cls._instance
 
     def _post_content(self, url, params={}):
 
         headers = {}
-        api_key = self.config.get('api_key')
+        api_key = self.config.get("api_key")
         if api_key:
-            headers['Authorization'] = api_key
+            headers["Authorization"] = api_key
 
         pyopenssl.inject_into_urllib3()
 
         try:
             http_request = requests.post(url, headers=headers, json=params)
         except HTTPError as e:
-            raise ContentFetchError('HTTP error: %s %s' % (e.response.status_code, e.request.url))
+            raise ContentFetchError(
+                "HTTP error: %s %s" % (e.response.status_code, e.request.url)
+            )
         except RequestException as e:
-            raise ContentFetchError('Request error: %s' % e)
+            raise ContentFetchError("Request error: %s" % e)
         except Exception as e:
-            raise ContentFetchError('HTTP general exception: %s' % e)
+            raise ContentFetchError("HTTP general exception: %s" % e)
         return http_request.text
 
     def info(self):
         return {
-            'name': 'ckan_spatial',
-            'title': 'CKAN Spatial',
-            'description': 'Harvests remote CKAN instances filtering by spatial query',
-            'form_config_interface': 'Text'
+            "name": "ckan_spatial",
+            "title": "CKAN Spatial",
+            "description": "Harvests remote CKAN instances filtering by spatial query",
+            "form_config_interface": "Text",
         }
 
     def modify_package_dict(self, package_dict, harvest_object):
 
         # provide default values if harvesting from a ckan catalogue that does not have these in their schema
-        if not package_dict.get('projects'): 
-            package_dict['projects'] = []
-        if not package_dict.get('datacentre'): 
-            package_dict['datacentre'] = []
+        if not package_dict.get("projects"):
+            package_dict["projects"] = []
+        if not package_dict.get("datacentre"):
+            package_dict["datacentre"] = []
 
         # populate publishing data catalogue list
         dc = {
-            "name": load_json(toolkit.config.get('ckan.site_title')),
-            "description": load_json(toolkit.config.get('ckan.site_description')),
-            "url": toolkit.config.get('ckan.site_url')
+            "name": load_json(toolkit.config.get("ckan.site_title")),
+            "description": load_json(toolkit.config.get("ckan.site_description")),
+            "url": toolkit.config.get("ckan.site_url"),
         }
-        if not package_dict.get('included_in_data_catalogue'):
-            package_dict['included_in_data_catalogue'] = [dc]
+        if not package_dict.get("included_in_data_catalogue"):
+            package_dict["included_in_data_catalogue"] = [dc]
         else:
-            package_dict['included_in_data_catalogue'].append(dc)
+            package_dict["included_in_data_catalogue"].append(dc)
             # remove duplicities
-            package_dict['included_in_data_catalogue'] = list({item.get('url',''):item for item in package_dict['included_in_data_catalogue'][::-1]}.values())
+            package_dict["included_in_data_catalogue"] = list(
+                {
+                    item.get("url", ""): item
+                    for item in package_dict["included_in_data_catalogue"][::-1]
+                }.values()
+            )
 
         return package_dict
 
     def modify_search(self, pkg_dicts, remote_ckan_base_url, fq_terms):
         ss_params = {}
-        spatial_filter_file = self.config.get('spatial_filter_file', None)
+        spatial_filter_file = self.config.get("spatial_filter_file", None)
         if spatial_filter_file:
             f = open(spatial_filter_file, "r")
             spatial_filter_wkt = f.read()
         else:
-            spatial_filter_wkt = self.config.get('spatial_filter', None)
-        if spatial_filter_wkt.startswith(('POLYGON', 'MULTIPOLYGON')):
-            ss_params['poly'] = spatial_filter_wkt
-        if spatial_filter_wkt.startswith('BOX'):
-            ss_params['bbox'] = spatial_filter_wkt[4:-1]
-        ss_params['crs'] = self.config.get('spatial_crs', 4326)
+            spatial_filter_wkt = self.config.get("spatial_filter", None)
+        if spatial_filter_wkt.startswith(("POLYGON", "MULTIPOLYGON")):
+            ss_params["poly"] = spatial_filter_wkt
+        if spatial_filter_wkt.startswith("BOX"):
+            ss_params["bbox"] = spatial_filter_wkt[4:-1]
+        ss_params["crs"] = self.config.get("spatial_crs", 4326)
         spatial_id_list = []
         if spatial_filter_wkt:
-            spatial_search_url = remote_ckan_base_url + '/api/2/search/dataset/geo'
+            spatial_search_url = remote_ckan_base_url + "/api/2/search/dataset/geo"
             try:
                 ss_content = self._post_content(spatial_search_url, ss_params)
             except ContentFetchError as e:
                 raise SearchError(
-                    'Error sending request to spatial search remote '
-                    'CKAN instance %s using URL %r. Error: %s' %
-                    (remote_ckan_base_url, spatial_search_url, e))
+                    "Error sending request to spatial search remote "
+                    "CKAN instance %s using URL %r. Error: %s"
+                    % (remote_ckan_base_url, spatial_search_url, e)
+                )
             try:
                 ss_response_dict = json.loads(ss_content)
             except ValueError:
-                raise SearchError('Spatial Search response from remote CKAN was not JSON: %r'
-                                  % ss_content)
+                raise SearchError(
+                    "Spatial Search response from remote CKAN was not JSON: %r"
+                    % ss_content
+                )
             try:
-                spatial_id_list = ss_response_dict.get('results', [])
+                spatial_id_list = ss_response_dict.get("results", [])
             except ValueError:
-                raise SearchError('Response JSON did not contain '
-                                  'results list: %r' % ss_response_dict)
+                raise SearchError(
+                    "Response JSON did not contain results list: %r" % ss_response_dict
+                )
 
         # Filter out packages not found by spatial search
-        pkg_dicts = [p for p in pkg_dicts
-                     if p['id'] in spatial_id_list]
+        pkg_dicts = [p for p in pkg_dicts if p["id"] in spatial_id_list]
 
-        log.debug('Found the follow packages during spatial search:\n %r', pkg_dicts)
+        log.debug("Found the follow packages during spatial search:\n %r", pkg_dicts)
 
         return pkg_dicts
 
 
 # place holder, spatial extension expects a validator to be present
 class MyValidator(BaseValidator):
+    name = "my-validator"
 
-    name = 'my-validator'
-
-    title = 'My very own validator'
+    title = "My very own validator"
 
     @classmethod
     def is_valid(cls, xml):
@@ -851,15 +1031,16 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         pass
 
     def create(self, entity):
-        if hasattr(entity, 'title_translated'):
-            if entity.title_translated == '{}' or not entity.title_translated:
-                toolkit.get_action('organization_patch')(
+        if hasattr(entity, "title_translated"):
+            if entity.title_translated == "{}" or not entity.title_translated:
+                toolkit.get_action("organization_patch")(
                     data_dict={
-                        'id': entity.id,
-                        'title': entity.title,
-                        'title_translated': '{"en":"%s", "fr":"%s"}' % (entity.title, entity.title)
-                        }
-                        )
+                        "id": entity.id,
+                        "title": entity.title,
+                        "title_translated": '{"en":"%s", "fr":"%s"}'
+                        % (entity.title, entity.title),
+                    }
+                )
         return entity
 
     def edit(self, entity):
@@ -873,25 +1054,27 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
     # IConfigurer
     def update_config(self, config_):
-        toolkit.add_template_directory(config_, 'templates')
-        toolkit.add_public_directory(config_, 'public')
-        toolkit.add_resource('fanstatic', 'cioos_harvest')
+        toolkit.add_template_directory(config_, "templates")
+        toolkit.add_public_directory(config_, "public")
+        toolkit.add_resource("fanstatic", "cioos_harvest")
 
     # ITemplateHelpers
     def get_helpers(self):
         from ckanext.cioos_harvest import helpers as h
+
         return {
-            'cioos_spatial_widget_expands': h.spatial_widget_expands,
-            'cioos_spatial_default_extent': h.spatial_default_extent,
-            'cioos_spatial_get_map_initial_max_zoom': h.spatial_get_map_initial_max_zoom,
+            "cioos_spatial_widget_expands": h.spatial_widget_expands,
+            "cioos_spatial_default_extent": h.spatial_default_extent,
+            "cioos_spatial_get_map_initial_max_zoom": h.spatial_get_map_initial_max_zoom,
         }
 
     # IActions
     def get_actions(self):
         from ckanext.cioos_harvest import logic
+
         return {
-            'spatial_query_geo': logic.spatial_query_geo,
-            'spatial_query_geo_package_search': logic.spatial_query_geo_package_search,
+            "spatial_query_geo": logic.spatial_query_geo,
+            "spatial_query_geo_package_search": logic.spatial_query_geo_package_search,
         }
 
     # ISpatialHarvester
@@ -906,23 +1089,23 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return new_val
 
     def _get_object_extra(self, harvest_object, key):
-        '''
+        """
         Helper function for retrieving the value from a harvest object extra,
         given the key, copied from ckanext-spatial/ckanext/spatial/harvesters/base.py
-        '''
+        """
         for extra in harvest_object.extras:
             if extra.key == key:
                 return extra.value
         return None
 
     def trim_values(self, values):
-        if(isinstance(values, Number)):
+        if isinstance(values, Number):
             return values
-        elif(isinstance(values, list)):
+        elif isinstance(values, list):
             return [self.trim_values(x) for x in values]
-        elif(isinstance(values, dict)):
+        elif isinstance(values, dict):
             return {k.strip(): self.trim_values(v) for k, v in values.items()}
-        elif(isinstance(values, str)):
+        elif isinstance(values, str):
             try:
                 json_object = json.loads(values)
             except ValueError:
@@ -932,7 +1115,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return values
 
     def cioos_guess_resource_format(self, url, use_mimetypes=True):
-        '''
+        """
         Given a URL try to guess the best format to assign to the resource
 
         This function does not replace the guess_resource_format() in the base
@@ -941,13 +1124,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         Returns None if no format could be guessed.
 
-        '''
+        """
         url = url.lower().strip()
         resource_types = {
             # ERDDAP
-            'ERDDAP': ('/erddap/',),
+            "ERDDAP": ("/erddap/",),
             # OBIS
-            'OBIS': ('/ipt.iobis.org/',),
+            "OBIS": ("/ipt.iobis.org/",),
         }
 
         for resource_type, parts in resource_types.items():
@@ -955,12 +1138,12 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 return resource_type
 
         file_types = {
-            'CSV': ('csv',),
-            'PDF': ('pdf',),
-            'TXT': ('txt',),
-            'XML': ('xml',),
-            'HTML': ('html',),
-            'JSON': ('json',),
+            "CSV": ("csv",),
+            "PDF": ("pdf",),
+            "TXT": ("txt",),
+            "XML": ("xml",),
+            "HTML": ("html",),
+            "JSON": ("json",),
         }
 
         for file_type, extensions in file_types.items():
@@ -970,248 +1153,340 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         return None
 
     def get_package_dict(self, context, data_dict):
-        package_dict = data_dict['package_dict']
-        iso_values = data_dict['iso_values']
-        harvest_object = data_dict['harvest_object']
-        source_config = json.loads(data_dict['harvest_object'].source.config or '{}')
-        xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
-        xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
+        package_dict = data_dict["package_dict"]
+        iso_values = data_dict["iso_values"]
+        harvest_object = data_dict["harvest_object"]
+        source_config = json.loads(data_dict["harvest_object"].source.config or "{}")
+        xml_location_url = self._get_object_extra(
+            data_dict["harvest_object"], "waf_location"
+        )
+        xml_modified_date = self._get_object_extra(
+            data_dict["harvest_object"], "waf_modified_date"
+        )
 
         # convert extras key:value list to dictinary
-        extras = {x['key']: x['value'] for x in package_dict.get('extras', [])}
+        extras = {x["key"]: x["value"] for x in package_dict.get("extras", [])}
 
-        extras['xml_location_url'] = xml_location_url
+        extras["xml_location_url"] = xml_location_url
         if xml_modified_date:
-            extras['xml_modified_date'] = xml_modified_date.replace('Z','')
+            extras["xml_modified_date"] = xml_modified_date.replace("Z", "")
 
         # copy some fields over from iso_values if they exist
-        if(iso_values.get('limitations-on-public-access')):
-            extras['limitations-on-public-access'] = iso_values.get('limitations-on-public-access')
-        if(iso_values.get('access-constraints')):
-            extras['access-constraints'] = iso_values.get('access-constraints')
-        if(iso_values.get('use-constraints')):
-            extras['use-constraints'] = iso_values.get('use-constraints')
-        if(iso_values.get('use-constraints-code')):
-            extras['use-constraints-code'] = iso_values.get('use-constraints-code')
-        if(iso_values.get('legal-constraints-reference-code')):
-            extras['legal-constraints-reference-code'] = iso_values.get('legal-constraints-reference-code')
-        if(iso_values.get('distributor')):
-            extras['distributor'] = iso_values.get('distributor')
-        if(iso_values.get('dataset-language')):
-            extras['dataset-language'] = iso_values.get('dataset-language')
-        if(iso_values.get('dataset-language-other')):
-            extras['dataset-language-other'] = iso_values.get('dataset-language-other')
+        if iso_values.get("limitations-on-public-access"):
+            extras["limitations-on-public-access"] = iso_values.get(
+                "limitations-on-public-access"
+            )
+        if iso_values.get("access-constraints"):
+            extras["access-constraints"] = iso_values.get("access-constraints")
+        if iso_values.get("use-constraints"):
+            extras["use-constraints"] = iso_values.get("use-constraints")
+        if iso_values.get("use-constraints-code"):
+            extras["use-constraints-code"] = iso_values.get("use-constraints-code")
+        if iso_values.get("legal-constraints-reference-code"):
+            extras["legal-constraints-reference-code"] = iso_values.get(
+                "legal-constraints-reference-code"
+            )
+        if iso_values.get("distributor"):
+            extras["distributor"] = iso_values.get("distributor")
+        if iso_values.get("dataset-language"):
+            extras["dataset-language"] = iso_values.get("dataset-language")
+        if iso_values.get("dataset-language-other"):
+            extras["dataset-language-other"] = iso_values.get("dataset-language-other")
 
         # populate harvest source organization
         harvest_source = toolkit.get_action("harvest_source_show")(
-            data_dict = {
-            "id": harvest_object.source.id
-        })
-        extras['harvest_source_organization'] = harvest_source.get('organization')   
-        
+            data_dict={"id": harvest_object.source.id}
+        )
+        extras["harvest_source_organization"] = harvest_source.get("organization")
 
         # load remote xml content
         package_dict = _extract_xml_from_harvest_object(package_dict, harvest_object)
 
         # Handle Scheming, Composit, and Fluent extensions
         loaded_plugins = plugins.toolkit.config.get("ckan.plugins")
-        if 'scheming_datasets' in loaded_plugins:
+        if "scheming_datasets" in loaded_plugins:
             # composite = 'composite' in loaded_plugins
-            fluent = 'fluent' in loaded_plugins
-            schema = plugins.toolkit.h.scheming_get_dataset_schema('dataset')
+            fluent = "fluent" in loaded_plugins
+            schema = plugins.toolkit.h.scheming_get_dataset_schema("dataset")
 
             # Package name: prefer guid over title (reverse of ckanext-spatial default).
             # Read title from iso_values (the raw parsed values), not package_dict['title'],
             # because the harvester's get_package_dict() may have already converted the title
             # to a plain string by the time this ISpatialHarvester callback runs.
-            _title_parsed = self.from_json(iso_values.get('title', '{}'))
+            _title_parsed = self.from_json(iso_values.get("title", "{}"))
             title_as_name = (
-                _title_parsed.get('en', package_dict['name'])
+                _title_parsed.get("en", package_dict["name"])
                 if isinstance(_title_parsed, dict)
-                else (_title_parsed or package_dict['name'])
+                else (_title_parsed or package_dict["name"])
             )
-            name = munge.munge_name(extras.get('guid', title_as_name)).lower()
-            package_dict['name'] = name
+            name = munge.munge_name(extras.get("guid", title_as_name)).lower()
+            package_dict["name"] = name
 
             # add uri key for dcat extension to use. this field is used as the
             # dataset id in rdf / jsonld output
-            package_uri = toolkit.config.get('ckan.site_url') + '/dataset/' + name
-            extras['uri'] = package_uri
+            package_uri = toolkit.config.get("ckan.site_url") + "/dataset/" + name
+            extras["uri"] = package_uri
 
             # populate license_id
-            if not package_dict.get('license_id'):
-                package_dict['license_id'] = iso_values.get('legal-constraints-reference-code') or iso_values.get('use-constraints') or ''
-                if not package_dict['license_id']:
-                    log.warning('No license_id found.')
+            if not package_dict.get("license_id"):
+                package_dict["license_id"] = (
+                    iso_values.get("legal-constraints-reference-code")
+                    or iso_values.get("use-constraints")
+                    or ""
+                )
+                if not package_dict["license_id"]:
+                    log.warning("No license_id found.")
 
             # populate citation — inject CKAN dataset URL into each language's CSL-JSON.
             # The parser leaves URL='' because ckan.site_url is only accessible here.
-            _citation = iso_values.get('citation')
+            _citation = iso_values.get("citation")
             if isinstance(_citation, dict) and _citation:
                 _pkg_url_base = (
-                    toolkit.config.get('ckan.site_url', '').rstrip('/')
-                    + '/dataset/' + package_dict.get('name', '')
+                    toolkit.config.get("ckan.site_url", "").rstrip("/")
+                    + "/dataset/"
+                    + package_dict.get("name", "")
                 )
                 _updated_citation = {}
                 for _lang, _csl_str in _citation.items():
                     try:
                         _csl = json.loads(_csl_str)
                         if isinstance(_csl, list) and _csl:
-                            _csl[0]['URL'] = _pkg_url_base + '?local=' + _lang
+                            _csl[0]["URL"] = _pkg_url_base + "?local=" + _lang
                         _updated_citation[_lang] = json.dumps(_csl, ensure_ascii=False)
                     except Exception:
                         _updated_citation[_lang] = _csl_str
-                package_dict['citation'] = _updated_citation
+                package_dict["citation"] = _updated_citation
             elif _citation is not None:
-                package_dict['citation'] = _citation
+                package_dict["citation"] = _citation
 
             # populate projects
-            package_dict['projects'] = iso_values.get('keyword-project', [])
+            package_dict["projects"] = iso_values.get("keyword-project", [])
 
             # populate datacentre
-            package_dict['datacentre'] = iso_values.get('keyword-datacentre', [])
+            package_dict["datacentre"] = iso_values.get("keyword-datacentre", [])
 
             # populate lineage - convert string to list of dicts as required by schema
-            lineage_value = iso_values.get('lineage', [])
+            lineage_value = iso_values.get("lineage", [])
             if isinstance(lineage_value, str):
                 # Convert string lineage to required list of dicts format
-                log.warning('Converting lineage from string to list of dicts for dataset: %s',
-                           iso_values.get('guid', 'unknown'))
-                package_dict['lineage'] = [{
-                    'statment': {'en': lineage_value},
-                    'scope': 'dataset',
-                    'additional-documentation': [],
-                    'source': [],
-                    'processing-step': []
-                }]
+                log.warning(
+                    "Converting lineage from string to list of dicts for dataset: %s",
+                    iso_values.get("guid", "unknown"),
+                )
+                package_dict["lineage"] = [
+                    {
+                        "statment": {"en": lineage_value},
+                        "scope": "dataset",
+                        "additional-documentation": [],
+                        "source": [],
+                        "processing-step": [],
+                    }
+                ]
             else:
-                package_dict['lineage'] = lineage_value if lineage_value else []
+                package_dict["lineage"] = lineage_value if lineage_value else []
 
             # populate publishing data catalogue list
-            package_dict['included_in_data_catalogue'] = [{
-                "name": load_json(toolkit.config.get('ckan.site_title')),
-                "description": load_json(toolkit.config.get('ckan.site_description')),
-                "url": toolkit.config.get('ckan.site_url')
-            }]
+            package_dict["included_in_data_catalogue"] = [
+                {
+                    "name": load_json(toolkit.config.get("ckan.site_title")),
+                    "description": load_json(
+                        toolkit.config.get("ckan.site_description")
+                    ),
+                    "url": toolkit.config.get("ckan.site_url"),
+                }
+            ]
 
-            if source_config.get('data_catalogue_source'):
-                 package_dict['included_in_data_catalogue'] = load_json(source_config['data_catalogue_source']) +  package_dict['included_in_data_catalogue']
+            if source_config.get("data_catalogue_source"):
+                package_dict["included_in_data_catalogue"] = (
+                    load_json(source_config["data_catalogue_source"])
+                    + package_dict["included_in_data_catalogue"]
+                )
 
             # Always populate translation_method for bilingual fields with at
             # least both CIOOS portal languages present.  Merge any values the
             # parser may have produced on top of the empty-string defaults.
-            _default_tm = {'en': '', 'fr': ''}
-            package_dict['title_translation_method'] = dict(
-                _default_tm, **(iso_values.get('title_translation_method') or {}))
-            package_dict['notes_translation_method'] = dict(
-                _default_tm, **(iso_values.get('abstract_translation_method') or {}))
-            package_dict['keywords_translation_method'] = dict(
-                _default_tm, **(iso_values.get('keywords_translation_method') or {}))
+            _default_tm = {"en": "", "fr": ""}
+            package_dict["title_translation_method"] = dict(
+                _default_tm, **(iso_values.get("title_translation_method") or {})
+            )
+            package_dict["notes_translation_method"] = dict(
+                _default_tm, **(iso_values.get("abstract_translation_method") or {})
+            )
+            package_dict["keywords_translation_method"] = dict(
+                _default_tm, **(iso_values.get("keywords_translation_method") or {})
+            )
 
             # set default language, default to english
-            default_language = iso_values.get('metadata-language', 'en')[0:2]
+            default_language = iso_values.get("metadata-language", "en")[0:2]
             if not default_language:
-                default_language = 'en'
+                default_language = "en"
 
             # iterate over schema fields and update package dictionary as needed
-            for field in schema['dataset_fields']:
+            for field in schema["dataset_fields"]:
                 handled_fields = []
-                self.handle_composite_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
+                self.handle_composite_harvest_dictinary(
+                    field,
+                    iso_values,
+                    extras,
+                    package_dict,
+                    default_language,
+                    handled_fields,
+                )
 
                 if fluent:
-                    self.handle_fluent_harvest_dictinary(field, iso_values, package_dict, schema, default_language, handled_fields, source_config)
+                    self.handle_fluent_harvest_dictinary(
+                        field,
+                        iso_values,
+                        package_dict,
+                        schema,
+                        default_language,
+                        handled_fields,
+                        source_config,
+                    )
 
-                self.handle_scheming_harvest_dictinary(field, iso_values, extras, package_dict, default_language, handled_fields)
+                self.handle_scheming_harvest_dictinary(
+                    field,
+                    iso_values,
+                    extras,
+                    package_dict,
+                    default_language,
+                    handled_fields,
+                )
 
             # fall back to DOI URL for citation when the XML did not supply one.
             # The fluent handler above leaves citation = {default_language: ''} when
             # no value is found, so check for an empty/blank string and replace it.
-            citation_val = package_dict.get('citation', {})
-            if isinstance(citation_val, dict) and not citation_val.get(default_language, '').strip():
+            citation_val = package_dict.get("citation", {})
+            if (
+                isinstance(citation_val, dict)
+                and not citation_val.get(default_language, "").strip()
+            ):
                 URIF = toolkit.h.cioos_get_fully_qualified_package_uri(
                     package_dict,
-                    uri_field='unique-resource-identifier-full',
-                    default_code_space='doi.org')
+                    uri_field="unique-resource-identifier-full",
+                    default_code_space="doi.org",
+                )
                 if URIF:
-                    package_dict['citation'] = {default_language: URIF[0]}
+                    package_dict["citation"] = {default_language: URIF[0]}
 
             # set default values
-            package_dict['progress'] = package_dict.get('progress', 'onGoing') or 'onGoing'
-            package_dict['frequency-of-update'] = package_dict.get('frequency-of-update', 'asNeeded') or 'asNeeded'
+            package_dict["progress"] = (
+                package_dict.get("progress", "onGoing") or "onGoing"
+            )
+            package_dict["frequency-of-update"] = (
+                package_dict.get("frequency-of-update", "asNeeded") or "asNeeded"
+            )
 
         extras_as_list = []
         for key, value in extras.items():
-            if package_dict.get(key, ''):
-                log.error('extras %s found in package dict: key:%s value:%s', key, key, value)
+            if package_dict.get(key, ""):
+                log.error(
+                    "extras %s found in package dict: key:%s value:%s", key, key, value
+                )
                 continue  # already stored as a schema field; adding it to extras too would
-                           # trigger CKAN's "There is a schema field with the same name" error
+                # trigger CKAN's "There is a schema field with the same name" error
             if isinstance(value, (list, dict)):
-                extras_as_list.append({'key': key, 'value': json.dumps(value)})
+                extras_as_list.append({"key": key, "value": json.dumps(value)})
             else:
-                extras_as_list.append({'key': key, 'value': value})
+                extras_as_list.append({"key": key, "value": value})
 
-        package_dict['extras'] = extras_as_list
+        package_dict["extras"] = extras_as_list
 
-         ## Configuring Responsible Organization group
-        group_mapping = source_config.get('organization_mapping', {})
-        group_type = 'resorg'
+        ## Configuring Responsible Organization group
+        group_mapping = source_config.get("organization_mapping", {})
+        group_type = "resorg"
         # filter out entries with no organisation
-        parties = [ x for x in iso_values.get("cited-responsible-party",[]) if x.get('organisation-name')]
+        parties = [
+            x
+            for x in iso_values.get("cited-responsible-party", [])
+            if x.get("organisation-name")
+        ]
         # filter out entries with no organisation from metadata-point-of-contact
-        additional_parties = [ x for x in iso_values.get("metadata-point-of-contact",[]) if x.get('organisation-name')]
+        additional_parties = [
+            x
+            for x in iso_values.get("metadata-point-of-contact", [])
+            if x.get("organisation-name")
+        ]
         # generate groups
-        groups = handle_groups(context, harvest_object, group_mapping, group_type, parties, additional_parties)
+        groups = handle_groups(
+            context,
+            harvest_object,
+            group_mapping,
+            group_type,
+            parties,
+            additional_parties,
+        )
         if groups:
             # remove duplicates by populating dictionary and then converting to list
-            package_dict['groups'] = list({x['id']: x for x in (package_dict.get('groups',[]) + groups)}.values())
+            package_dict["groups"] = list(
+                {x["id"]: x for x in (package_dict.get("groups", []) + groups)}.values()
+            )
 
         # update resource format and translated relevant fields
-        resources = package_dict.get('resources', [])
+        resources = package_dict.get("resources", [])
         for resource in resources:
-            url = resource.get('url', '').strip()
-            protocol = resource.get('resource_locator_protocol') or resource.get('protocol')
-            format = resource.get('format') or 'text/html'
+            url = resource.get("url", "").strip()
+            protocol = resource.get("resource_locator_protocol") or resource.get(
+                "protocol"
+            )
+            format = resource.get("format") or "text/html"
             if url:
                 format = self.cioos_guess_resource_format(url) or format
-            resource['format'] = format
+            resource["format"] = format
 
-            if resource.get('name') and not resource.get('name_translated'):
-                name_val = self.from_json(resource.get('name'))
+            if resource.get("name") and not resource.get("name_translated"):
+                name_val = self.from_json(resource.get("name"))
                 if isinstance(name_val, dict):
-                    resource['name_translated'] = name_val
-                    resource['name'] = name_val.get('en') or next(iter(name_val.values()), resource['name'])
+                    resource["name_translated"] = name_val
+                    resource["name"] = name_val.get("en") or next(
+                        iter(name_val.values()), resource["name"]
+                    )
                 else:
-                    resource['name_translated'] = {}
-                    resource['name_translated'][default_language] = name_val
+                    resource["name_translated"] = {}
+                    resource["name_translated"][default_language] = name_val
 
-            if resource.get('description') and not resource.get('description_translated'):
-                description_val = self.from_json(resource.get('description'))
+            if resource.get("description") and not resource.get(
+                "description_translated"
+            ):
+                description_val = self.from_json(resource.get("description"))
                 if isinstance(description_val, dict):
-                    resource['description_translated'] = description_val
-                    resource['description'] = description_val.get('en') or next(iter(description_val.values()), resource['description'])
+                    resource["description_translated"] = description_val
+                    resource["description"] = description_val.get("en") or next(
+                        iter(description_val.values()), resource["description"]
+                    )
                 else:
-                    resource['description_translated'] = {}
-                    resource['description_translated'][default_language] = description_val
+                    resource["description_translated"] = {}
+                    resource["description_translated"][default_language] = (
+                        description_val
+                    )
 
-        package_dict['resources'] = resources
+        package_dict["resources"] = resources
         return self.trim_values(package_dict)
 
-    
-    def handle_fluent_harvest_dictinary(self, field, iso_values, package_dict, schema, default_language, handled_fields, harvest_config):
-        field_name = field['field_name']
+    def handle_fluent_harvest_dictinary(
+        self,
+        field,
+        iso_values,
+        package_dict,
+        schema,
+        default_language,
+        handled_fields,
+        harvest_config,
+    ):
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
 
         field_value = {}
 
-        if not field.get('preset', '').startswith(u'fluent'):
+        if not field.get("preset", "").startswith("fluent"):
             return
 
         # handle tag fields
-        if field.get('preset', '') == u'fluent_tags':
+        if field.get("preset", "") == "fluent_tags":
             fluent_tags = iso_values.get(field_name, [])
             schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
-            do_clean = toolkit.asbool(harvest_config.get('clean_tags', False))
+            do_clean = toolkit.asbool(harvest_config.get("clean_tags", False))
 
             # init language key
             field_value = {sl: [] for sl in schema_languages}
@@ -1219,7 +1494,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             # process fluent_tags by convert list of language dictionaries into
             # a dictionary of language lists
             for t in fluent_tags:
-                tobj = self.from_json(t.get('keyword', t))
+                tobj = self.from_json(t.get("keyword", t))
                 if isinstance(tobj, Number):
                     tobj = str(tobj)
                 if isinstance(tobj, dict):
@@ -1237,23 +1512,23 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                     field_value[default_language].append(tobj)
 
             # add tags to default language fluent field
-            for item in package_dict['tags']:
-                if item.get('name'):
-                    item = item['name']
+            for item in package_dict["tags"]:
+                if item.get("name"):
+                    item = item["name"]
                 if item not in field_value[default_language]:
                     field_value[default_language].append(item)
 
             package_dict[field_name] = field_value
 
             # clear tags as its garbage anyway
-            package_dict['tags'] = []
+            package_dict["tags"] = []
 
         else:
             # Populate translated fields from core. this could have been done in
             # the spatial extensions. example 'title' -> 'title_translated'
 
             # strip trailing _translated part of field name
-            if field_name.endswith(u'_translated'):
+            if field_name.endswith("_translated"):
                 package_fn = field_name[:-11]
             else:
                 package_fn = field_name
@@ -1268,7 +1543,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if isinstance(existing, dict) and existing:
                 field_value = existing
             else:
-                field_value = self.from_json(package_dict.get(package_fn, ''))
+                field_value = self.from_json(package_dict.get(package_fn, ""))
 
             schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
             if isinstance(field_value, dict):
@@ -1277,7 +1552,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 result = {default_language: field_value}
             # The fluent validator uses truthiness, so missing or empty-string
             # values fail.  Fall back to any available non-empty value.
-            fallback = next((v for v in result.values() if v), '')
+            fallback = next((v for v in result.values() if v), "")
             for lang in schema_languages:
                 if not result.get(lang):
                     result[lang] = fallback
@@ -1292,19 +1567,21 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             if isinstance(value, dict):
                 self.flatten_composite_keys(obj[key], new_obj, keys + [key])
             else:
-                new_obj['_'.join(keys + [key])] = value
+                new_obj["_".join(keys + [key])] = value
         return new_obj
 
-    def handle_composite_harvest_dictinary(self, field, iso_values, extras, package_dict, default_language, handled_fields):
+    def handle_composite_harvest_dictinary(
+        self, field, iso_values, extras, package_dict, default_language, handled_fields
+    ):
         sep = plugins.toolkit.h.scheming_composite_separator()
-        field_name = field['field_name']
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
 
         field_value = iso_values.get(field_name, {})
 
         # populate composite repeating fields
-        if field_value and field.get('repeating_subfields'):
+        if field_value and field.get("repeating_subfields"):
             if isinstance(field_value, dict):
                 field_value = [field_value]
 
@@ -1312,13 +1589,20 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 # lxml can yield bytes; try to decode + parse before flattening
                 if isinstance(subitem, (bytes, str)) and not isinstance(subitem, bool):
                     try:
-                        subitem_str = subitem.decode('utf-8') if isinstance(subitem, bytes) else subitem
+                        subitem_str = (
+                            subitem.decode("utf-8")
+                            if isinstance(subitem, bytes)
+                            else subitem
+                        )
                         subitem = json.loads(subitem_str)
                     except (ValueError, TypeError):
                         pass
                 if not isinstance(subitem, dict):
-                    log.warning('Skipping non-dict subitem for composite field %s (got %s)',
-                                field_name, type(subitem).__name__)
+                    log.warning(
+                        "Skipping non-dict subitem for composite field %s (got %s)",
+                        field_name,
+                        type(subitem).__name__,
+                    )
                     continue
                 # collapse subfields into one key value pair
                 subitem = self.flatten_composite_keys(subitem, {}, [])
@@ -1331,22 +1615,26 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                 del extras[field_name]
             handled_fields.append(field_name)
 
-    def handle_scheming_harvest_dictinary(self, field, iso_values, extras, package_dict, default_language, handled_fields):
-        field_name = field['field_name']
+    def handle_scheming_harvest_dictinary(
+        self, field, iso_values, extras, package_dict, default_language, handled_fields
+    ):
+        field_name = field["field_name"]
         if field_name in handled_fields:
             return
         iso_field_value = iso_values.get(field_name, {})
         extra_field_value = extras.get(field_name, "")
 
         # move schema fields, in extras, to package dictionary
-        if field_name in extras and not package_dict.get(field_name, ''):
+        if field_name in extras and not package_dict.get(field_name, ""):
             package_dict[field_name] = extra_field_value
             del extras[field_name]
             handled_fields.append(field_name)
         # move schema fields, in iso_values, to package dictionary
-        elif iso_field_value and not package_dict.get(field_name, ''):
+        elif iso_field_value and not package_dict.get(field_name, ""):
             # convert list to single value for select fields (not multi-select)
-            if field.get('preset', '') == 'select' and isinstance(iso_field_value, list):
+            if field.get("preset", "") == "select" and isinstance(
+                iso_field_value, list
+            ):
                 iso_field_value = iso_field_value[0]
             package_dict[field_name] = iso_field_value
             # remove from extras so as not to duplicate fields
