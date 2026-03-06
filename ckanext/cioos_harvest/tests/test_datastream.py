@@ -55,22 +55,12 @@ _JSON_DIR = _FIXTURES_DIR / "01-ckan-package"
 _SKIP_FIELDS = frozenset(
     {
         # CKAN-assigned fields (not set by the harvester)
-        "id",
-        "metadata_created",
-        "metadata_modified",
-        "num_resources",
-        "num_tags",
         "isopen",
         "creator_user_id",
         # Fields set by plugin.py (ISpatialHarvester.get_package_dict),
         # which runs after the harvester and is not invoked in these tests.
-        "lineage",
-        "included_in_data_catalogue",
-        "datacentre",
         # License title/url depend on the CKAN license register configuration
         # (licenses_group_url) which may differ between environments.
-        "license_title",
-        "license_url",
         # Relationship/org context fields populated by CKAN storage layer
         "groups",
         "organization",
@@ -81,7 +71,6 @@ _SKIP_FIELDS = frozenset(
         "relationships_as_object",
         "relationships_as_subject",
         # Misc fields skipped from golden comparison
-        "harvest_document_content",
         "xml_location_url",
         "author",
         "author_email",
@@ -109,10 +98,17 @@ _EXTRAS_SKIP_KEYS = frozenset(
         # Environment-specific or CKAN-internal
         "encoding",
         "uri",
-        "legal-constraints-reference-code",
-        "metadata_created_source",
-        "metadata_modified_source",
-        "use-constraints-code",
+    }
+)
+
+# Translated/fluent fields where the 'fr' sub-key is derived from AWS Translate
+# at runtime.  The test uses a deterministic mock that produces '[FR:...]' strings
+# instead of real French, so we strip 'fr' before comparison to avoid false failures.
+_STRIP_FR_FIELDS = frozenset(
+    {
+        "keywords",
+        "title_translated",
+        "notes_translated",
     }
 )
 
@@ -181,6 +177,9 @@ def _filter(pkg: dict) -> dict:
         result["extras"] = _normalise_extras(result["extras"])
     if "resources" in result:
         result["resources"] = [_filter_resource(r) for r in result["resources"]]
+    for field in _STRIP_FR_FIELDS:
+        if field in result and isinstance(result[field], dict):
+            result[field] = {k: v for k, v in result[field].items() if k != "fr"}
     return result
 
 

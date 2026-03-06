@@ -468,6 +468,35 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             iso_values, harvest_object)
 
         # ----------------------------------------------------------------
+        # Step 6.3 — Extras cleanup
+        # ----------------------------------------------------------------
+        # ckanext-spatial serializes gmd:EX_VerticalExtent elements as raw XML
+        # strings when all sub-elements carry gco:nilReason="missing".
+        # Those blobs carry no useful data and are not expected by the CIOOS portal.
+        if 'vertical-extent' in package_dict:
+            ve = package_dict['vertical-extent']
+            # ckanext-spatial returns a list of raw XML str/bytes when all
+            # sub-elements carry nilReason; real extent would be a list of dicts.
+            if isinstance(ve, list) and (not ve or not isinstance(ve[0], dict)):
+                del package_dict['vertical-extent']
+
+        # ckanext-spatial serializes an empty access-constraints list as the
+        # JSON string '[]'.  The CIOOS portal stores it as an empty string.
+        for _e in package_dict.get('extras', []):
+            if _e['key'] == 'access_constraints' and _e['value'] == '[]':
+                _e['value'] = ''
+
+        # ----------------------------------------------------------------
+        # Step 6.4 — Truncate dataset-reference-date values to date-only
+        # ----------------------------------------------------------------
+        # ckanext-spatial's ISODocument returns full ISO datetime strings
+        # (e.g. '2023-01-19T20:54:15.592Z'); the CIOOS portal expects
+        # date-only strings (e.g. '2023-01-19').
+        for _entry in package_dict.get('dataset-reference-date', []):
+            if isinstance(_entry, dict) and _entry.get('value'):
+                _entry['value'] = str(_entry['value'])[:10]
+
+        # ----------------------------------------------------------------
         # Step 6.5 — License: useLimitation → licence extra / use-constraints / license_id
         # ----------------------------------------------------------------
         # DataStream XML stores the license as gmd:useLimitation/gco:CharacterString
@@ -522,6 +551,22 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             _mpoc = self._map_responsible_org_to_contact(_resp_org)
             if _mpoc:
                 package_dict['metadata-point-of-contact'] = _mpoc
+
+        # ----------------------------------------------------------------
+        # Step 6.7 — metadata-reference-date from gmd:dateStamp
+        # ----------------------------------------------------------------
+        # ISO 19115-2 has a single gmd:dateStamp with no type information.
+        # The CIOOS portal expects a list of typed date entries; derive two
+        # entries (Creation and Revision) from the single stamp, matching
+        # the format produced by the ISO 19115-3 parser's infer chain.
+        if not package_dict.get('metadata-reference-date'):
+            _metadata_date = iso_values.get('metadata-date', '')
+            if _metadata_date:
+                _date_only = str(_metadata_date)[:10]
+                package_dict['metadata-reference-date'] = [
+                    {'type': 'Creation', 'value': _date_only},
+                    {'type': 'Revision', 'value': _date_only},
+                ]
 
         # ----------------------------------------------------------------
         # Step 7 — Inject translated keywords
