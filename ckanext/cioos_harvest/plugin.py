@@ -44,34 +44,34 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
             return r
         except ET.ParseError as e:
             msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-            log.warn(msg)
+            log.warning(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         except requests.exceptions.Timeout as e:
             msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-            log.warn(msg)
+            log.warning(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         except requests.exceptions.TooManyRedirects as e:
             msg = 'HTTP too many redirects: %s' % e.code
-            log.warn(msg)
+            log.warning(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         except requests.exceptions.RequestException as e:
             msg = 'HTTP request exception: %s' % e.code
-            log.warn(msg)
+            log.warning(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         except Exception as e:
             msg = '%s: %s. From external XML content at %s' % (type(e).__name__, str(e), xml_url)
-            log.warn(msg)
+            log.warning(msg)
             err = HarvestObjectError(message=msg, object=harvest_object, stage='Import')
             err.save()
         finally:
             return ''
 
     except StaleDataError as e:
-        log.warn('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
+        log.warning('Harvest object %s is stail. Error object not created. %s' % (harvest_object.id, str(e)))
 
 
 def _get_extra(key, package_dict):
@@ -91,14 +91,14 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
     elif content.startswith('<'):
         value = harvest_object.content
     else:
-        log.warn('Unable to find harvest object "%s" '
+        log.warning('Unable to find harvest object "%s" '
                  'referenced by dataset "%s". Trying xml url',
                  harvest_object.id, package_dict['id'])
 
         # try reading from xml url
         xml_url = load_json(package_dict.get('xml_location_url'))
         if not xml_url:
-            log.warn('Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved.')
+            log.warning('Empty or Missing URL in xml_location_url field. External xml metadata will not be retreaved.')
         else:
             urlopen_timeout = float(source_config.get('url_read_timeout') or toolkit.config.get('ckan.index_xml_url_read_timeout') or '500') / 1000.0  # get value in millieseconds but urllib assumes it is in seconds
 
