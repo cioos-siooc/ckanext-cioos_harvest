@@ -268,6 +268,10 @@ class TestDatastreamHarvester:
 
         guid = iso_values.get("guid") or name
         mock_ho = _make_mock_harvest_object(guid)
+        # Provide raw XML content so the harvester can parse gmd:useLimitation
+        # (ckanext-spatial's ISODocument skips it, so _extract_use_limitation_url
+        # needs to read it from harvest_object.content directly).
+        mock_ho.content = xml_str
 
         # --- Step 2: build DataStream package dict ---
         mock_source_pkg = MagicMock()

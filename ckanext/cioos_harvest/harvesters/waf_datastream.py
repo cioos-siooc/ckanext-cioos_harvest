@@ -135,6 +135,84 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         return None
 
     # ------------------------------------------------------------------
+    # License helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _extract_use_limitation_url(harvest_object):
+        """Parse the first gmd:useLimitation URL from harvest_object.content.
+
+        DataStream XML stores the license as
+        ``gmd:useLimitation/gco:CharacterString`` (free-text), not as
+        ``gmd:useConstraints/gmd:MD_RestrictionCode`` (controlled vocabulary).
+        ckanext-spatial's ISODocument only reads the latter, so ``extras['licence']``
+        ends up as an empty list and ``license_id`` is never set.
+
+        Returns the URL string, or ``None`` if it cannot be extracted.
+        """
+        try:
+            content = getattr(harvest_object, 'content', None)
+            if not isinstance(content, (str, bytes)):
+                return None
+            if isinstance(content, str):
+                content = content.encode('utf-8')
+            tree = etree.fromstring(content)
+            ns = {
+                'gmd': 'http://www.isotc211.org/2005/gmd',
+                'gco': 'http://www.isotc211.org/2005/gco',
+            }
+            urls = tree.xpath(
+                './/gmd:MD_LegalConstraints/gmd:useLimitation'
+                '/gco:CharacterString/text()',
+                namespaces=ns)
+            return next((u.strip() for u in urls if u.strip()), None)
+        except Exception as exc:
+            log.debug('DataStream: could not parse useLimitation: %s', exc)
+            return None
+
+    @staticmethod
+    def _resolve_license_id_from_url(url):
+        """Reverse-lookup a license ID by its URL.
+
+        Checks the CKAN license register first (populated when
+        ``licenses_group_url`` is configured to the CIOOS license file), then
+        falls back to loading the local ``ckan_license.json`` shipped with
+        ``cioos-siooc-schema``.  Trailing slashes are normalised before
+        comparison so ``https://…/by/1-0`` and ``https://…/by/1-0/`` both
+        match.
+        """
+        url_stripped = url.rstrip('/')
+
+        # 1. Try CKAN license register
+        try:
+            from ckan import model as _ckan_model
+            register = _ckan_model.Package.get_license_register()
+            for lid, lic in register.items():
+                if getattr(lic, 'url', '').rstrip('/') == url_stripped:
+                    return lid
+        except Exception:
+            pass
+
+        # 2. Fall back to the CIOOS ckan_license.json
+        try:
+            from pathlib import Path as _Path
+            import json as _json
+            # waf_datastream.py: harvesters/ → cioos_harvest/ → ckanext/
+            #   → ckanext-cioos_harvest/ → src_extensions/ (or src/)
+            lic_path = (
+                _Path(__file__).parent.parent.parent.parent.parent
+                / 'cioos-siooc-schema' / 'ckan_license.json'
+            )
+            if lic_path.exists():
+                for lic_data in _json.loads(lic_path.read_text(encoding='utf-8')):
+                    if lic_data.get('url', '').rstrip('/') == url_stripped:
+                        return lic_data['id']
+        except Exception as exc:
+            log.debug('DataStream: CIOOS license file lookup failed: %s', exc)
+
+        return None
+
+    # ------------------------------------------------------------------
     # DOI normalisation
     # ------------------------------------------------------------------
 
@@ -296,6 +374,43 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # ecv, metadata_created/modified, title/notes plain-string override.
         package_dict = super(DatastreamSitemapHarvester, self).get_package_dict(
             iso_values, harvest_object)
+
+        # ----------------------------------------------------------------
+        # Step 6.5 — License: useLimitation → licence extra / use-constraints / license_id
+        # ----------------------------------------------------------------
+        # DataStream XML stores the license as gmd:useLimitation/gco:CharacterString
+        # (a free-text URL), not as gmd:useConstraints/gmd:MD_RestrictionCode.
+        # ckanext-spatial's ISODocument only reads useConstraints, so extras['licence']
+        # ends up as '[]' and license_id is never resolved by the base class.
+        # We parse the raw XML directly, fix the extras, and do a URL-based
+        # license ID lookup against the CIOOS ckan_license.json.
+        _license_url = self._extract_use_limitation_url(harvest_object)
+        if _license_url:
+            # Fix extras.licence (set by ckanext-spatial as empty list → '[]')
+            for _e in package_dict.get('extras', []):
+                if _e['key'] == 'licence':
+                    _e['value'] = _license_url
+                    break
+            else:
+                package_dict.setdefault('extras', []).append(
+                    {'key': 'licence', 'value': _license_url})
+
+            # Add extras.use-constraints (mirrors plugin.py ISpatialHarvester logic)
+            if not any(_e['key'] == 'use-constraints'
+                       for _e in package_dict.get('extras', [])):
+                package_dict['extras'].append(
+                    {'key': 'use-constraints', 'value': _license_url})
+
+            # Resolve license_id by URL when the base class could not set it
+            if not package_dict.get('license_id'):
+                package_dict['license_id'] = (
+                    self._resolve_license_id_from_url(_license_url)
+                    or _license_url
+                )
+                if package_dict['license_id'] == _license_url:
+                    log.warning(
+                        'license_id not resolved for URL %r — using URL as fallback',
+                        _license_url)
 
         # ----------------------------------------------------------------
         # Step 7 — Inject translated keywords
