@@ -171,15 +171,16 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             return None
 
     @staticmethod
-    def _resolve_license_id_from_url(url):
-        """Reverse-lookup a license ID by its URL.
+    def _lookup_license_by_url(url):
+        """Reverse-lookup license fields (id, title, url) by URL.
 
         Checks the CKAN license register first (populated when
         ``licenses_group_url`` is configured to the CIOOS license file), then
         falls back to loading the local ``ckan_license.json`` shipped with
         ``cioos-siooc-schema``.  Trailing slashes are normalised before
-        comparison so ``https://…/by/1-0`` and ``https://…/by/1-0/`` both
-        match.
+        comparison.
+
+        Returns a dict ``{'id': ..., 'title': ..., 'url': ...}`` or ``None``.
         """
         url_stripped = url.rstrip('/')
 
@@ -189,7 +190,11 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             register = _ckan_model.Package.get_license_register()
             for lid, lic in register.items():
                 if getattr(lic, 'url', '').rstrip('/') == url_stripped:
-                    return lid
+                    return {
+                        'id': lid,
+                        'title': getattr(lic, 'title', ''),
+                        'url': getattr(lic, 'url', url),
+                    }
         except Exception:
             pass
 
@@ -206,7 +211,11 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             if lic_path.exists():
                 for lic_data in _json.loads(lic_path.read_text(encoding='utf-8')):
                     if lic_data.get('url', '').rstrip('/') == url_stripped:
-                        return lic_data['id']
+                        return {
+                            'id': lic_data['id'],
+                            'title': lic_data.get('title', ''),
+                            'url': lic_data.get('url', url),
+                        }
         except Exception as exc:
             log.debug('DataStream: CIOOS license file lookup failed: %s', exc)
 
@@ -459,6 +468,24 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 'en': '', 'fr': 'Description ' + self.translation_method_text}
 
         # ----------------------------------------------------------------
+        # Step 5.5 — Pre-set metadata-reference-date from gmd:dateStamp
+        # ----------------------------------------------------------------
+        # waf.py's get_package_dict() derives metadata_created / metadata_modified
+        # from iso_values['metadata-reference-date'].  For ISO 19115-2 (DataStream),
+        # ckanext-spatial's ISODocument does not populate this key — it only reads
+        # gmd:CI_Date elements under the resource citation, not gmd:dateStamp.
+        # Pre-populating it here (from gmd:dateStamp via iso_values['metadata-date'])
+        # ensures waf.py's derivation runs with correct values during super().
+        if not iso_values.get('metadata-reference-date'):
+            _ds = iso_values.get('metadata-date', '')
+            if _ds:
+                _date_only = str(_ds)[:10]
+                iso_values['metadata-reference-date'] = [
+                    {'type': 'Creation', 'value': _date_only},
+                    {'type': 'Revision', 'value': _date_only},
+                ]
+
+        # ----------------------------------------------------------------
         # Step 6 — CIOOS field handling via WAFHarvesterISO19115_3
         # ----------------------------------------------------------------
         # This runs: _expand_point_bboxes, spatial base get_package_dict,
@@ -485,6 +512,17 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         for _e in package_dict.get('extras', []):
             if _e['key'] == 'access_constraints' and _e['value'] == '[]':
                 _e['value'] = ''
+
+        # Store the source XML so downstream tools (portal, plugin.py) can
+        # access it.  plugin.py also sets this, but setting it here ensures it
+        # is available even when plugin.py is not in the call stack (e.g. tests).
+        if not package_dict.get('harvest_document_content'):
+            _content = getattr(harvest_object, 'content', None)
+            if _content:
+                package_dict['harvest_document_content'] = (
+                    _content if isinstance(_content, str)
+                    else _content.decode('utf-8', errors='replace')
+                ).strip()  # remove leading \n left by the XML-declaration regex in fetch_stage
 
         # ----------------------------------------------------------------
         # Step 6.4 — Truncate dataset-reference-date values to date-only
@@ -522,16 +560,20 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 package_dict['extras'].append(
                     {'key': 'use-constraints', 'value': _license_url})
 
-            # Resolve license_id by URL when the base class could not set it
-            if not package_dict.get('license_id'):
-                package_dict['license_id'] = (
-                    self._resolve_license_id_from_url(_license_url)
-                    or _license_url
-                )
-                if package_dict['license_id'] == _license_url:
-                    log.warning(
-                        'license_id not resolved for URL %r — using URL as fallback',
-                        _license_url)
+            # Resolve license id/title/url by URL when the base class could not
+            _lic = self._lookup_license_by_url(_license_url)
+            if _lic:
+                if not package_dict.get('license_id'):
+                    package_dict['license_id'] = _lic['id']
+                if not package_dict.get('license_title'):
+                    package_dict['license_title'] = _lic.get('title', '')
+                if not package_dict.get('license_url'):
+                    package_dict['license_url'] = _lic.get('url', _license_url)
+            elif not package_dict.get('license_id'):
+                package_dict['license_id'] = _license_url
+                log.warning(
+                    'license_id not resolved for URL %r — using URL as fallback',
+                    _license_url)
 
         # ----------------------------------------------------------------
         # Step 6.6 — cited-responsible-party and metadata-point-of-contact
@@ -553,12 +595,12 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 package_dict['metadata-point-of-contact'] = _mpoc
 
         # ----------------------------------------------------------------
-        # Step 6.7 — metadata-reference-date from gmd:dateStamp
+        # Step 6.7 — metadata-reference-date from gmd:dateStamp (fallback)
         # ----------------------------------------------------------------
-        # ISO 19115-2 has a single gmd:dateStamp with no type information.
-        # The CIOOS portal expects a list of typed date entries; derive two
-        # entries (Creation and Revision) from the single stamp, matching
-        # the format produced by the ISO 19115-3 parser's infer chain.
+        # Step 5.5 pre-sets iso_values['metadata-reference-date'] so that
+        # waf.py's metadata_created/metadata_modified derivation works during
+        # super().  The schema handler inside super() should move it into
+        # package_dict; this guard handles any edge case where it did not.
         if not package_dict.get('metadata-reference-date'):
             _metadata_date = iso_values.get('metadata-date', '')
             if _metadata_date:
@@ -567,6 +609,21 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                     {'type': 'Creation', 'value': _date_only},
                     {'type': 'Revision', 'value': _date_only},
                 ]
+
+        # ----------------------------------------------------------------
+        # Step 6.8 — included_in_data_catalogue
+        # ----------------------------------------------------------------
+        # Mark all DataStream harvested records as belonging to the DataStream
+        # catalogue.  This allows the CIOOS portal to display a "View on
+        # DataStream" badge and filter by catalogue membership.
+        if not package_dict.get('included_in_data_catalogue'):
+            package_dict['included_in_data_catalogue'] = [
+                {
+                    'description': 'DataStream is an open access platform for water quality data',
+                    'name': 'DataStream',
+                    'url': 'https://datastream.org',
+                }
+            ]
 
         # ----------------------------------------------------------------
         # Step 7 — Inject translated keywords
