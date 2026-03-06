@@ -904,11 +904,18 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                         tobj = munge.munge_tag(tobj)
                     field_value[default_language].append(tobj)
 
-            # add tags to default language fluent field
+            # add tags to default language fluent field, drop duplicates and normalize for comparison
             for item in package_dict['tags']:
                 if item.get('name'):
                     item = item['name']
-                if item not in field_value[default_language]:
+                # normalize for comparison (strip whitespace, lowercase)
+                item_normalized = item.strip().lower() if isinstance(item, str) else str(item).strip().lower()
+                # check if this keyword already exists in the default language
+                existing_keywords = [
+                    (kw.strip().lower() if isinstance(kw, str) else str(kw).strip().lower())
+                    for kw in field_value.get(default_language, [])
+                ]
+                if item_normalized not in existing_keywords:
                     field_value[default_language].append(item)
 
             package_dict[field_name] = field_value
