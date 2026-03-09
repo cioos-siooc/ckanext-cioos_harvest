@@ -76,7 +76,8 @@ def _get_extra(key, package_dict):
 
 def _extract_xml_from_harvest_object(package_dict, harvest_object):
     content = harvest_object.content
-    source_config = json.loads(harvest_object.source.config)
+    # Handle empty or None config gracefully
+    source_config = json.loads(harvest_object.source.config) if harvest_object.source.config else {}
     key = 'harvest_document_content'
     value = ''
     package_content = package_dict.get(key,'')
@@ -119,7 +120,8 @@ def _extract_xml_from_harvest_object(package_dict, harvest_object):
     return package_dict
 
 def handle_groups(context, harvest_object, group_mapping, group_type, cats = [], additional_contacts = []):
-        source_config = json.loads(harvest_object.source.config)
+        # Handle empty or None config gracefully
+        source_config = json.loads(harvest_object.source.config) if harvest_object.source.config else {}
         validated_groups = []
 
         harvest_responsible_organizations = (source_config.get('harvest_responsible_organizations') or toolkit.config.get('ckan.harvest_responsible_organizations') or 'true').lower()
@@ -408,7 +410,8 @@ class CIOOSCKANHarvester(CKANHarvester):
                 log.warning('Setting tags to an empty list. the following tags will be lost if not already added to keywords: %r', package_dict['tags'])
             package_dict['tags'] = []
 
-            source_config = json.loads(harvest_object.source.config)
+            # Handle empty or None config gracefully
+            source_config = json.loads(harvest_object.source.config) if harvest_object.source.config else {}
             ## Configuring Responsible Organization group
             group_mapping = source_config.get('organization_mapping', {})
             group_type = 'resorg'
@@ -684,7 +687,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         package_dict = data_dict['package_dict']
         iso_values = data_dict['iso_values']
         harvest_object = data_dict['harvest_object']
-        source_config = json.loads(data_dict['harvest_object'].source.config)
+        # Handle empty or None config gracefully
+        source_config = json.loads(data_dict['harvest_object'].source.config) if data_dict['harvest_object'].source.config else {}
         xml_location_url = self._get_object_extra(data_dict['harvest_object'], 'waf_location')
         xml_modified_date = self._get_object_extra(data_dict['harvest_object'], 'waf_modified_date')
 
