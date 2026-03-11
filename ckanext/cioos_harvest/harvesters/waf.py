@@ -6,7 +6,6 @@ from WAFHarvester.
 """
 
 import logging
-import re
 
 from ckan.lib.helpers import json
 from ckan.plugins.core import SingletonPlugin, implements
@@ -14,30 +13,22 @@ from ckan.plugins.core import SingletonPlugin, implements
 import ckanext.spatial.harvesters.base as spatial_base
 from ckan import model as ckan_model
 from ckan import plugins as p
+from ckanext.cioos_harvest.harvesters.base import (
+    from_json,
+    sanitize_tag,
+    singleton_new,
+    translate_resource_fields,
+)
+from ckanext.cioos_harvest.harvesters.field_handlers import (
+    handle_composite_field,
+    handle_fluent_field,
+    handle_scheming_field,
+)
 from ckanext.cioos_harvest.model.iso19115_3 import ISODocument
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.spatial.harvesters.waf import WAFHarvester
 
 log = logging.getLogger(__name__)
-
-# CKAN tag validator allows: alphanumeric, space, and -_.,;'()
-# Characters outside that set are replaced with safe equivalents first,
-# then any remaining disallowed characters are stripped.
-_TAG_REPLACEMENTS = [
-    ("\u2013", "-"),  # en dash  →  hyphen
-    ("\u2014", "-"),  # em dash  →  hyphen
-    ("&", "and"),
-    (":", " -"),
-]
-_TAG_INVALID_RE = re.compile(r"[^\w \-_.,;'()]", re.UNICODE)
-
-
-def _sanitize_tag(text):
-    """Replace/strip characters that CKAN's tag validator rejects."""
-    for char, replacement in _TAG_REPLACEMENTS:
-        text = text.replace(char, replacement)
-    text = _TAG_INVALID_RE.sub("", text)
-    return " ".join(text.split())  # collapse any double-spaces left behind
 
 
 class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
@@ -49,10 +40,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
 
     implements(IHarvester)
 
-    def __new__(cls, *args, **kwargs):
-        if "_instance" not in cls.__dict__:
-            cls._instance = object.__new__(cls)
-        return cls._instance
+    __new__ = singleton_new
 
     def info(self):
         return {
@@ -76,8 +64,9 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                 config_obj = json.loads(source_config)
                 if "validator_profiles" in config_obj:
                     log.info(
-                        "WAFHarvesterISO19115_3: ignoring validator_profiles %s "
+                        "%s: ignoring validator_profiles %s "
                         "(XSD validation is skipped for this harvester)",
+                        self.__class__.__name__,
                         config_obj["validator_profiles"],
                     )
                     config_obj.pop("validator_profiles")
@@ -89,7 +78,8 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     def _validate_document(self, document_string, harvest_object, validator=None):
         """Skip ISO 19139 XSD validation — this harvester is ISO 19115-3 only."""
         log.debug(
-            "Skipping XSD validation for ISO 19115-3 harvester (GUID: %s)",
+            "%s: skipping XSD validation (GUID: %s)",
+            self.__class__.__name__,
             harvest_object.guid,
         )
         return True, None, []
@@ -119,19 +109,8 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         finally:
             spatial_base.ISODocument = old_cls
 
-    # ------------------------------------------------------------------
-    # JSON helper
-    # ------------------------------------------------------------------
-
-    def from_json(self, val):
-        if isinstance(val, str):
-            stripped = val.strip()
-            if stripped.startswith("{") or stripped.startswith("["):
-                try:
-                    return json.loads(val)
-                except Exception:
-                    pass
-        return val
+    # Delegate to shared base functions (kept as methods for backward compat)
+    from_json = staticmethod(from_json)
 
     # ------------------------------------------------------------------
     # Package dict construction
@@ -331,18 +310,13 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             if loc.get("url") and loc.get("format")
         }
 
-        # Post-process resources: the parser stores name/description as
-        # JSON-encoded lang-dicts.  Decode them into a plain primary-language
-        # string (for backward-compat) plus a _translated sibling dict.
-        # Also apply CIOOS-specific format labels derived from the URL.
+        # Decode multilingual name/description on resources into _translated dicts.
+        translate_resource_fields(
+            package_dict.get("resources", []), primary_lang, json_decoder=from_json
+        )
+
+        # Apply CIOOS-specific format labels derived from URL patterns.
         for resource in package_dict.get("resources", []):
-            for field in ("name", "description"):
-                val = self.from_json(resource.get(field, ""))
-                if isinstance(val, dict):
-                    resource[field + "_translated"] = val
-                    resource[field] = val.get(primary_lang) or next(
-                        iter(val.values()), ""
-                    )
             url = resource.get("url", "")
             if url in locator_formats:
                 resource["format"] = locator_formats[url]
@@ -422,118 +396,44 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         return package_dict
 
     # ------------------------------------------------------------------
-    # Field handlers (fluent / composite / scheming)
+    # Field handlers — delegate to shared field_handlers module
     # ------------------------------------------------------------------
 
     def handle_fluent_harvest_dictionary(
         self, field, iso_values, package_dict, schema, handled_fields, harvest_config
     ):
-        field_name = field["field_name"]
-        if field_name in handled_fields:
-            return
-        if not field.get("preset", "").startswith("fluent"):
-            return
-
         default_language = iso_values.get("metadata-language", "en") or "en"
-
-        if field.get("preset", "") == "fluent_tags":
-            tags = iso_values.get("tags", [])
-            schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
-            field_value = {lang: [] for lang in schema_languages}
-            for t in tags:
-                tobj = self.from_json(t)
-                if isinstance(tobj, dict):
-                    for key, value in tobj.items():
-                        if key in schema_languages:
-                            field_value[key].append(_sanitize_tag(value))
-                else:
-                    field_value[default_language].append(_sanitize_tag(str(tobj)))
-            package_dict[field_name] = field_value
-            # With fluent_tags active, keywords are stored in the fluent
-            # field (e.g. 'keywords') — the plain 'tags' list must be empty.
-            package_dict["tags"] = []
-        else:
-            if field_name.endswith("_translated"):
-                package_fn = field_name[:-11]
-            else:
-                package_fn = field_name
-            schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
-            package_val = package_dict.get(package_fn, "")
-            field_value = self.from_json(package_val)
-            if isinstance(field_value, dict):
-                result = dict(field_value)
-            else:
-                result = {default_language[:2]: field_value}
-            # The fluent validator uses truthiness (value.get(lang)), so a missing
-            # or empty-string value for a required language fails validation even
-            # if the key is present.  For harvested records that only carry one
-            # language, fall back to any available non-empty value so the record
-            # is importable.  The fallback is intentional: monolingual records are
-            # common in historical datasets; flagging them as errors would block
-            # the whole harvest.
-            fallback = next((v for v in result.values() if v), "")
-            for lang in schema_languages:
-                if not result.get(lang):
-                    result[lang] = fallback
-            package_dict[field_name] = result
-
-        handled_fields.append(field_name)
-
-    def flatten_composite_keys(self, obj, new_obj={}, keys=[]):
-        for key, value in obj.items():
-            if isinstance(value, dict):
-                self.flatten_composite_keys(obj[key], new_obj, keys + [key])
-            else:
-                new_obj["_".join(keys + [key])] = value
-        return new_obj
+        handle_fluent_field(
+            field,
+            iso_values,
+            package_dict,
+            schema,
+            default_language,
+            handled_fields,
+            tag_sanitizer=sanitize_tag,
+            json_decoder=from_json,
+        )
 
     def handle_composite_harvest_dictionary(
         self, field, iso_values, package_dict, handled_fields
     ):
-        field_name = field["field_name"]
-        if field_name in handled_fields:
-            return
-        field_value = iso_values.get(field_name, {})
-        if "__extras" not in package_dict:
-            package_dict["__extras"] = {}
-
-        if field_value and field.get("preset", "") == "composite":
-            if isinstance(field_value, list):
-                field_value = field_value[0]
-            field_value = self.flatten_composite_keys(field_value)
-            for key, value in field_value.items():
-                package_dict["__extras"][field_name + "|" + key] = value
-            handled_fields.append(field_name)
-        elif field_value and field.get("preset", "") == "composite_repeating":
-            if isinstance(field_value, dict):
-                field_value[0] = field_value
-            for idx, subitem in enumerate(field_value):
-                subitem = self.flatten_composite_keys(subitem)
-                for key, value in subitem.items():
-                    package_dict["__extras"][
-                        field_name + "|" + str(idx + 1) + "|" + key
-                    ] = value
-            handled_fields.append(field_name)
+        handle_composite_field(
+            field,
+            iso_values,
+            package_dict,
+            handled_fields,
+            separator="|",
+            extras=None,  # WAF path: writes to __extras
+        )
 
     def handle_scheming_harvest_dictionary(
         self, field, iso_values, extras, package_dict, handled_fields
     ):
-        field_name = field["field_name"]
-        if field_name in handled_fields:
-            return
-        iso_field_value = iso_values.get(field_name, {})
-        extra_field_value = extras.get(field_name, "")
-
-        if field_name in extras and not package_dict.get(field_name, ""):
-            package_dict[field_name] = self.from_json(extra_field_value)
-            del extras[field_name]
-            handled_fields.append(field_name)
-        elif iso_field_value and not package_dict.get(field_name, ""):
-            if field.get("preset", "") == "select" and isinstance(
-                iso_field_value, list
-            ):
-                iso_field_value = iso_field_value[0]
-            package_dict[field_name] = iso_field_value
-            if field_name in extras:
-                del extras[field_name]
-            handled_fields.append(field_name)
+        handle_scheming_field(
+            field,
+            iso_values,
+            extras,
+            package_dict,
+            handled_fields,
+            json_decoder=from_json,
+        )

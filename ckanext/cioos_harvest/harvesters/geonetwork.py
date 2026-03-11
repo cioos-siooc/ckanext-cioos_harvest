@@ -7,6 +7,7 @@ from ckan.plugins.core import SingletonPlugin
 from ckantoolkit import config
 
 from ckan import model
+from ckanext.cioos_harvest.harvesters.base import singleton_new
 from ckanext.spatial.harvested_metadata import ISODocument, ISOElement
 from ckanext.spatial.harvesters.csw import CSWHarvester
 
@@ -45,10 +46,7 @@ for element in ISODocument.elements:
 
 
 class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
-    def __new__(cls, *args, **kwargs):
-        if "_instance" not in cls.__dict__:
-            cls._instance = object.__new__(cls)
-        return cls._instance
+    __new__ = singleton_new
 
     def info(self):
         return {
@@ -71,7 +69,6 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
             gn_localized_url = gn_localized_url[:-3]
 
         log.debug("GN localized URL %s", gn_localized_url)
-        # log.debug('Package dict is %r ', package_dict['extras'])
 
         package_dict["extras"].append(
             {
@@ -103,10 +100,8 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
             if groups:
                 package_dict["groups"] = groups
 
-        # log.debug('::::::::::::::::::::::: %r ', self.source_config.get('private_datasets'))
         if self.source_config.get("private_datasets") == "True":
             package_dict["private"] = True
-        # log.debug('::::::::::::::::::::::: %r ', package_dict['private'])
 
         # Fix resources type according to resource_locator_protocol
         self.fix_resource_type(package_dict["resources"])
@@ -140,12 +135,7 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
             ):
                 # Handle groups mapping using metadata TopicCategory
                 cats = values["topic-category"]
-                log.info(":::::::::::::-TOPIC-CATEGORY-::::::::::::: %r ", cats)
-            # else:
-            # Handle groups mapping using GeoNetwork categories
-            # version = self.source_config.get('version')
-            # client = GeoNetworkClient(gn_localized_url, version)
-            # cats = client.retrieveMetadataCategories(harvest_object.guid)
+                log.info("Topic categories: %r", cats)
 
             for cat in cats:
                 groupname = group_mapping[cat]
@@ -157,11 +147,6 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
                     try:
                         data_dict = {"id": groupname}
                         get_action("group_show")(context, data_dict)
-                        # log.info('Group %s found %s' % (groupname, group))
-                        # if self.api_version == 1:
-                        # validated_groups.append(group['name'])
-                        # else:
-                        # validated_groups.append(group['id'])
                         validated_groups.append({"name": groupname})
                     except NotFound:
                         log.warning(

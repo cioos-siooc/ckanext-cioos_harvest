@@ -12,13 +12,17 @@ from ckanext.cioos_harvest.harvesters.base import (
     SearchError,
     all_packages_for_source,
 )
+from ckanext.cioos_harvest.harvesters.ckan_cioos import CIOOSCKANHarvester
 from ckanext.cioos_harvest.harvesters.ckan_schema import CIOOSCKANSchemaHarvester
+from ckanext.cioos_harvest.harvesters.ckan_spatial import CKANSpatialHarvester
 from ckanext.cioos_harvest.harvesters.geonetwork import GeoNetworkHarvester
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.cioos_harvest.harvesters.waf_datastream import DatastreamSitemapHarvester
 
 __all__ = [
+    "CIOOSCKANHarvester",
     "CIOOSCKANSchemaHarvester",
+    "CKANSpatialHarvester",
     "WAFHarvesterISO19115_3",
     "DatastreamSitemapHarvester",
     "GeoNetworkHarvester",

@@ -1,18 +1,21 @@
-from __future__ import print_function
-
 import hashlib
+import json as json_stdlib
 import logging
 import unicodedata
+from collections import OrderedDict
+from pathlib import Path
 
 import boto3
 import requests
+from ckan import model
+from ckan import plugins
 from ckan.lib.helpers import json
 from ckan.plugins.core import implements
 from ckantoolkit import config
 from lxml import etree
 from sqlalchemy.orm import aliased
 
-from ckan import model
+from ckanext.cioos_harvest.harvesters.base import sanitize_tag, singleton_new
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.harvest.interfaces import IHarvester
 from ckanext.harvest.model import HarvestObject
@@ -36,10 +39,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
     implements(IHarvester)
 
-    def __new__(cls, *args, **kwargs):
-        if "_instance" not in cls.__dict__:
-            cls._instance = object.__new__(cls)
-        return cls._instance
+    __new__ = singleton_new
 
     redis_translation_store = "awsTranslations"
     translation_method_text = "text translated using the Amazon translate service / texte traduit à l'aide du service Amazon translate"
@@ -51,35 +51,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             "description": "site map listing datasets urls with avilable iso19115-2 xml",
         }
 
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
-
-    def _validate_document(self, document_string, harvest_object, validator=None):
-        """Skip XSD validation — DataStream ISO 19115-2 documents use gmi:MI_Metadata
-        which is not covered by the ISO 19139 schemas bundled with ckanext-spatial."""
-        log.debug(
-            "Skipping XSD validation for DataStream harvester (GUID: %s)",
-            harvest_object.guid,
-        )
-        return True, None, []
-
-    def validate_config(self, source_config):
-        """Strip validator_profiles before base validation — this harvester skips XSD validation."""
-        if source_config:
-            try:
-                config_obj = json.loads(source_config)
-                if "validator_profiles" in config_obj:
-                    log.info(
-                        "DatastreamSitemapHarvester: ignoring validator_profiles %s "
-                        "(XSD validation is skipped for this harvester)",
-                        config_obj["validator_profiles"],
-                    )
-                    config_obj.pop("validator_profiles")
-                    source_config = json.dumps(config_obj)
-            except ValueError:
-                pass
-        return super(DatastreamSitemapHarvester, self).validate_config(source_config)
+    # _validate_document and validate_config are inherited from
+    # WAFHarvesterISO19115_3 — no need to override.
 
     # ------------------------------------------------------------------
     # Import stage — skip ISO 19115-3 monkey-patch
@@ -132,8 +105,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 log.debug('"%s" saved to cache', string_to_translate)
                 redis_conn.hset(store_name, mapping={string_to_translate: aws_trans})
                 return aws_trans
-        except Exception as e:
-            log.error('Could not translate text "%s": %s', string_to_translate[:80], e)
+        except Exception as err:
+            log.error('Could not translate text "%s": %s', string_to_translate[:80], err)
 
         return None
 
@@ -169,7 +142,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 "/gco:CharacterString/text()",
                 namespaces=ns,
             )
-            return next((u.strip() for u in urls if u.strip()), None)
+            return next((url.strip() for url in urls if url.strip()), None)
         except Exception as exc:
             log.debug("DataStream: could not parse useLimitation: %s", exc)
             return None
@@ -190,9 +163,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
         # 1. Try CKAN license register
         try:
-            from ckan import model as _ckan_model
-
-            register = _ckan_model.Package.get_license_register()
+            register = model.Package.get_license_register()
             for lid, lic in register.items():
                 if getattr(lic, "url", "").rstrip("/") == url_stripped:
                     return {
@@ -205,18 +176,15 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
         # 2. Fall back to the CIOOS ckan_license.json
         try:
-            import json as _json
-            from pathlib import Path as _Path
-
             # waf_datastream.py: harvesters/ → cioos_harvest/ → ckanext/
             #   → ckanext-cioos_harvest/ → src_extensions/ (or src/)
             lic_path = (
-                _Path(__file__).parent.parent.parent.parent.parent
+                Path(__file__).parent.parent.parent.parent.parent
                 / "cioos-siooc-schema"
                 / "ckan_license.json"
             )
             if lic_path.exists():
-                for lic_data in _json.loads(lic_path.read_text(encoding="utf-8")):
+                for lic_data in json_stdlib.loads(lic_path.read_text(encoding="utf-8")):
                     if lic_data.get("url", "").rstrip("/") == url_stripped:
                         return {
                             "id": lic_data["id"],
@@ -260,8 +228,6 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 ".//gmd:CI_Citation/gmd:citedResponsibleParty/gmd:CI_ResponsibleParty",
                 namespaces=ns,
             )
-
-            from collections import OrderedDict
 
             merged = OrderedDict()
             for party in parties:
@@ -534,17 +500,17 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # strings when all sub-elements carry gco:nilReason="missing".
         # Those blobs carry no useful data and are not expected by the CIOOS portal.
         if "vertical-extent" in package_dict:
-            ve = package_dict["vertical-extent"]
+            vertical_extent = package_dict["vertical-extent"]
             # ckanext-spatial returns a list of raw XML str/bytes when all
             # sub-elements carry nilReason; real extent would be a list of dicts.
-            if isinstance(ve, list) and (not ve or not isinstance(ve[0], dict)):
+            if isinstance(vertical_extent, list) and (not vertical_extent or not isinstance(vertical_extent[0], dict)):
                 del package_dict["vertical-extent"]
 
         # ckanext-spatial serializes an empty access-constraints list as the
         # JSON string '[]'.  The CIOOS portal stores it as an empty string.
-        for _e in package_dict.get("extras", []):
-            if _e["key"] == "access_constraints" and _e["value"] == "[]":
-                _e["value"] = ""
+        for extra_item in package_dict.get("extras", []):
+            if extra_item["key"] == "access_constraints" and extra_item["value"] == "[]":
+                extra_item["value"] = ""
 
         # Store the source XML so downstream tools (portal, plugin.py) can
         # access it.  plugin.py also sets this, but setting it here ensures it
@@ -580,9 +546,9 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         _license_url = self._extract_use_limitation_url(harvest_object)
         if _license_url:
             # Fix extras.licence (set by ckanext-spatial as empty list → '[]')
-            for _e in package_dict.get("extras", []):
-                if _e["key"] == "licence":
-                    _e["value"] = _license_url
+            for extra_item in package_dict.get("extras", []):
+                if extra_item["key"] == "licence":
+                    extra_item["value"] = _license_url
                     break
             else:
                 package_dict.setdefault("extras", []).append(
@@ -591,7 +557,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
             # Add extras.use-constraints (mirrors plugin.py ISpatialHarvester logic)
             if not any(
-                _e["key"] == "use-constraints" for _e in package_dict.get("extras", [])
+                extra_item["key"] == "use-constraints" for extra_item in package_dict.get("extras", [])
             ):
                 package_dict["extras"].append(
                     {"key": "use-constraints", "value": _license_url}
@@ -670,23 +636,20 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # iso_values['tags'] and re-run the fluent_tags handler manually
         # to produce the correct {"en": [...], "fr": [...]} format.
         iso_values["tags"] = iso_values.pop("_datastream_tags", [])
-        from ckan import plugins as p
 
-        loaded_plugins = p.toolkit.config.get("ckan.plugins", "")
+        loaded_plugins = plugins.toolkit.config.get("ckan.plugins", "")
         if "scheming_datasets" in loaded_plugins and "fluent" in loaded_plugins:
-            schema = p.toolkit.h.scheming_get_dataset_schema("dataset")
-            from ckanext.cioos_harvest.harvesters.waf import _sanitize_tag
-
-            schema_languages = p.toolkit.h.fluent_form_languages(schema=schema)
+            schema = plugins.toolkit.h.scheming_get_dataset_schema("dataset")
+            schema_languages = plugins.toolkit.h.fluent_form_languages(schema=schema)
             kw_field_value = {lang: [] for lang in schema_languages}
-            for t in iso_values["tags"]:
-                tobj = self.from_json(t)
-                if isinstance(tobj, dict):
-                    for key, value in tobj.items():
-                        if key in schema_languages:
-                            kw_field_value[key].append(_sanitize_tag(value))
+            for tag_str in iso_values["tags"]:
+                tag_obj = self.from_json(tag_str)
+                if isinstance(tag_obj, dict):
+                    for lang, tag_value in tag_obj.items():
+                        if lang in schema_languages:
+                            kw_field_value[lang].append(sanitize_tag(tag_value))
                 else:
-                    kw_field_value[primary_lang].append(_sanitize_tag(str(tobj)))
+                    kw_field_value[primary_lang].append(sanitize_tag(str(tag_obj)))
             package_dict["keywords"] = kw_field_value
         package_dict["tags"] = []
 
@@ -746,27 +709,27 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             te_raw = iso_values.get("temporal-extent", [])
             if te_raw:
                 entries = []
-                for ex in te_raw:
-                    entry = {}
-                    if ex.get("begin"):
-                        entry["begin"] = ex["begin"][:10]
-                    if ex.get("end"):
-                        entry["end"] = ex["end"][:10]
-                    if entry:
-                        entries.append(entry)
+                for extent in te_raw:
+                    extent_entry = {}
+                    if extent.get("begin"):
+                        extent_entry["begin"] = extent["begin"][:10]
+                    if extent.get("end"):
+                        extent_entry["end"] = extent["end"][:10]
+                    if extent_entry:
+                        entries.append(extent_entry)
                 if entries:
                     package_dict["temporal-extent"] = entries
             else:
                 # Fall back to the extras that ckanext-spatial added
                 begin = end = ""
                 kept_extras = []
-                for e in package_dict.get("extras", []):
-                    if e["key"] == "temporal-extent-begin":
-                        begin = (e["value"] or "")[:10]
-                    elif e["key"] == "temporal-extent-end":
-                        end = (e["value"] or "")[:10]
+                for extra_item in package_dict.get("extras", []):
+                    if extra_item["key"] == "temporal-extent-begin":
+                        begin = (extra_item["value"] or "")[:10]
+                    elif extra_item["key"] == "temporal-extent-end":
+                        end = (extra_item["value"] or "")[:10]
                     else:
-                        kept_extras.append(e)
+                        kept_extras.append(extra_item)
                 if begin or end:
                     package_dict["temporal-extent"] = [{"begin": begin, "end": end}]
                     package_dict["extras"] = kept_extras
@@ -827,9 +790,9 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         try:
             sitemap_response = requests.get(source_url, timeout=60)
             sitemap_response.raise_for_status()
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException as err:
             self._save_gather_error(
-                "Unable to get content for URL: %s: %r" % (source_url, e), harvest_job
+                "Unable to get content for URL: %s: %r" % (source_url, err), harvest_job
             )
             return None
 
@@ -853,8 +816,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 url = loc_node.text + "/iso19115.xml"
                 modified_date = last_modified_node.text
                 url_to_modified_harvest[url] = modified_date
-        except Exception as e:
-            msg = "Error extracting URLs from %s, error was %r" % (source_url, e)
+        except Exception as err:
+            msg = "Error extracting URLs from %s, error was %r" % (source_url, err)
             self._save_gather_error(msg, harvest_job)
             return None
 

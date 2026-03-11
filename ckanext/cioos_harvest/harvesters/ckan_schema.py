@@ -20,6 +20,8 @@ from ckanext.cioos_harvest.harvesters.base import (
     ContentNotFoundError,
     RemoteResourceError,
     SearchError,
+    get_extra,
+    load_json,
 )
 from ckanext.harvest.harvesters.base import HarvesterBase
 from ckanext.harvest.model import HarvestObject
@@ -611,11 +613,6 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
 
             # Set default extras if needed
             default_extras = self.config.get("default_extras", {})
-
-            def get_extra(key, package_dict):
-                for extra in package_dict.get("extras", []):
-                    if extra["key"] == key:
-                        return extra
 
             if default_extras:
                 override_extras = self.config.get("override_extras", False)

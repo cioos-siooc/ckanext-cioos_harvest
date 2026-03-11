@@ -66,8 +66,8 @@ setup(
     entry_points="""
         [ckan.plugins]
         cioos_harvest=ckanext.cioos_harvest.plugin:Cioos_HarvestPlugin
-        ckan_cioos_harvester=ckanext.cioos_harvest.plugin:CIOOSCKANHarvester
-        ckan_spatial_harvester=ckanext.cioos_harvest.plugin:CKANSpatialHarvester
+        ckan_cioos_harvester=ckanext.cioos_harvest.harvesters.ckan_cioos:CIOOSCKANHarvester
+        ckan_spatial_harvester=ckanext.cioos_harvest.harvesters.ckan_spatial:CKANSpatialHarvester
         ckan_schema_harvester=ckanext.cioos_harvest.harvesters:CIOOSCKANSchemaHarvester
         waf_iso19115_3_harvester=ckanext.cioos_harvest.harvesters:WAFHarvesterISO19115_3
         cioos_datastream_harvester=ckanext.cioos_harvest.harvesters:DatastreamSitemapHarvester
