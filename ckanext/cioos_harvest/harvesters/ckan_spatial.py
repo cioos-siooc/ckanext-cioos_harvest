@@ -7,7 +7,6 @@ against the remote instance's spatial search API.
 import json
 import logging
 
-import ckan.plugins.toolkit as toolkit
 import requests
 from ckan.lib.search import SearchError
 from requests.exceptions import HTTPError, RequestException
@@ -70,10 +69,8 @@ class CKANSpatialHarvester(CKANHarvester):
             package_dict["included_in_data_catalogue"] = [dc]
         else:
             package_dict["included_in_data_catalogue"].append(dc)
-            package_dict["included_in_data_catalogue"] = (
-                deduplicate_catalogue_entries(
-                    package_dict["included_in_data_catalogue"]
-                )
+            package_dict["included_in_data_catalogue"] = deduplicate_catalogue_entries(
+                package_dict["included_in_data_catalogue"]
             )
 
         return package_dict
@@ -82,7 +79,7 @@ class CKANSpatialHarvester(CKANHarvester):
         ss_params = {}
         spatial_filter_file = self.config.get("spatial_filter_file", None)
         if spatial_filter_file:
-            f = open(spatial_filter_file, "r")
+            f = open(spatial_filter_file)
             spatial_filter_wkt = f.read()
         else:
             spatial_filter_wkt = self.config.get("spatial_filter", None)

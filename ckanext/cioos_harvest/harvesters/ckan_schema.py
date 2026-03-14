@@ -21,7 +21,6 @@ from ckanext.cioos_harvest.harvesters.base import (
     RemoteResourceError,
     SearchError,
     get_extra,
-    load_json,
 )
 from ckanext.harvest.harvesters.base import HarvesterBase
 from ckanext.harvest.model import HarvestObject
@@ -268,9 +267,7 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
             get_changes_since = (last_time - datetime.timedelta(hours=1)).isoformat()
             log.info("Searching for datasets modified since: %s UTC", get_changes_since)
 
-            fq_since_last_time = "metadata_modified:[{since}Z TO *]".format(
-                since=get_changes_since
-            )
+            fq_since_last_time = f"metadata_modified:[{get_changes_since}Z TO *]"
 
             try:
                 pkg_dicts = self._search_for_datasets(

@@ -58,7 +58,7 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
 
     def get_package_dict(self, iso_values, harvest_object):
 
-        package_dict = super(GeoNetworkHarvester, self).get_package_dict(
+        package_dict = super().get_package_dict(
             iso_values, harvest_object
         )
 

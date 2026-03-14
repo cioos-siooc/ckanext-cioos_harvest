@@ -7,14 +7,13 @@ from pathlib import Path
 
 import boto3
 import requests
-from ckan import model
-from ckan import plugins
 from ckan.lib.helpers import json
 from ckan.plugins.core import implements
 from ckantoolkit import config
 from lxml import etree
 from sqlalchemy.orm import aliased
 
+from ckan import model, plugins
 from ckanext.cioos_harvest.harvesters.base import sanitize_tag, singleton_new
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.harvest.interfaces import IHarvester
@@ -106,7 +105,9 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 redis_conn.hset(store_name, mapping={string_to_translate: aws_trans})
                 return aws_trans
         except Exception as err:
-            log.error('Could not translate text "%s": %s', string_to_translate[:80], err)
+            log.error(
+                'Could not translate text "%s": %s', string_to_translate[:80], err
+            )
 
         return None
 
@@ -489,7 +490,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # This runs: _expand_point_bboxes, spatial base get_package_dict,
         # scheming/fluent/composite field handlers, license resolution,
         # ecv, metadata_created/modified, title/notes plain-string override.
-        package_dict = super(DatastreamSitemapHarvester, self).get_package_dict(
+        package_dict = super().get_package_dict(
             iso_values, harvest_object
         )
 
@@ -503,13 +504,18 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             vertical_extent = package_dict["vertical-extent"]
             # ckanext-spatial returns a list of raw XML str/bytes when all
             # sub-elements carry nilReason; real extent would be a list of dicts.
-            if isinstance(vertical_extent, list) and (not vertical_extent or not isinstance(vertical_extent[0], dict)):
+            if isinstance(vertical_extent, list) and (
+                not vertical_extent or not isinstance(vertical_extent[0], dict)
+            ):
                 del package_dict["vertical-extent"]
 
         # ckanext-spatial serializes an empty access-constraints list as the
         # JSON string '[]'.  The CIOOS portal stores it as an empty string.
         for extra_item in package_dict.get("extras", []):
-            if extra_item["key"] == "access_constraints" and extra_item["value"] == "[]":
+            if (
+                extra_item["key"] == "access_constraints"
+                and extra_item["value"] == "[]"
+            ):
                 extra_item["value"] = ""
 
         # Store the source XML so downstream tools (portal, plugin.py) can
@@ -557,7 +563,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
             # Add extras.use-constraints (mirrors plugin.py ISpatialHarvester logic)
             if not any(
-                extra_item["key"] == "use-constraints" for extra_item in package_dict.get("extras", [])
+                extra_item["key"] == "use-constraints"
+                for extra_item in package_dict.get("extras", [])
             ):
                 package_dict["extras"].append(
                     {"key": "use-constraints", "value": _license_url}
@@ -892,9 +899,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
         if len(ids) > 0:
             log.debug(
-                "{0} objects sent to the next stage: {1} new, {2} change, {3} delete".format(
-                    len(ids), len(new), len(change), len(delete)
-                )
+                f"{len(ids)} objects sent to the next stage: {len(new)} new, {len(change)} change, {len(delete)} delete"
             )
             return ids
         else:

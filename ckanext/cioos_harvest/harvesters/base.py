@@ -188,7 +188,7 @@ def sanitize_tag(text):
 def all_packages_for_source(source_id):
     """Fetch all datasets belonging to a harvest source (handles pagination)."""
     limit = 1000
-    fq = '+harvest_source_id:"{0}"'.format(source_id)
+    fq = f'+harvest_source_id:"{source_id}"'
     search_dict = {
         "fq": fq,
         "rows": limit,
@@ -227,9 +227,7 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
                 xml_url,
             )
             log.warning(msg)
-            err = HarvestObjectError(
-                message=msg, object=harvest_object, stage="Import"
-            )
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.Timeout as e:
             msg = "%s: %s. From external XML content at %s" % (
@@ -238,23 +236,17 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
                 xml_url,
             )
             log.warning(msg)
-            err = HarvestObjectError(
-                message=msg, object=harvest_object, stage="Import"
-            )
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.TooManyRedirects as e:
             msg = "HTTP too many redirects: %s" % e.code
             log.warning(msg)
-            err = HarvestObjectError(
-                message=msg, object=harvest_object, stage="Import"
-            )
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except requests.exceptions.RequestException as e:
             msg = "HTTP request exception: %s" % e.code
             log.warning(msg)
-            err = HarvestObjectError(
-                message=msg, object=harvest_object, stage="Import"
-            )
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         except Exception as e:
             msg = "%s: %s. From external XML content at %s" % (
@@ -263,9 +255,7 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
                 xml_url,
             )
             log.warning(msg)
-            err = HarvestObjectError(
-                message=msg, object=harvest_object, stage="Import"
-            )
+            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
             err.save()
         finally:
             return ""
@@ -322,9 +312,7 @@ def extract_xml_from_harvest_object(package_dict, harvest_object):
 
             # single file
             if xml_url and isinstance(xml_url, str):
-                value = _get_xml_url_content(
-                    xml_url, urlopen_timeout, harvest_object
-                )
+                value = _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
 
             # list of files
             if xml_url and isinstance(xml_url, list):
@@ -332,9 +320,7 @@ def extract_xml_from_harvest_object(package_dict, harvest_object):
                     value = (
                         value
                         + "<doc>"
-                        + _get_xml_url_content(
-                            xml_url, urlopen_timeout, harvest_object
-                        )
+                        + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
                         + "</doc>"
                     )
 
@@ -451,9 +437,7 @@ def handle_groups(
                     context.copy(), data_dict=data_dict
                 )
                 log.info("Found Existing Group %s" % (groupname))
-                validated_groups.append(
-                    {"id": group["id"], "name": group["name"]}
-                )
+                validated_groups.append({"id": group["id"], "name": group["name"]})
             except toolkit.ObjectNotFound:
                 log.debug("Group %s is not available" % (groupname))
                 # check if group exists as an organization
@@ -491,9 +475,7 @@ def handle_groups(
                     created_group = toolkit.get_action("group_create")(
                         context.copy(), data_dict=org
                     )
-                    log.info(
-                        "Group %s created from org %s", groupname, orgname
-                    )
+                    log.info("Group %s created from org %s", groupname, orgname)
                     validated_groups.append(
                         {
                             "id": created_group["id"],
@@ -524,16 +506,10 @@ def handle_groups(
                             "fr": organisation_name,
                         },
                         "organisation-uri": {
-                            "authority": cat.get(
-                                "organisation-uri_authority", ""
-                            ),
+                            "authority": cat.get("organisation-uri_authority", ""),
                             "code": cat.get("organisation-uri_code", ""),
-                            "code-space": cat.get(
-                                "organisation-uri_code-space", ""
-                            ),
-                            "version": cat.get(
-                                "organisation-uri_version", ""
-                            ),
+                            "code-space": cat.get("organisation-uri_code-space", ""),
+                            "version": cat.get("organisation-uri_version", ""),
                         },
                     }
                     try:
@@ -575,9 +551,7 @@ def make_site_catalogue_entry():
 
 def deduplicate_catalogue_entries(entries):
     """Deduplicate a list of catalogue dicts by URL, preserving order."""
-    return list(
-        {item.get("url", ""): item for item in entries[::-1]}.values()
-    )
+    return list({item.get("url", ""): item for item in entries[::-1]}.values())
 
 
 # ---------------------------------------------------------------------------
@@ -619,8 +593,6 @@ def translate_resource_fields(resources, primary_lang, json_decoder=None):
             val = json_decoder(raw)
             if isinstance(val, dict):
                 resource[field + "_translated"] = val
-                resource[field] = val.get(primary_lang) or next(
-                    iter(val.values()), ""
-                )
+                resource[field] = val.get(primary_lang) or next(iter(val.values()), "")
             else:
                 resource[field + "_translated"] = {primary_lang: val}

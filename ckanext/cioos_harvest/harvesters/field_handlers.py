@@ -17,7 +17,6 @@ import ckan.plugins.toolkit as toolkit
 from ckanext.cioos_harvest.harvesters.base import (
     flatten_composite_keys,
     from_json,
-    sanitize_tag,
 )
 
 log = logging.getLogger(__name__)
@@ -123,7 +122,18 @@ def handle_fluent_field(
                         elif tag_sanitizer and not do_clean:
                             # WAF path: always sanitize
                             value = tag_sanitizer(value)
-                        field_value[key].append(value)
+                        if isinstance(value, list):
+                            field_value[key].extend(value)
+                        else:
+                            field_value[key].append(value)
+            elif isinstance(tobj, list):
+                # ISO 19139 groups multiple keywords per MD_Keywords element
+                # as a list — flatten them into individual tag entries.
+                for item in tobj:
+                    item = str(item) if not isinstance(item, str) else item
+                    if tag_sanitizer:
+                        item = tag_sanitizer(item)
+                    field_value[default_language].append(item)
             else:
                 if do_clean and tag_sanitizer:
                     tobj = tag_sanitizer(str(tobj))
@@ -216,9 +226,8 @@ def handle_composite_field(
 
     # Determine if this is a composite field
     is_composite = field.get("preset", "") == "composite"
-    is_repeating = (
-        field.get("preset", "") == "composite_repeating"
-        or field.get("repeating_subfields")
+    is_repeating = field.get("preset", "") == "composite_repeating" or field.get(
+        "repeating_subfields"
     )
 
     if not (is_composite or is_repeating):
@@ -234,9 +243,7 @@ def handle_composite_field(
             if "__extras" not in package_dict:
                 package_dict["__extras"] = {}
             for key, value in field_value.items():
-                package_dict["__extras"][
-                    field_name + separator + key
-                ] = value
+                package_dict["__extras"][field_name + separator + key] = value
         else:
             # Plugin path: write to package_dict directly
             for key, value in field_value.items():
@@ -256,9 +263,7 @@ def handle_composite_field(
 
         for idx, subitem in enumerate(field_value):
             # Try to decode bytes/strings before flattening
-            if isinstance(subitem, (bytes, str)) and not isinstance(
-                subitem, bool
-            ):
+            if isinstance(subitem, (bytes, str)) and not isinstance(subitem, bool):
                 try:
                     subitem_str = (
                         subitem.decode("utf-8")
@@ -356,9 +361,7 @@ def handle_scheming_field(
     # Move schema fields from iso_values to package dictionary
     elif iso_field_value and not package_dict.get(field_name, ""):
         # Convert list to single value for select fields (not multi-select)
-        if field.get("preset", "") == "select" and isinstance(
-            iso_field_value, list
-        ):
+        if field.get("preset", "") == "select" and isinstance(iso_field_value, list):
             iso_field_value = iso_field_value[0]
         package_dict[field_name] = iso_field_value
         if field_name in extras:

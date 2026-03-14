@@ -14,6 +14,13 @@ from ckanext.cioos_harvest.harvesters.base import (
     make_site_catalogue_entry,
     translate_resource_fields,
 )
+
+# Re-export harvester classes so that existing imports from plugin.py
+# (and setup.py entry points) continue to work.
+from ckanext.cioos_harvest.harvesters.ckan_cioos import CIOOSCKANHarvester  # noqa: F401
+from ckanext.cioos_harvest.harvesters.ckan_spatial import (
+    CKANSpatialHarvester,  # noqa: F401
+)
 from ckanext.cioos_harvest.harvesters.field_handlers import (
     handle_composite_field,
     handle_fluent_field,
@@ -21,11 +28,6 @@ from ckanext.cioos_harvest.harvesters.field_handlers import (
 )
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.validation.validation import BaseValidator
-
-# Re-export harvester classes so that existing imports from plugin.py
-# (and setup.py entry points) continue to work.
-from ckanext.cioos_harvest.harvesters.ckan_cioos import CIOOSCKANHarvester  # noqa: F401
-from ckanext.cioos_harvest.harvesters.ckan_spatial import CKANSpatialHarvester  # noqa: F401
 
 log = logging.getLogger(__name__)
 

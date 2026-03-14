@@ -73,7 +73,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     source_config = json.dumps(config_obj)
             except ValueError:
                 pass
-        return super(WAFHarvesterISO19115_3, self).validate_config(source_config)
+        return super().validate_config(source_config)
 
     def _validate_document(self, document_string, harvest_object, validator=None):
         """Skip ISO 19139 XSD validation — this harvester is ISO 19115-3 only."""
@@ -105,7 +105,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         old_cls = spatial_base.ISODocument
         spatial_base.ISODocument = ISODocument
         try:
-            return super(WAFHarvesterISO19115_3, self).import_stage(harvest_object)
+            return super().import_stage(harvest_object)
         finally:
             spatial_base.ISODocument = old_cls
 
@@ -163,7 +163,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     def get_package_dict(self, iso_values, harvest_object):
         self._expand_point_bboxes(iso_values, guid=harvest_object.guid)
 
-        package_dict = super(WAFHarvesterISO19115_3, self).get_package_dict(
+        package_dict = super().get_package_dict(
             iso_values, harvest_object
         )
 

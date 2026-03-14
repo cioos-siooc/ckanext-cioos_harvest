@@ -151,9 +151,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             get_changes_since = (last_time - datetime.timedelta(hours=1)).isoformat()
             log.info("Searching for datasets modified since: %s UTC", get_changes_since)
 
-            fq_since_last_time = "metadata_modified:[{since}Z TO *]".format(
-                since=get_changes_since
-            )
+            fq_since_last_time = f"metadata_modified:[{get_changes_since}Z TO *]"
 
             try:
                 pkg_dicts = self._search_for_datasets(
@@ -356,9 +354,7 @@ class CIOOSCKANHarvester(CKANHarvester):
         try:
             # convert extras key:value list to dictionary
             extras = {x["key"]: x["value"] for x in package_dict.get("extras", [])}
-            package_dict = extract_xml_from_harvest_object(
-                package_dict, harvest_object
-            )
+            package_dict = extract_xml_from_harvest_object(package_dict, harvest_object)
 
             if not extras.get("metadata_created_source"):
                 extras["metadata_created_source"] = package_dict.get("metadata_created")
