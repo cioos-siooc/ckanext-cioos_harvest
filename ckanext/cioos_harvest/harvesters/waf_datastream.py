@@ -417,6 +417,11 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         if not translated_tags:
             translated_tags = [json.dumps({"en": "other", "fr": "autre"})]
 
+        # Always include a "datastream" keyword in both languages so the
+        # required fluent_tags field is never empty and records are easily
+        # identifiable as DataStream-sourced.
+        translated_tags.append(json.dumps({"en": "datastream", "fr": "datastream"}))
+
         # Replace iso_values['tags'] with our translated bilingual entries.
         # The spatial base's tag processing expects dicts with a 'name' key;
         # it would fail on our JSON strings.  WAFHarvesterISO19115_3 calls
@@ -643,6 +648,14 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # iso_values['tags'] and re-run the fluent_tags handler manually
         # to produce the correct {"en": [...], "fr": [...]} format.
         iso_values["tags"] = iso_values.pop("_datastream_tags", [])
+
+        # Also update iso_values["keywords"] so that plugin.py's
+        # ISpatialHarvester callback (which reads from iso_values["keywords"]
+        # via tag_source=field["field_name"]) produces bilingual output
+        # instead of overwriting with the original monolingual raw keywords.
+        iso_values["keywords"] = [
+            {"keyword": tag_str} for tag_str in iso_values["tags"]
+        ]
 
         loaded_plugins = plugins.toolkit.config.get("ckan.plugins", "")
         if "scheming_datasets" in loaded_plugins and "fluent" in loaded_plugins:
