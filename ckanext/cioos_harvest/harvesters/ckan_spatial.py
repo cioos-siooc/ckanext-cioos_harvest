@@ -56,6 +56,19 @@ class CKANSpatialHarvester(CKANHarvester):
         }
 
     def modify_package_dict(self, package_dict, harvest_object):
+        # Strip remote harvest extras so they don't shadow the local
+        # values that ckanext-harvest's before_dataset_index adds to
+        # the Solr index.
+        _remote_harvest_keys = {
+            "harvest_source_id",
+            "harvest_source_url",
+            "harvest_source_title",
+            "harvest_object_id",
+        }
+        package_dict["extras"] = [
+            e for e in package_dict.get("extras", [])
+            if e["key"] not in _remote_harvest_keys
+        ]
 
         # provide default values if harvesting from a ckan catalogue that does not have these in their schema
         if not package_dict.get("projects"):

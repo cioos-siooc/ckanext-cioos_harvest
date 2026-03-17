@@ -352,8 +352,20 @@ class CIOOSCKANHarvester(CKANHarvester):
             "user": self._get_user_name(),
         }
         try:
-            # convert extras key:value list to dictionary
-            extras = {x["key"]: x["value"] for x in package_dict.get("extras", [])}
+            # convert extras key:value list to dictionary, stripping remote
+            # harvest extras so they don't shadow the local values that
+            # ckanext-harvest's before_dataset_index adds to the Solr index.
+            _remote_harvest_keys = {
+                "harvest_source_id",
+                "harvest_source_url",
+                "harvest_source_title",
+                "harvest_object_id",
+            }
+            extras = {
+                x["key"]: x["value"]
+                for x in package_dict.get("extras", [])
+                if x["key"] not in _remote_harvest_keys
+            }
             package_dict = extract_xml_from_harvest_object(package_dict, harvest_object)
 
             if not extras.get("metadata_created_source"):

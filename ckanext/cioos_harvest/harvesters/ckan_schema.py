@@ -648,9 +648,20 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
             schema = toolkit.h.scheming_get_dataset_schema("dataset", "false")
             map_schema_fields = map(lambda x: x["field_name"], schema["dataset_fields"])
             schema_field_names = set(map_schema_fields)
+            # Strip remote harvest extras so they don't shadow the local
+            # values that ckanext-harvest's before_dataset_index adds to
+            # the Solr index.
+            _remote_harvest_keys = {
+                "harvest_source_id",
+                "harvest_source_url",
+                "harvest_source_title",
+                "harvest_object_id",
+            }
             extras_not_in_schema = []
 
             for extra in package_dict.get("extras", []):
+                if extra["key"] in _remote_harvest_keys:
+                    continue
                 if extra["key"] in schema_field_names:
                     package_dict[extra["key"]] = extra["value"]
                 else:
