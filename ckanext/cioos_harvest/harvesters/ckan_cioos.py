@@ -400,7 +400,7 @@ class CIOOSCKANHarvester(CKANHarvester):
             )
             existing_extra = get_extra("uri", package_dict)
             if not existing_extra:
-                extras.append({"key": "uri", "value": package_uri})
+                extras_as_list.append({"key": "uri", "value": package_uri})
 
             # populate publishing data catalogue list
             source_dc = {
