@@ -772,6 +772,8 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
                 harvest_object,
                 "Import",
             )
+            return False
         except Exception as e:
             log.exception(e)
             self._save_object_error("%s" % e, harvest_object, "Import")
+            return False
