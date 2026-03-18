@@ -610,6 +610,17 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             if _mpoc:
                 package_dict["metadata-point-of-contact"] = _mpoc
 
+        # Propagate to iso_values so the Cioos_HarvestPlugin ISpatialHarvester
+        # callback can read them for responsible-organisation → group mapping.
+        if package_dict.get("cited-responsible-party"):
+            iso_values["cited-responsible-party"] = package_dict[
+                "cited-responsible-party"
+            ]
+        if package_dict.get("metadata-point-of-contact"):
+            iso_values["metadata-point-of-contact"] = package_dict[
+                "metadata-point-of-contact"
+            ]
+
         # ----------------------------------------------------------------
         # Step 6.7 — metadata-reference-date from gmd:dateStamp (fallback)
         # ----------------------------------------------------------------
