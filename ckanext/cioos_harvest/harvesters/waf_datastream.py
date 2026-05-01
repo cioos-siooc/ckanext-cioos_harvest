@@ -395,8 +395,13 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                     if isinstance(fr_str, list):
                         fr_str = fr_str[0] if fr_str else ""
                 else:
-                    en_str = str(kw_obj) if kw_obj else ""
-                    fr_str = ""
+                    # Assign the raw keyword to the correct language slot
+                    if primary_lang == "fr":
+                        en_str = ""
+                        fr_str = str(kw_obj) if kw_obj else ""
+                    else:
+                        en_str = str(kw_obj) if kw_obj else ""
+                        fr_str = ""
 
                 if en_str and not fr_str:
                     en_str = unicodedata.normalize("NFKD", en_str.replace('"', ""))
@@ -433,9 +438,10 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         iso_values["tags"] = []  # suppress spatial base tag processing
 
         if has_translation:
+            other_lang = "fr" if primary_lang == "en" else "en"
             iso_values["keywords_translation_method"] = {
-                "en": "",
-                "fr": "Keyword " + self.translation_method_text,
+                primary_lang: "",
+                other_lang: "Keyword " + self.translation_method_text,
             }
 
         # ----------------------------------------------------------------
@@ -443,16 +449,18 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # ----------------------------------------------------------------
         title_raw = iso_values.get("title", "")
         if isinstance(title_raw, str) and not title_raw.strip().startswith("{"):
-            en_title = title_raw
-            fr_title = (
-                self.translate_string(redis_conn, en_title, "en", "fr") or en_title
+            other_lang = "fr" if primary_lang == "en" else "en"
+            translated = (
+                self.translate_string(redis_conn, title_raw, primary_lang, other_lang)
+                or title_raw
             )
+            title_dict = {primary_lang: title_raw, other_lang: translated}
             # Store as JSON dict — WAFHarvesterISO19115_3 decodes it for
             # both the plain title and the title_translated fluent field.
-            iso_values["title"] = json.dumps({"en": en_title, "fr": fr_title})
+            iso_values["title"] = json.dumps(title_dict)
             iso_values["title_translation_method"] = {
-                "en": "",
-                "fr": "Title " + self.translation_method_text,
+                primary_lang: "",
+                other_lang: "Title " + self.translation_method_text,
             }
 
         # ----------------------------------------------------------------
@@ -460,15 +468,16 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # ----------------------------------------------------------------
         abstract_raw = iso_values.get("abstract", "")
         if isinstance(abstract_raw, str) and not abstract_raw.strip().startswith("{"):
-            en_abstract = abstract_raw
-            fr_abstract = (
-                self.translate_string(redis_conn, en_abstract, "en", "fr")
-                or en_abstract
+            other_lang = "fr" if primary_lang == "en" else "en"
+            translated = (
+                self.translate_string(redis_conn, abstract_raw, primary_lang, other_lang)
+                or abstract_raw
             )
-            iso_values["abstract"] = json.dumps({"en": en_abstract, "fr": fr_abstract})
+            abstract_dict = {primary_lang: abstract_raw, other_lang: translated}
+            iso_values["abstract"] = json.dumps(abstract_dict)
             iso_values["abstract_translation_method"] = {
-                "en": "",
-                "fr": "Description " + self.translation_method_text,
+                primary_lang: "",
+                other_lang: "Description " + self.translation_method_text,
             }
 
         # ----------------------------------------------------------------
