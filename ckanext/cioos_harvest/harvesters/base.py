@@ -216,55 +216,55 @@ def all_packages_for_source(source_id):
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     """Fetch XML from *xml_url* and return the response text, or ``""`` on error."""
     try:
-        try:
-            r = requests.get(xml_url, timeout=urlopen_timeout)
-            ET.XML(r.content)  # test for valid xml
-            return r
-        except ET.ParseError as e:
-            msg = "%s: %s. From external XML content at %s" % (
-                type(e).__name__,
-                str(e),
-                xml_url,
-            )
-            log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-            err.save()
-        except requests.exceptions.Timeout as e:
-            msg = "%s: %s. From external XML content at %s" % (
-                type(e).__name__,
-                str(e),
-                xml_url,
-            )
-            log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-            err.save()
-        except requests.exceptions.TooManyRedirects as e:
-            msg = "HTTP too many redirects: %s" % e.code
-            log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-            err.save()
-        except requests.exceptions.RequestException as e:
-            msg = "HTTP request exception: %s" % e.code
-            log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-            err.save()
-        except Exception as e:
-            msg = "%s: %s. From external XML content at %s" % (
-                type(e).__name__,
-                str(e),
-                xml_url,
-            )
-            log.warning(msg)
-            err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-            err.save()
-        finally:
-            return ""
+        r = requests.get(xml_url, timeout=urlopen_timeout)
+        ET.XML(r.content)  # test for valid xml
+        return r
+
+    except ET.ParseError as e:
+        msg = "%s: %s. From external XML content at %s" % (
+            type(e).__name__,
+            str(e),
+            xml_url,
+        )
+        log.warning(msg)
+        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
+        err.save()
+    except requests.exceptions.Timeout as e:
+        msg = "%s: %s. From external XML content at %s" % (
+            type(e).__name__,
+            str(e),
+            xml_url,
+        )
+        log.warning(msg)
+        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
+        err.save()
+    except requests.exceptions.TooManyRedirects as e:
+        msg = "HTTP too many redirects: %s" % e.code
+        log.warning(msg)
+        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
+        err.save()
+    except requests.exceptions.RequestException as e:
+        msg = "HTTP request exception: %s" % e.code
+        log.warning(msg)
+        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
+        err.save()
+    except Exception as e:
+        msg = "%s: %s. From external XML content at %s" % (
+            type(e).__name__,
+            str(e),
+            xml_url,
+        )
+        log.warning(msg)
+        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
+        err.save()
 
     except StaleDataError as e:
         log.warning(
             "Harvest object %s is stail. Error object not created. %s"
             % (harvest_object.id, str(e))
         )
+
+    return ""
 
 
 def extract_xml_from_harvest_object(package_dict, harvest_object):
