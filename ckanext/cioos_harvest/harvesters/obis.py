@@ -45,6 +45,10 @@ Source configuration (JSON)
 ``nodeid`` / ``instituteid`` / ``startdate`` / ``enddate``
                           Optional pass-through OBIS ``/v3/dataset`` filters.
 ``page_size``             OBIS page size (default 1000).
+``gather_timeout``        Read timeout (s) for the dataset-list discovery request
+                          (default 300). Raise it when harvesting all of OBIS —
+                          the un-paged /v3/dataset list of the full catalogue is
+                          large and slow.
 ``request_delay_seconds`` Delay between per-dataset fetch calls (default 0.5) to
                           stay polite to the OBIS API.
 ``fetch_retries``         Retry attempts for transient network errors during
@@ -96,6 +100,39 @@ USER_AGENT = (
     "(+https://cioos.ca; ckanext-cioos_harvest; contact: info@cioos.ca)"
 )
 _HTTP_HEADERS = {"User-Agent": USER_AGENT}
+
+# Default read timeout (seconds) for the OBIS dataset-list discovery request.
+# OBIS /v3/dataset has no offset paging and returns full records, so a
+# whole-catalogue list can be large and slow; keep this generous and override
+# with the `gather_timeout` config key when harvesting all of OBIS.
+DEFAULT_GATHER_TIMEOUT = 300
+
+_GATHER_SESSION = None
+
+
+def _get_gather_session():
+    """Shared requests.Session for gather discovery calls (retry + User-Agent)."""
+    global _GATHER_SESSION
+    if _GATHER_SESSION is None:
+        from requests.adapters import HTTPAdapter
+        from urllib3.util.retry import Retry
+
+        session = requests.Session()
+        retry = Retry(
+            total=3,
+            connect=3,
+            read=3,
+            backoff_factor=1.0,
+            status_forcelist=(500, 502, 503, 504),
+            allowed_methods=frozenset(["GET"]),
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        session.headers.update(_HTTP_HEADERS)
+        _GATHER_SESSION = session
+    return _GATHER_SESSION
 
 # Defaults for the fetch-stage politeness / resilience knobs (overridable in the
 # source config). fetch_stage makes live OBIS calls per object, so the source
@@ -161,6 +198,7 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         "startdate",
         "enddate",
         "page_size",
+        "gather_timeout",
         "request_delay_seconds",
         "fetch_retries",
         "max_delete_fraction",
@@ -223,6 +261,12 @@ class OBISHarvester(WAFHarvesterISO19115_3):
                 except ValueError:
                     raise ValueError("%s must be an ISO date (YYYY-MM-DD)" % key)
 
+        gather_timeout = config_obj.get("gather_timeout")
+        if gather_timeout is not None and (
+            not isinstance(gather_timeout, int) or gather_timeout <= 0
+        ):
+            raise ValueError("gather_timeout must be a positive integer (seconds)")
+
         retries = config_obj.get("fetch_retries")
         if retries is not None and (not isinstance(retries, int) or retries < 0):
             raise ValueError("fetch_retries must be a non-negative integer")
@@ -281,22 +325,30 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         gather error).
         """
         page_size = int(self.source_config.get("page_size", 1000))
+        gather_timeout = int(
+            self.source_config.get("gather_timeout", DEFAULT_GATHER_TIMEOUT)
+        )
 
+        # Resolve query params first (this may read spatial_filter_file). Kept in
+        # its own try so a file error is reported as such — note requests
+        # exceptions subclass OSError, so this must NOT wrap the HTTP call or an
+        # API timeout would be mislabeled as a file error.
         try:
-            # Built inside the try so an unreadable spatial_filter_file becomes a
-            # recorded gather error rather than an opaque crash out of gather.
             params = self._obis_query_params()
-            params["size"] = page_size
-            response = requests.get(
-                OBIS_DATASET_API, params=params, timeout=120, headers=_HTTP_HEADERS
-            )
-            response.raise_for_status()
-            payload = response.json()
         except OSError as e:
             self._save_gather_error(
                 "Unable to read spatial_filter_file: %r" % e, harvest_job
             )
             return None
+
+        session = _get_gather_session()
+        try:
+            params["size"] = page_size
+            response = session.get(
+                OBIS_DATASET_API, params=params, timeout=gather_timeout
+            )
+            response.raise_for_status()
+            payload = response.json()
         except (requests.RequestException, ValueError) as e:
             self._save_gather_error(
                 "Unable to query OBIS dataset API (%s): %r"
@@ -327,11 +379,8 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         if total > len(results):
             try:
                 params["size"] = total
-                response = requests.get(
-                    OBIS_DATASET_API,
-                    params=params,
-                    timeout=300,
-                    headers=_HTTP_HEADERS,
+                response = session.get(
+                    OBIS_DATASET_API, params=params, timeout=gather_timeout
                 )
                 response.raise_for_status()
                 results = response.json().get("results", []) or []
