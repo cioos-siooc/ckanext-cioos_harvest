@@ -3,3 +3,9 @@ requests>=2.28.0
 boto3>=1.26.0
 redis>=4.0.0
 unidecode>=1.3.0
+# OBIS harvester (issue #20) also needs cioos-metadata-conversion
+# (feat/load-from-obis branch). It cannot be listed here yet: its
+# requires-python = "~=3.11" rejects the Python 3.10 CKAN images and its
+# metadata-xml dependency is a uv-only git source that plain pip cannot
+# resolve. Until those packaging fixes land upstream it is installed
+# explicitly in ckan/Dockerfile.dev / ckan/Dockerfile with workarounds.

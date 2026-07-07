@@ -71,6 +71,7 @@ setup(
         waf_iso19115_3_harvester=ckanext.cioos_harvest.harvesters:WAFHarvesterISO19115_3
         cioos_datastream_harvester=ckanext.cioos_harvest.harvesters:DatastreamSitemapHarvester
         cioos_geonetwork_harvester=ckanext.cioos_harvest.harvesters:GeoNetworkHarvester
+        obis_harvester=ckanext.cioos_harvest.harvesters:OBISHarvester
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
