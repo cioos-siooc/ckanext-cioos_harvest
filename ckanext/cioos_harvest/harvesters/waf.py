@@ -273,6 +273,30 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     )
                 package_dict["eov"] = filtered or ["other"]
 
+            # ECV is optional, but when present, keep only schema-supported
+            # values to avoid validation failures on unknown keywords.
+            ecv_field = next(
+                (f for f in schema["dataset_fields"] if f["field_name"] == "ecv"), None
+            )
+            if ecv_field:
+                valid_ecv = {c["value"] for c in ecv_field.get("choices", [])}
+                raw_ecv = package_dict.get("ecv") or []
+                if isinstance(raw_ecv, str):
+                    raw_ecv = [raw_ecv]
+                filtered_ecv, skipped_ecv = [], []
+                for v in raw_ecv:
+                    if v in valid_ecv:
+                        filtered_ecv.append(v)
+                    else:
+                        skipped_ecv.append(v)
+                if skipped_ecv:
+                    log.warning(
+                        "Record %s: unknown ECV value(s) %s — skipping (not in schema choices)",
+                        harvest_object.guid,
+                        skipped_ecv,
+                    )
+                package_dict["ecv"] = filtered_ecv
+
         # Ensure ecv is always present (schema field, defaults to empty list).
         if "ecv" not in package_dict:
             package_dict["ecv"] = []

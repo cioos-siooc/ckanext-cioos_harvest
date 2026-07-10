@@ -37,7 +37,7 @@ import pytest
 from lxml import etree
 
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
-from ckanext.cioos_harvest.model.iso19115_3 import ISODocument
+from ckanext.cioos_harvest.model.iso19115_3 import ISODocument, _infer_keyword_types
 
 log = logging.getLogger(__name__)
 
@@ -334,3 +334,38 @@ class TestISO19115_3:
             f"  Expected : {json_path}\n"
             f"  To regenerate all fixtures: pytest --regenerate-fixtures"
         )
+
+
+def test_infer_keyword_types_extracts_ecv_from_keywords():
+    values = {
+        "metadata-language": "en",
+        "keywords": [
+            {"type": "ecv", "keyword": json.dumps({"en": "precipitation"})},
+            {"type": "eov", "keyword": json.dumps({"en": "oxygen"})},
+        ],
+    }
+
+    _infer_keyword_types(values)
+
+    assert values["ecv"] == ["precipitation"]
+    assert values["eov"] == ["oxygen"]
+
+
+def test_infer_keyword_types_matches_type_case_insensitively():
+    values = {
+        "metadata-language": "en",
+        "keywords": [
+            {"type": "ECV", "keyword": json.dumps({"en": "pressure_surface"})},
+            {"type": "EOV", "keyword": json.dumps({"en": "seaIce"})},
+            {"type": "Project", "keyword": json.dumps({"en": "CIOOS Core"})},
+            {"type": "DataCentre", "keyword": json.dumps({"en": "DFO"})},
+        ],
+    }
+
+    _infer_keyword_types(values)
+
+    assert values["ecv"] == ["pressure_surface"]
+    assert values["eov"] == ["seaIce"]
+    assert values["keyword-project"] == ["CIOOS Core"]
+    assert values["projects"] == ["CIOOS Core"]
+    assert values["keyword-datacentre"] == ["DFO"]

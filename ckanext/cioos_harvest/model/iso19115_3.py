@@ -1195,14 +1195,16 @@ _TAGS_ONLY_KEYWORD_TYPES = frozenset(
 
 
 def _infer_keyword_types(values):
-    """Split keywords by type → keyword-project, keyword-datacentre, projects."""
+    """Split keywords by type → keyword-project, keyword-datacentre, EOV, ECV."""
     keywords = values.get("keywords", [])
     default_lang = (values.get("metadata-language") or "en")[:2]
     projects = []
     eovs = []
+    ecvs = []
     datacentres = []
     for kw in keywords:
         ktype = kw.get("type") or ""
+        ktype_norm = str(ktype).strip().lower()
         keyword_json = kw.get("keyword", "")
         if not keyword_json:
             continue
@@ -1215,13 +1217,13 @@ def _infer_keyword_types(values):
             )
         except (ValueError, TypeError):
             value = keyword_json
-        if not value or ktype == "default":
+        if not value or ktype_norm == "default":
             continue
-        if ktype == "project" and value not in projects:
+        if ktype_norm == "project" and value not in projects:
             projects.append(value)
-        elif ktype == "datacentre" and value not in datacentres:
+        elif ktype_norm == "datacentre" and value not in datacentres:
             datacentres.append(value)
-        elif ktype == "eov":
+        elif ktype_norm == "eov":
             # EOV codes are always English identifiers — resolve 'en' key only;
             # French-text-only keyword elements are intentionally skipped.
             try:
@@ -1231,11 +1233,20 @@ def _infer_keyword_types(values):
                 eov_value = value
             if eov_value and eov_value not in eovs:
                 eovs.append(eov_value)
+        elif ktype_norm == "ecv":
+            # ECV identifiers are stored as canonical English codes in schema.
+            try:
+                parsed = json.loads(keyword_json)
+                ecv_value = parsed.get("en") if isinstance(parsed, dict) else value
+            except (ValueError, TypeError):
+                ecv_value = value
+            if ecv_value and ecv_value not in ecvs:
+                ecvs.append(ecv_value)
         elif ktype in _TAGS_ONLY_KEYWORD_TYPES:
             # Known thesaurus types with no dedicated schema field — keywords
             # are already captured as regular tags by _infer_tags_from_keywords.
             pass
-        elif ktype:
+        elif ktype_norm:
             log.warning(
                 'Unknown keyword type "%s" for keyword "%s". Skipping.', ktype, value
             )
@@ -1247,6 +1258,8 @@ def _infer_keyword_types(values):
         values["keyword-datacentre"] = datacentres
     if eovs:
         values["eov"] = eovs
+    if ecvs:
+        values["ecv"] = ecvs
 
 
 def _infer_tags_from_keywords(values):
