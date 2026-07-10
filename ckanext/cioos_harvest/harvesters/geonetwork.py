@@ -124,9 +124,9 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
         return
 
     def handle_groups(self, harvest_object, group_mapping, gn_localized_url, values):
+        validated_groups = []
         try:
             context = {"model": model, "session": Session, "user": "harvest"}
-            validated_groups = []
             cats = []
 
             harvest_iso_categories = self.source_config.get("harvest_iso_categories")
@@ -138,10 +138,9 @@ class GeoNetworkHarvester(CSWHarvester, SingletonPlugin):
                 log.info("Topic categories: %r", cats)
 
             for cat in cats:
-                groupname = group_mapping[cat]
+                groupname = group_mapping.get(cat)
 
-                printname = groupname if not None else "NONE"
-                log.debug("category %s mapped into %s" % (cat, printname))
+                log.debug("category %s mapped into %s" % (cat, groupname or "NONE"))
 
                 if groupname:
                     try:

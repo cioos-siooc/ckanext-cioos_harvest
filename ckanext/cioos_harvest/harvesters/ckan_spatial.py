@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 class CKANSpatialHarvester(CKANHarvester):
     __new__ = singleton_new
 
-    def _post_content(self, url, params={}):
+    def _post_content(self, url, params=None):
 
         headers = {}
         api_key = self.config.get("api_key")
@@ -36,7 +36,9 @@ class CKANSpatialHarvester(CKANHarvester):
         pyopenssl.inject_into_urllib3()
 
         try:
-            http_request = requests.post(url, headers=headers, json=params)
+            http_request = requests.post(
+                url, headers=headers, json=params or {}, timeout=(10, 120)
+            )
         except HTTPError as e:
             raise ContentFetchError(
                 "HTTP error: %s %s" % (e.response.status_code, e.request.url)
@@ -54,6 +56,18 @@ class CKANSpatialHarvester(CKANHarvester):
             "description": "Harvests remote CKAN instances filtering by spatial query",
             "form_config_interface": "Text",
         }
+
+    def validate_config(self, config):
+        config = super(CKANSpatialHarvester, self).validate_config(config)
+        if config:
+            config_obj = json.loads(config)
+            if not config_obj.get("spatial_filter") and not config_obj.get(
+                "spatial_filter_file"
+            ):
+                raise ValueError(
+                    "One of spatial_filter or spatial_filter_file must be set"
+                )
+        return config
 
     def modify_package_dict(self, package_dict, harvest_object):
         # Strip remote harvest extras so they don't shadow the local
@@ -92,10 +106,16 @@ class CKANSpatialHarvester(CKANHarvester):
         ss_params = {}
         spatial_filter_file = self.config.get("spatial_filter_file", None)
         if spatial_filter_file:
-            f = open(spatial_filter_file)
-            spatial_filter_wkt = f.read()
+            with open(spatial_filter_file) as f:
+                spatial_filter_wkt = f.read()
         else:
             spatial_filter_wkt = self.config.get("spatial_filter", None)
+        if not spatial_filter_wkt:
+            raise SearchError(
+                "No spatial filter configured: set 'spatial_filter' or "
+                "'spatial_filter_file' in the harvest source config"
+            )
+        spatial_filter_wkt = spatial_filter_wkt.strip()
         if spatial_filter_wkt.startswith(("POLYGON", "MULTIPOLYGON")):
             ss_params["poly"] = spatial_filter_wkt
         if spatial_filter_wkt.startswith("BOX"):

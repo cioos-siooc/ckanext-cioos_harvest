@@ -60,7 +60,9 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
         pyopenssl.inject_into_urllib3()
 
         try:
-            http_response = requests.get(url, headers=headers, params=params)
+            http_response = requests.get(
+                url, headers=headers, params=params, timeout=(10, 120)
+            )
             http_response.raise_for_status()
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 404:
@@ -702,11 +704,11 @@ class CIOOSCKANSchemaHarvester(HarvesterBase):
             if not package_dict.get("keywords"):
                 package_dict["keywords"] = {
                     "en": [
-                        x.get("name", "display_name")
+                        x.get("name") or x.get("display_name")
                         for x in package_dict.get("tags", [])
                     ],
                     "fr": [
-                        x.get("name", "display_name")
+                        x.get("name") or x.get("display_name")
                         for x in package_dict.get("tags", [])
                     ],
                 }

@@ -82,6 +82,9 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # check for string in redis
         redis_trans = redis_conn.hget(store_name, string_to_translate)
         if redis_trans:
+            # redis returns bytes unless decode_responses is set on the connection
+            if isinstance(redis_trans, bytes):
+                redis_trans = redis_trans.decode("utf-8")
             # replace non-breaking white space
             redis_trans = redis_trans.replace("\u00a0", " ")
             log.debug('"%s" found in cache', string_to_translate)
@@ -405,16 +408,16 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
                 if en_str and not fr_str:
                     en_str = unicodedata.normalize("NFKD", en_str.replace('"', ""))
-                    fr_str = (
-                        self.translate_string(redis_conn, en_str, "en", "fr") or en_str
-                    )
-                    has_translation = True
+                    translated = self.translate_string(redis_conn, en_str, "en", "fr")
+                    fr_str = translated or en_str
+                    if translated:
+                        has_translation = True
                 elif fr_str and not en_str:
                     fr_str = unicodedata.normalize("NFKD", fr_str.replace('"', ""))
-                    en_str = (
-                        self.translate_string(redis_conn, fr_str, "fr", "en") or fr_str
-                    )
-                    has_translation = True
+                    translated = self.translate_string(redis_conn, fr_str, "fr", "en")
+                    en_str = translated or fr_str
+                    if translated:
+                        has_translation = True
 
                 if en_str or fr_str:
                     translated_tags.append(json.dumps({"en": en_str, "fr": fr_str}))
@@ -450,18 +453,19 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         title_raw = iso_values.get("title", "")
         if isinstance(title_raw, str) and not title_raw.strip().startswith("{"):
             other_lang = "fr" if primary_lang == "en" else "en"
-            translated = (
-                self.translate_string(redis_conn, title_raw, primary_lang, other_lang)
-                or title_raw
+            translated = self.translate_string(
+                redis_conn, title_raw, primary_lang, other_lang
             )
-            title_dict = {primary_lang: title_raw, other_lang: translated}
+            title_dict = {primary_lang: title_raw, other_lang: translated or title_raw}
             # Store as JSON dict — WAFHarvesterISO19115_3 decodes it for
             # both the plain title and the title_translated fluent field.
             iso_values["title"] = json.dumps(title_dict)
-            iso_values["title_translation_method"] = {
-                primary_lang: "",
-                other_lang: "Title " + self.translation_method_text,
-            }
+            # only claim machine translation when it actually happened
+            if translated:
+                iso_values["title_translation_method"] = {
+                    primary_lang: "",
+                    other_lang: "Title " + self.translation_method_text,
+                }
 
         # ----------------------------------------------------------------
         # Step 5 — Translate abstract/notes
@@ -469,16 +473,20 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         abstract_raw = iso_values.get("abstract", "")
         if isinstance(abstract_raw, str) and not abstract_raw.strip().startswith("{"):
             other_lang = "fr" if primary_lang == "en" else "en"
-            translated = (
-                self.translate_string(redis_conn, abstract_raw, primary_lang, other_lang)
-                or abstract_raw
+            translated = self.translate_string(
+                redis_conn, abstract_raw, primary_lang, other_lang
             )
-            abstract_dict = {primary_lang: abstract_raw, other_lang: translated}
-            iso_values["abstract"] = json.dumps(abstract_dict)
-            iso_values["abstract_translation_method"] = {
-                primary_lang: "",
-                other_lang: "Description " + self.translation_method_text,
+            abstract_dict = {
+                primary_lang: abstract_raw,
+                other_lang: translated or abstract_raw,
             }
+            iso_values["abstract"] = json.dumps(abstract_dict)
+            # only claim machine translation when it actually happened
+            if translated:
+                iso_values["abstract_translation_method"] = {
+                    primary_lang: "",
+                    other_lang: "Description " + self.translation_method_text,
+                }
 
         # ----------------------------------------------------------------
         # Step 5.5 — Pre-set metadata-reference-date from gmd:dateStamp
@@ -838,12 +846,11 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
         sitemape_content = sitemap_response.text
 
-        # convert xml content to lxml etree
-        sitemap_tree = etree.fromstring(str.encode(sitemape_content))
-
         # using dataset urls, generate url to xml metadata files. aka add /iso19115.xml to end
         url_to_modified_harvest = {}  ## mapping of url to last_modified in harvest
         try:
+            # convert xml content to lxml etree
+            sitemap_tree = etree.fromstring(str.encode(sitemape_content))
             for url_node in sitemap_tree.findall(
                 ".//{http://www.sitemaps.org/schemas/sitemap/0.9}url"
             ):

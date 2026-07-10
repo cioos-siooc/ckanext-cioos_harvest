@@ -15,6 +15,7 @@ from shapely import wkt as shapely_wkt
 from shapely.geometry import Polygon as ShapelyPolygon
 from shapely.geometry import mapping as shapely_mapping
 from shapely.geometry import shape as shapely_shape
+from shapely.ops import unary_union
 
 log = logging.getLogger(__name__)
 
@@ -951,7 +952,7 @@ def _infer_contact_email(values):
 
 
 def _infer_spatial(values):
-    geom = None
+    geoms = []
     for xml_geom in values.get("spatial", []):
         try:
             xml_geom = xml_geom.decode()
@@ -977,6 +978,10 @@ def _infer_spatial(values):
                         "Spatial element is not GeoJSON, WKT, or GML — skipping."
                     )
                     continue
+        geoms.append(geom)
+    # combine multiple geometries (e.g. several EX_BoundingPolygon
+    # elements) instead of keeping only the last one
+    geom = unary_union(geoms) if len(geoms) > 1 else (geoms[0] if geoms else None)
     if geom:
         values["spatial"] = json.dumps(shapely_mapping(geom))
         if not values.get("bbox"):

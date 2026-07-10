@@ -24,7 +24,6 @@ from sqlalchemy.orm.exc import StaleDataError
 
 from ckan import logic, model
 from ckanext.harvest.model import HarvestObjectError
-from ckanext.spatial.harvesters.base import SpatialHarvester
 
 log = logging.getLogger(__name__)
 
@@ -213,56 +212,34 @@ def all_packages_for_source(source_id):
 # ---------------------------------------------------------------------------
 
 
+def _save_harvest_object_error(message, harvest_object, stage="Import"):
+    """Record a HarvestObjectError without needing a harvester instance."""
+    log.warning(message)
+    try:
+        HarvestObjectError(
+            message=message, object=harvest_object, stage=stage
+        ).save()
+    except StaleDataError as e:
+        log.warning(
+            "Harvest object %s is stale. Error object not created. %s"
+            % (harvest_object.id, str(e))
+        )
+
+
 def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     """Fetch XML from *xml_url* and return the response text, or ``""`` on error."""
     try:
         r = requests.get(xml_url, timeout=urlopen_timeout)
         ET.XML(r.content)  # test for valid xml
-        return r
-
-    except ET.ParseError as e:
-        msg = "%s: %s. From external XML content at %s" % (
-            type(e).__name__,
-            str(e),
-            xml_url,
-        )
-        log.warning(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-        err.save()
-    except requests.exceptions.Timeout as e:
-        msg = "%s: %s. From external XML content at %s" % (
-            type(e).__name__,
-            str(e),
-            xml_url,
-        )
-        log.warning(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-        err.save()
-    except requests.exceptions.TooManyRedirects as e:
-        msg = "HTTP too many redirects: %s" % e.code
-        log.warning(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-        err.save()
-    except requests.exceptions.RequestException as e:
-        msg = "HTTP request exception: %s" % e.code
-        log.warning(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-        err.save()
+        return r.text
     except Exception as e:
         msg = "%s: %s. From external XML content at %s" % (
             type(e).__name__,
             str(e),
             xml_url,
         )
-        log.warning(msg)
-        err = HarvestObjectError(message=msg, object=harvest_object, stage="Import")
-        err.save()
-
-    except StaleDataError as e:
-        log.warning(
-            "Harvest object %s is stail. Error object not created. %s"
-            % (harvest_object.id, str(e))
-        )
+        _save_harvest_object_error(msg, harvest_object)
+        return ""
 
     return ""
 
@@ -320,7 +297,9 @@ def extract_xml_from_harvest_object(package_dict, harvest_object):
                     value = (
                         value
                         + "<doc>"
-                        + _get_xml_url_content(xml_url, urlopen_timeout, harvest_object)
+                        + _get_xml_url_content(
+                            xml_file, urlopen_timeout, harvest_object
+                        )
                         + "</doc>"
                     )
 
@@ -427,7 +406,7 @@ def handle_groups(
         )
         groupname = "_".join([group_type, orgname])
 
-        printname = orgname if not None else "NONE"
+        printname = orgname or "NONE"
         log.debug("Group %s mapped into %s" % (organisation_name, printname))
 
         if groupname:
@@ -483,11 +462,10 @@ def handle_groups(
                         }
                     )
                 except toolkit.ValidationError as e:
-                    SpatialHarvester._save_object_error(
+                    _save_harvest_object_error(
                         "Validation Error while creating group %s: %s"
                         % (org["name"], e.error_dict),
                         harvest_object,
-                        "Import",
                     )
                     continue
                 except toolkit.ObjectNotFound:
@@ -517,11 +495,10 @@ def handle_groups(
                             context.copy(), data_dict=group
                         )
                     except toolkit.ValidationError as e:
-                        SpatialHarvester._save_object_error(
+                        _save_harvest_object_error(
                             "Validation Error while creating group %s: %s"
                             % (group["name"], e.error_dict),
                             harvest_object,
-                            "Import",
                         )
                         continue
 

@@ -497,12 +497,12 @@ class CIOOSCKANHarvester(CKANHarvester):
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
                     crp, uri_field="individual-uri_"
                 )
-                mpoc["individual-uri_code"] = next(iter(code or []), "")
+                crp["individual-uri_code"] = next(iter(code or []), "")
 
                 code = toolkit.h.cioos_get_fully_qualified_package_uri(
                     crp, uri_field="organisation-uri_"
                 )
-                mpoc["organisation-uri_code"] = next(iter(code or []), "")
+                crp["organisation-uri_code"] = next(iter(code or []), "")
             package_dict["cited-responsible-party"] = crps
 
             if len(package_dict["tags"]) > 0:
