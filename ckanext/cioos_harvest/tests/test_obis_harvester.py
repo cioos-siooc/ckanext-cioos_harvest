@@ -76,6 +76,18 @@ class TestConfigAndParams:
     def test_validate_config_allows_empty(self):
         assert self.h.validate_config("") == ""
 
+    def test_validate_config_discovery_values(self):
+        assert self.h.validate_config(json.dumps({"discovery": "s3"}))
+        assert self.h.validate_config(json.dumps({"discovery": "api"}))
+        with pytest.raises(ValueError):
+            self.h.validate_config(json.dumps({"discovery": "ftp"}))
+
+    def test_validate_config_s3_rejects_spatial_filter(self):
+        with pytest.raises(ValueError):
+            self.h.validate_config(
+                json.dumps({"discovery": "s3", "spatial_filter": POLYGON})
+            )
+
     def test_query_params_include_geometry_and_filters(self):
         self.h.source_config = {
             "spatial_filter": POLYGON,
@@ -206,6 +218,62 @@ class TestTranslationHook:
         pkg = {"title": "x"}
         # Stub: still returns the record unchanged (not yet implemented).
         assert self.h._maybe_translate(pkg, _make_ho("u1")) == pkg
+
+
+# ---------------------------------------------------------------------------
+# S3-listing discovery
+# ---------------------------------------------------------------------------
+
+
+class TestS3Discovery:
+    @pytest.fixture(autouse=True)
+    def harvester(self):
+        self.h = OBISHarvester()
+        self.h.source_config = {}
+
+    @staticmethod
+    def _page(contents, token=None):
+        items = "".join(
+            "<Contents><Key>%s</Key><LastModified>%s</LastModified></Contents>"
+            % (k, lm)
+            for k, lm in contents
+        )
+        trunc = "true" if token else "false"
+        nt = "<NextContinuationToken>%s</NextContinuationToken>" % token if token else ""
+        return (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+            "<IsTruncated>%s</IsTruncated>%s%s</ListBucketResult>"
+            % (trunc, nt, items)
+        ).encode()
+
+    def test_parses_uuids_and_paginates(self):
+        u1 = "00017595-e015-4ec6-bf8a-b013e0dca521"
+        u2 = "0001aa41-e3e4-40a0-9193-9a5c81c627bf"
+        pages = [
+            self._page(
+                [("occurrence/%s.parquet" % u1, "2025-09-11T19:32:34.000Z")],
+                token="TOKEN",
+            ),
+            self._page(
+                [
+                    ("occurrence/%s.parquet" % u2, "2025-09-23T16:32:55.000Z"),
+                    ("occurrence/", "x"),  # prefix placeholder key -> ignored
+                    ("occurrence/not-a-uuid.parquet", "x"),  # ignored
+                ]
+            ),
+        ]
+        responses = [MagicMock(content=p) for p in pages]
+        session = MagicMock()
+        session.get.side_effect = responses
+        with patch(
+            "ckanext.cioos_harvest.harvesters.obis._get_gather_session",
+            return_value=session,
+        ):
+            out = self.h._fetch_obis_datasets_s3(MagicMock())
+        assert [d["id"] for d in out] == [u1, u2]
+        assert out[0]["updated"] == "2025-09-11T19:32:34.000Z"
+        assert session.get.call_count == 2  # followed the continuation token
 
 
 # ---------------------------------------------------------------------------

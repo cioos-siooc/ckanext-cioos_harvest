@@ -38,6 +38,12 @@ Stages
 
 Source configuration (JSON)
 ---------------------------
+``discovery``             ``"api"`` (default) discovers datasets via OBIS
+                          ``/v3/dataset``; ``"s3"`` lists the OBIS open-data S3
+                          bucket instead — fast and reliable for the whole
+                          catalogue (recommended for the national harvest), but
+                          cannot be combined with a spatial_filter (no geometry
+                          filter) and does DOI de-dup only by OBIS UUID.
 ``spatial_filter``        Inline WKT ``POLYGON``/``MULTIPOLYGON`` restricting the
                           harvest to a region (server-side OBIS ``geometry=``).
 ``spatial_filter_file``   Path to a file containing the same WKT (takes
@@ -68,6 +74,7 @@ import logging
 import os
 import re
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import requests
@@ -81,6 +88,7 @@ from ckanext.cioos_harvest.harvesters.obis_dedup import (
     classify_datasets,
     normalize_doi,
     obis_dataset_dois,
+    package_obis_uuids,
 )
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.harvest.interfaces import IHarvester
@@ -93,6 +101,14 @@ OBIS_DATASET_API = "https://api.obis.org/v3/dataset"
 # Public OBIS dataset page and per-dataset open-data export (used for link-back).
 OBIS_DATASET_PAGE = "https://obis.org/dataset/"
 OBIS_PARQUET_URL = "https://obis-open-data.s3.amazonaws.com/occurrence/{uuid}.parquet"
+
+# OBIS open-data S3 bucket (anonymous) — one occurrence parquet per dataset.
+# Used by the "s3" discovery mode to enumerate dataset UUIDs quickly and
+# reliably, instead of OBIS's slow, un-paged /v3/dataset list.
+OBIS_S3_BUCKET_URL = "https://obis-open-data.s3.amazonaws.com/"
+OBIS_S3_PREFIX = "occurrence/"
+_S3_NS = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 # Identify CIOOS on every OBIS request so OBIS ops can attribute/contact us.
 USER_AGENT = (
@@ -191,6 +207,7 @@ class OBISHarvester(WAFHarvesterISO19115_3):
 
     # Config keys this harvester understands (for typo detection).
     _KNOWN_CONFIG_KEYS = {
+        "discovery",
         "spatial_filter",
         "spatial_filter_file",
         "nodeid",
@@ -217,6 +234,19 @@ class OBISHarvester(WAFHarvesterISO19115_3):
             raise ValueError("Config must be valid JSON: %s" % e)
         if not isinstance(config_obj, dict):
             raise ValueError("Config must be a JSON object")
+
+        discovery = config_obj.get("discovery")
+        if discovery is not None and discovery not in ("api", "s3"):
+            raise ValueError("discovery must be 'api' or 's3'")
+        if discovery == "s3" and (
+            config_obj.get("spatial_filter") or config_obj.get("spatial_filter_file")
+        ):
+            # The S3 bucket listing cannot be filtered by geometry; regional
+            # scoping is done downstream (RA harvests national by region).
+            raise ValueError(
+                "discovery='s3' cannot be combined with spatial_filter/"
+                "spatial_filter_file (S3 listing has no geometry filter)"
+            )
 
         spatial_filter = config_obj.get("spatial_filter")
         if spatial_filter and not str(spatial_filter).upper().startswith(
@@ -392,6 +422,112 @@ class OBISHarvester(WAFHarvesterISO19115_3):
 
         return results
 
+    def _fetch_obis_datasets_s3(self, harvest_job):
+        """Enumerate OBIS datasets by listing the open-data S3 bucket.
+
+        Fast, reliable, fully-paged alternative to OBIS's slow un-paged
+        /v3/dataset list: one parquet object per dataset, so the bucket keys are
+        the authoritative dataset UUID list. Uses each object's ``LastModified``
+        as the change-detection date. Returns dataset dicts ``{"id", "updated"}``
+        (no ``doi``/``citation_id`` — those aren't in the S3 key; the DOI is
+        recovered at fetch time from the converter metadata instead), or None on
+        error after recording a gather error.
+        """
+        session = _get_gather_session()
+        gather_timeout = int(
+            self.source_config.get("gather_timeout", DEFAULT_GATHER_TIMEOUT)
+        )
+        datasets = []
+        token = None
+        try:
+            while True:
+                params = {"list-type": "2", "prefix": OBIS_S3_PREFIX}
+                if token:
+                    params["continuation-token"] = token
+                response = session.get(
+                    OBIS_S3_BUCKET_URL, params=params, timeout=gather_timeout
+                )
+                response.raise_for_status()
+                root = ET.fromstring(response.content)
+                for c in root.findall("s3:Contents", _S3_NS):
+                    key = c.findtext("s3:Key", default="", namespaces=_S3_NS)
+                    if not key.endswith(".parquet"):
+                        continue
+                    uuid = key[len(OBIS_S3_PREFIX):-len(".parquet")].lower()
+                    if not _UUID_RE.match(uuid):
+                        continue
+                    datasets.append(
+                        {
+                            "id": uuid,
+                            "updated": c.findtext(
+                                "s3:LastModified", default="", namespaces=_S3_NS
+                            ),
+                        }
+                    )
+                if root.findtext("s3:IsTruncated", namespaces=_S3_NS) == "true":
+                    token = root.findtext(
+                        "s3:NextContinuationToken", namespaces=_S3_NS
+                    )
+                    if not token:
+                        break
+                else:
+                    break
+        except (requests.RequestException, ET.ParseError) as e:
+            self._save_gather_error(
+                "Unable to list the OBIS open-data S3 bucket (%s): %r"
+                % (OBIS_S3_BUCKET_URL, e),
+                harvest_job,
+            )
+            return None
+
+        if len(datasets) > _MAX_OBIS_SIZE:
+            self._save_gather_error(
+                "OBIS S3 listing returned %s datasets, exceeding the cap of %s. "
+                "Refusing to proceed (raise _MAX_OBIS_SIZE)."
+                % (len(datasets), _MAX_OBIS_SIZE),
+                harvest_job,
+            )
+            return None
+        return datasets
+
+    def _existing_source_packages(self, source_id):
+        """Map OBIS UUID -> package_id for every package already harvested by
+        this source, so orphaned packages (whose harvest object was lost) can be
+        updated rather than re-created. Keyed by the OBIS UUID extracted from the
+        package (resources/identifiers) so it is robust to the package name.
+        Returns {} on any search error (orphan adoption is best-effort)."""
+        from ckan.plugins import toolkit
+        from ckan import model
+
+        ctx = {"model": model, "session": model.Session, "ignore_auth": True}
+        out = {}
+        start = 0
+        try:
+            while True:
+                result = toolkit.get_action("package_search")(
+                    dict(ctx),
+                    {
+                        "fq": 'harvest_source_id:"%s"' % source_id,
+                        "rows": 1000,
+                        "start": start,
+                    },
+                )
+                rows = result.get("results", [])
+                if not rows:
+                    break
+                for pkg in rows:
+                    for uuid in package_obis_uuids(pkg):
+                        out[uuid] = pkg["id"]
+                start += 1000
+                if start >= result.get("count", 0):
+                    break
+        except Exception as e:
+            log.warning(
+                "Could not list existing source packages for orphan adoption: %r",
+                e,
+            )
+        return out
+
     # ------------------------------------------------------------------
     # Gather stage
     # ------------------------------------------------------------------
@@ -401,7 +537,11 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         self.harvest_job = harvest_job
         self._set_source_config(harvest_job.source.config)
 
-        datasets = self._fetch_obis_datasets(harvest_job)
+        discovery = self.source_config.get("discovery", "api")
+        if discovery == "s3":
+            datasets = self._fetch_obis_datasets_s3(harvest_job)
+        else:
+            datasets = self._fetch_obis_datasets(harvest_job)
         if datasets is None:
             return None
         # Map OBIS UUID -> dataset record (lower-cased keys for stable matching).
@@ -427,6 +567,13 @@ class OBISHarvester(WAFHarvesterISO19115_3):
             db_modified[guid] = modified_date
             db_package_id[guid] = package_id
 
+        # Orphan adoption: packages already in the catalogue for THIS source
+        # whose current harvest object was lost (e.g. an interrupted/aborted
+        # run) are not in db_modified, so they'd be re-created as "new" and hit
+        # a "URL already in use" collision. Map OBIS UUID -> package_id for all
+        # of this source's existing packages so we can update them instead.
+        existing_pkg_by_uuid = self._existing_source_packages(harvest_job.source.id)
+
         # Cross-source dedup: build a catalogue index once (excluding this
         # source's own datasets) so datasets already present from another source
         # are skipped and reported rather than re-imported.
@@ -448,6 +595,26 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         change = classified["change"]
         delete = classified["delete"]
         skipped = classified["skipped"]
+
+        # Reclassify "new" guids that already have an orphaned package for this
+        # source as "change" linked to that package, so import updates it rather
+        # than colliding on the name.
+        adopted = []
+        for guid in list(new):
+            pkg_id = existing_pkg_by_uuid.get(guid)
+            if pkg_id and guid not in db_package_id:
+                new.discard(guid)
+                db_package_id[guid] = pkg_id
+                change.append(guid)
+                adopted.append(guid)
+        if adopted:
+            log.info(
+                "OBIS: adopting %s orphaned package(s) as updates (avoids name "
+                "collision): %s%s",
+                len(adopted),
+                adopted[:5],
+                " …" if len(adopted) > 5 else "",
+            )
 
         if classified["delete_suppressed"]:
             log.warning(
@@ -564,6 +731,7 @@ class OBISHarvester(WAFHarvesterISO19115_3):
 
         started = time.monotonic()
         iso_xml = None
+        doi_from_meta = ""
         # attempt 1 is the initial try; `retries` further attempts on transient
         # network errors, with exponential backoff. Conversion/schema errors are
         # permanent and never retried.
@@ -571,6 +739,11 @@ class OBISHarvester(WAFHarvesterISO19115_3):
             try:
                 record = Record(source=obis_id, schema=InputSchemas.obis)
                 record.load()
+                # Capture the DOI while metadata is still the flat cioos dict
+                # (convert_to_cioos_schema nests it). Lets s3-discovered datasets
+                # — which have no DOI at gather — still record it.
+                if isinstance(record.metadata, dict):
+                    doi_from_meta = record.metadata.get("datasetIdentifier") or ""
                 record.convert_to_cioos_schema()
                 iso_xml = record.convert_to("iso19115-3_xml")
                 break
@@ -613,6 +786,12 @@ class OBISHarvester(WAFHarvesterISO19115_3):
         # declaration. Other CIOOS ISO sources store declaration-free XML, so
         # strip it here to match and keep the record indexable.
         iso_xml = _strip_xml_declaration(iso_xml)
+
+        # If gather didn't capture the DOI (s3 discovery has no list record),
+        # backfill it from the converter metadata so get_package_dict can still
+        # populate unique-resource-identifier-full.
+        if doi_from_meta and not get_object_extra(harvest_object, "obis_doi"):
+            harvest_object.extras.append(HOExtra(key="obis_doi", value=doi_from_meta))
 
         harvest_object.content = iso_xml
         harvest_object.save()
