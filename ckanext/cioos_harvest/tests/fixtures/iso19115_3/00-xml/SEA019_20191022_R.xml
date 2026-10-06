@@ -1,0 +1,1665 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<mac:MI_Metadata xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://standards.iso.org/iso/19115/-3/mdb/2.0 https://schemas.isotc211.org/19115/-3/mdb/2.0/mdb.xsd"
+  xmlns:gml="http://www.opengis.net/gml/3.2"
+  xmlns:mpc="http://standards.iso.org/iso/19115/-3/mpc/1.0"
+  xmlns:mri="http://standards.iso.org/iso/19115/-3/mri/1.0"
+  xmlns:mrl="http://standards.iso.org/iso/19115/-3/mrl/2.0"
+  xmlns:mmi="http://standards.iso.org/iso/19115/-3/mmi/1.0"
+  xmlns:mdb="http://standards.iso.org/iso/19115/-3/mdb/2.0"
+  xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0"
+  xmlns:msr="http://standards.iso.org/iso/19115/-3/msr/2.0"
+  xmlns:mac="http://standards.iso.org/iso/19115/-3/mac/2.0"
+  xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/2.0"
+  xmlns:mrs="http://standards.iso.org/iso/19115/-3/mrs/1.0"
+  xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0"
+  xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0"
+  xmlns:mco="http://standards.iso.org/iso/19115/-3/mco/1.0"
+  xmlns:gex="http://standards.iso.org/iso/19115/-3/gex/1.0"
+  xmlns:mdq="http://standards.iso.org/iso/19157/-2/mdq/1.0"
+  xmlns:mas="http://standards.iso.org/iso/19115/-3/mas/1.0"
+  xmlns:mrd="http://standards.iso.org/iso/19115/-3/mrd/1.0"
+  xmlns:mrc="http://standards.iso.org/iso/19115/-3/mrc/2.0"
+  xmlns:gmx="http://www.isotc211.org/2005/gmx"
+  xmlns:xlink="http://www.w3.org/1999/xlink">
+  <mdb:metadataIdentifier>
+    <mcc:MD_Identifier>
+      <mcc:authority>
+        <cit:CI_Citation>
+          <cit:title>
+            <gco:CharacterString>ca.dfo-mpo.cnodc-cndoc</gco:CharacterString>
+          </cit:title>
+        </cit:CI_Citation>
+      </mcc:authority>
+      <mcc:code>
+        <gco:CharacterString>SEA019_20191022_R</gco:CharacterString>
+      </mcc:code>
+    </mcc:MD_Identifier>
+  </mdb:metadataIdentifier>
+  <mdb:defaultLocale>
+<lan:PT_Locale id="en">
+  <lan:language>
+    <lan:LanguageCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/LanguageCode.xml" codeListValue="eng" />
+  </lan:language>
+  <lan:country>
+    <lan:CountryCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml" codeListValue="CAN" />
+  </lan:country>
+  <lan:characterEncoding>
+    <lan:MD_CharacterSetCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/CharacterSetCode.xml" codeListValue="utf8" />
+  </lan:characterEncoding>
+</lan:PT_Locale>
+  </mdb:defaultLocale>
+  <mdb:metadataScope>
+    <mdb:MD_MetadataScope>
+      <mdb:resourceScope>
+        <mcc:MD_ScopeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ScopeCode" codeListValue="dataset" />
+      </mdb:resourceScope>
+    </mdb:MD_MetadataScope>
+  </mdb:metadataScope>
+  <mdb:contact>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="owner"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+  </mdb:contact>
+  <mdb:dateInfo>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2026-07-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="created" />
+  </cit:dateType>
+</cit:CI_Date>
+  </mdb:dateInfo>
+  <mdb:dateInfo>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2026-07-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+  </mdb:dateInfo>
+  <mdb:metadataStandard>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>ISO 19115-1 Geographic Information - Metadata</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">ISO 19115-1 Information géographique - Métadonnée</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:edition xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>First Edition 2014-04-01</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Première édition 2014-04-01</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:edition>
+  <cit:editionDate><gco:DateTime>2014-04-01T00:00:00.000</gco:DateTime></cit:editionDate>
+</cit:CI_Citation>
+  </mdb:metadataStandard>
+  <mdb:metadataStandard>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>ISO 19115-1 Geographic Information - Metadata Amendment 1</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">ISO 19115-1 Information géographique - Modification 1 des métadonnées</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:edition xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>2018-02</gco:CharacterString>
+</cit:edition>
+</cit:CI_Citation>
+  </mdb:metadataStandard>
+  <mdb:metadataProfile>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian Integrated Ocean Observing System Metadata Profile of ISO-19115</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Profil des métadonnées du Système intégré d’observation de l’océan de Canada ISO-19115</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2019-11-06</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+</cit:CI_Citation>
+  </mdb:metadataProfile>
+  <mdb:otherLocale>
+<lan:PT_Locale id="fr">
+  <lan:language>
+    <lan:LanguageCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/LanguageCode.xml" codeListValue="fra" />
+  </lan:language>
+  <lan:country>
+    <lan:CountryCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml" codeListValue="CAN" />
+  </lan:country>
+  <lan:characterEncoding>
+    <lan:MD_CharacterSetCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/CharacterSetCode.xml" codeListValue="utf8" />
+  </lan:characterEncoding>
+</lan:PT_Locale>
+  </mdb:otherLocale>
+  <mdb:referenceSystemInfo>
+<mrs:MD_ReferenceSystem>
+  <mrs:referenceSystemIdentifier>
+  <mcc:MD_Identifier>
+    <mcc:authority>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:presentationForm>
+    <cit:CI_PresentationFormCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_PresentationFormCode" codeListValue="documentDigital"/>
+  </cit:presentationForm>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://epsg.io/</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+    </mcc:authority>
+    <mcc:code><gco:CharacterString>4326</gco:CharacterString></mcc:code>
+    <mcc:codeSpace><gco:CharacterString>https://epsg.io/</gco:CharacterString></mcc:codeSpace>
+    <mcc:description xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>World Geodetic System of 1984</gco:CharacterString>
+</mcc:description>
+  </mcc:MD_Identifier>
+  </mrs:referenceSystemIdentifier>
+  <mrs:referenceSystemType>
+    <mrs:MD_ReferenceSystemTypeCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ReferenceSystemTypeCode" codeListValue="geodeticGeographic2D" />
+  </mrs:referenceSystemType>
+</mrs:MD_ReferenceSystem>
+  </mdb:referenceSystemInfo>
+  <mdb:referenceSystemInfo>
+<mrs:MD_ReferenceSystem>
+  <mrs:referenceSystemIdentifier>
+  <mcc:MD_Identifier>
+    <mcc:authority>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:presentationForm>
+    <cit:CI_PresentationFormCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_PresentationFormCode" codeListValue="documentDigital"/>
+  </cit:presentationForm>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://epsg.io/</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+    </mcc:authority>
+    <mcc:code><gco:CharacterString>5831</gco:CharacterString></mcc:code>
+    <mcc:codeSpace><gco:CharacterString>https://epsg.io/</gco:CharacterString></mcc:codeSpace>
+    <mcc:description xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Instantaneous depth below current sea level</gco:CharacterString>
+</mcc:description>
+  </mcc:MD_Identifier>
+  </mrs:referenceSystemIdentifier>
+  <mrs:referenceSystemType>
+    <mrs:MD_ReferenceSystemTypeCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ReferenceSystemTypeCode" codeListValue="vertical" />
+  </mrs:referenceSystemType>
+</mrs:MD_ReferenceSystem>
+  </mdb:referenceSystemInfo>
+  <mdb:identificationInfo>
+    <mri:MD_DataIdentification>
+      <mri:citation>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Glider SEA019 - 20191022 (Real-Time)</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Planeur SEA019 - 20191022 (temps réel)</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2026-07-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2026-07-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2026-07-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="creation" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:citedResponsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="contributor"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO-MPO</gco:CharacterString>
+</cit:name>
+  <cit:partyIdentifier>
+  <mcc:MD_Identifier>
+    <mcc:authority>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Research Organization Registry (ROR)</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Registre des organisations de recherche (ROR)</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:presentationForm>
+    <cit:CI_PresentationFormCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_PresentationFormCode" codeListValue="documentDigital"/>
+  </cit:presentationForm>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://ror.org</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>ROR Homepage</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Page d&#39;accueil pour les ROR</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+    </mcc:authority>
+    <mcc:code><gco:CharacterString>02qa1x782</gco:CharacterString></mcc:code>
+    <mcc:codeSpace><gco:CharacterString>https://ror.org/</gco:CharacterString></mcc:codeSpace>
+  </mcc:MD_Identifier>
+  </cit:partyIdentifier>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</cit:citedResponsibleParty>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www.meds-sdmm.dfo-mpo.gc.ca/</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+      </mri:citation>
+      <mri:abstract xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Real-time data from glider mission SEA019_20191022</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Données en temps réel de la mission du planeur SEA019_20191022</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mri:abstract>
+      <mri:status>
+        <mcc:MD_ProgressCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ProgressCode" codeListValue="final" />
+      </mri:status>
+      <mri:pointOfContact>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="pointOfContact"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+      </mri:pointOfContact>
+      <mri:spatialRepresentationType>
+        <mcc:MD_SpatialRepresentationTypeCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_SpatialRepresentationTypeCode" codeListValue="textTable" />
+      </mri:spatialRepresentationType>
+      <mri:topicCategory>
+        <mri:MD_TopicCategoryCode>oceans</mri:MD_TopicCategoryCode>
+      </mri:topicCategory>
+      <mri:extent>
+  <gex:EX_Extent>
+    <gex:geographicElement>
+      <gex:EX_GeographicBoundingBox>
+        <gex:extentTypeCode>
+          <gco:Boolean>true</gco:Boolean>
+        </gex:extentTypeCode>
+        <gex:westBoundLongitude>
+          <gco:Decimal>-63.42115</gco:Decimal>
+        </gex:westBoundLongitude>
+        <gex:eastBoundLongitude>
+          <gco:Decimal>-61.454183</gco:Decimal>
+        </gex:eastBoundLongitude>
+        <gex:southBoundLatitude>
+          <gco:Decimal>42.566983</gco:Decimal>
+        </gex:southBoundLatitude>
+        <gex:northBoundLatitude>
+          <gco:Decimal>44.508067</gco:Decimal>
+        </gex:northBoundLatitude>
+      </gex:EX_GeographicBoundingBox>
+    </gex:geographicElement>
+    <gex:temporalElement>
+      <gex:EX_TemporalExtent>
+        <gex:extent>
+  <gml:TimePeriod gml:id="time_period">
+    <gml:beginPosition>2018-07-12T14:55:48.000</gml:beginPosition>
+    <gml:endPosition>2019-11-12T22:40:44.000</gml:endPosition>
+  </gml:TimePeriod>
+        </gex:extent>
+      </gex:EX_TemporalExtent>
+    </gex:temporalElement>
+    <gex:verticalElement>
+      <gex:EX_VerticalExtent>
+        <gex:minimumValue>
+          <gco:Real>0.922491</gco:Real>
+        </gex:minimumValue>
+        <gex:maximumValue>
+          <gco:Real>9701.063516</gco:Real>
+        </gex:maximumValue>
+        <gex:verticalCRSId>
+<mrs:MD_ReferenceSystem>
+  <mrs:referenceSystemIdentifier>
+  <mcc:MD_Identifier>
+    <mcc:authority>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:presentationForm>
+    <cit:CI_PresentationFormCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_PresentationFormCode" codeListValue="documentDigital"/>
+  </cit:presentationForm>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://epsg.io/</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>EPSG Geodetic Parameter Dataset</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ensemble de données des paramètres géodésiques de l&#39;EPSG</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+    </mcc:authority>
+    <mcc:code><gco:CharacterString>5831</gco:CharacterString></mcc:code>
+    <mcc:codeSpace><gco:CharacterString>https://epsg.io/</gco:CharacterString></mcc:codeSpace>
+    <mcc:description xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Instantaneous depth below current sea level</gco:CharacterString>
+</mcc:description>
+  </mcc:MD_Identifier>
+  </mrs:referenceSystemIdentifier>
+  <mrs:referenceSystemType>
+    <mrs:MD_ReferenceSystemTypeCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ReferenceSystemTypeCode" codeListValue="vertical" />
+  </mrs:referenceSystemType>
+</mrs:MD_ReferenceSystem>
+        </gex:verticalCRSId>
+      </gex:EX_VerticalExtent>
+    </gex:verticalElement>
+  </gex:EX_Extent>
+      </mri:extent>
+      <mri:resourceMaintenance>
+<mmi:MD_MaintenanceInformation>
+  <mmi:maintenanceAndUpdateFrequency>
+    <mmi:MD_MaintenanceFrequencyCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_MaintenanceFrequencyCode" codeListValue="notPlanned" />
+  </mmi:maintenanceAndUpdateFrequency>
+</mmi:MD_MaintenanceInformation>
+      </mri:resourceMaintenance>
+      <mri:descriptiveKeywords>
+<mri:MD_Keywords>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>oceanography</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Oceanography</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Océanographie</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:type>
+    <mri:MD_KeywordTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_KeywordTypeCode" codeListValue="theme" />
+  </mri:type>
+  <mri:thesaurusName>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada Core Subject Thesaurus</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Thesaurus subjet core du gouvenerment du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2016-10-13</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:citedResponsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="owner"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</cit:citedResponsibleParty>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://open.canada.ca/data/en/dataset/d4a0e406-eea9-41a7-bcae-28c31f3b9c65</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>WWW:LINK</gco:CharacterString>
+</cit:protocol>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+  </mri:thesaurusName>
+</mri:MD_Keywords>
+      </mri:descriptiveKeywords>
+      <mri:descriptiveKeywords>
+<mri:MD_Keywords>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>dissolvedOrganicCarbon</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Dissolved Organic Carbon</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Carbone organique dissous</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>subSurfaceSalinity</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Sub-Surface Salinity</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Salinité sous la surface</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>subSurfaceTemperature</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Sub-Surface Temperature</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Température sous la surface</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:type>
+    <mri:MD_KeywordTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_KeywordTypeCode" codeListValue="theme" />
+  </mri:type>
+  <mri:thesaurusName>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Essential Ocean Variables</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Variables océaniques essentielles</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2023-10-06</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:citedResponsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="owner"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Global Ocean Observing System</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Système mondial d&#39;observation de l&#39;océan</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</cit:citedResponsibleParty>
+</cit:CI_Citation>
+  </mri:thesaurusName>
+</mri:MD_Keywords>
+      </mri:descriptiveKeywords>
+      <mri:descriptiveKeywords>
+<mri:MD_Keywords>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>scientists</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Scientists</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Scientifiques</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:type>
+    <mri:MD_KeywordTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_KeywordTypeCode" codeListValue="theme" />
+  </mri:type>
+  <mri:thesaurusName>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada Audiences</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Publics du gouvernement de Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2023-10-06</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:citedResponsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="owner"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</cit:citedResponsibleParty>
+</cit:CI_Citation>
+  </mri:thesaurusName>
+</mri:MD_Keywords>
+      </mri:descriptiveKeywords>
+      <mri:descriptiveKeywords>
+<mri:MD_Keywords>
+  <mri:keyword xsi:type="lan:PT_FreeText_PropertyType">
+    <gco:CharacterString>ontario_-_ottawa</gco:CharacterString>
+    <lan:PT_FreeText>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#en">Ontario - Ottawa</lan:LocalisedCharacterString>
+      </lan:textGroup>
+      <lan:textGroup>
+        <lan:LocalisedCharacterString locale="#fr">Ontario - Ottawa</lan:LocalisedCharacterString>
+      </lan:textGroup>
+    </lan:PT_FreeText>
+  </mri:keyword>
+  <mri:type>
+    <mri:MD_KeywordTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_KeywordTypeCode" codeListValue="place" />
+  </mri:type>
+  <mri:thesaurusName>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada Census Divisions</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Divisions de recensement du gouvernement de Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2016-01-01</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="revision" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:citedResponsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="owner"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</cit:citedResponsibleParty>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www12.statcan.gc.ca/census-recensement/2021/ref/dict/az/Definition-eng.cfm?ID=geo008</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>WWW:LINK</gco:CharacterString>
+</cit:protocol>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+  </mri:thesaurusName>
+</mri:MD_Keywords>
+      </mri:descriptiveKeywords>
+      <mri:resourceConstraints>
+ <mco:MD_LegalConstraints>
+      <mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Your use of this content is subject to the Open Government License of Canada (https://open.canada.ca/en/open-government-licence-canada).</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Votre utilisation de ce contenu est soumise à la Licence du gouvernement ouvert du Canada (https://ouvert.canada.ca/fr/licence-du-gouvernement-ouvert-canada).</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:useLimitation>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Open Government License - Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Licence du gouvernement ouvert - Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2022-12-02</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:edition xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>2.0</gco:CharacterString>
+</cit:edition>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://open.canada.ca/en/open-government-licence-canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://ouvert.canada.ca/fr/licence-du-gouvernement-ouvert-canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Open Government License - Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Licence du gouvernement ouvert - Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="author"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="pointOfContact"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+      <mco:accessConstraints>
+          <mco:MD_RestrictionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_RestrictionCode" codeListValue="licenceUnrestricted"/>
+      </mco:accessConstraints>
+      <mco:useConstraints>
+          <mco:MD_RestrictionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_RestrictionCode" codeListValue="licenceUnrestricted"/>
+      </mco:useConstraints>
+      <mco:otherConstraints xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Acknowledgement required as per the terms of the Open Government License</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Reconnaissance requise conformément aux termes de la licence du gouvernement ouvert</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:otherConstraints>
+    </mco:MD_LegalConstraints>
+      </mri:resourceConstraints>
+      <mri:resourceConstraints>
+    <mco:MD_SecurityConstraints>
+      <mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>This information is not considered classified or protected</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Cette information n&#39;est pas considérée comme classifiée ou protégée</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:useLimitation>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Directive on Security Management - Appendix J: Standard on Security Categorization</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Directive sur la gestion de la sécurité - Annexe J : Norme sur la catégorisation de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2019-07-01</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=32614</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://www.tbs-sct.canada.ca/pol/doc-fra.aspx?id=32614</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Directive on Security Management - Appendix J: Standard on Security Categorization</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Directive sur la gestion de la sécurité - Annexe J : Norme sur la catégorisation de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Levels of security</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Niveaux de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2024-12-31</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www.canada.ca/en/public-services-procurement/services/industrial-security/security-requirements-contracting/safeguarding-equipment-sites-assets-information/levels-security.html</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://www.canada.ca/fr/services-publics-approvisionnement/services/securite-industrielle/exigences-securite-contrats/protection-equipement-lieux-biens-renseignements/niveaux-securite.html</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Levels of security</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Niveaux de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="author"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="pointOfContact"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+      <mco:classification>
+        <mco:MD_ClassificationCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ClassificationCode" codeListValue="unclassified"/>
+      </mco:classification>
+      <mco:classificationSystem xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:classificationSystem>
+    </mco:MD_SecurityConstraints>
+      </mri:resourceConstraints>
+      <mri:defaultLocale>
+<lan:PT_Locale>
+  <lan:language>
+    <lan:LanguageCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/LanguageCode.xml" codeListValue="eng" />
+  </lan:language>
+  <lan:country>
+    <lan:CountryCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml" codeListValue="CAN" />
+  </lan:country>
+  <lan:characterEncoding>
+    <lan:MD_CharacterSetCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/CharacterSetCode.xml" codeListValue="utf8" />
+  </lan:characterEncoding>
+</lan:PT_Locale>
+      </mri:defaultLocale>
+      <mri:otherLocale>
+<lan:PT_Locale>
+  <lan:language>
+    <lan:LanguageCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/LanguageCode.xml" codeListValue="fra" />
+  </lan:language>
+  <lan:country>
+    <lan:CountryCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml" codeListValue="CAN" />
+  </lan:country>
+  <lan:characterEncoding>
+    <lan:MD_CharacterSetCode codeList="http://standards.iso.org/iso/19115/resources/Codelist/lan/CharacterSetCode.xml" codeListValue="utf8" />
+  </lan:characterEncoding>
+</lan:PT_Locale>
+      </mri:otherLocale>
+      <mri:supplementalInformation>
+  <gco:CharacterString>Data regularized, corrected and/or derived from raw glider data.</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Données régularisées, corrigées et/ou dérivées des données brutes du planeur.</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mri:supplementalInformation>
+    </mri:MD_DataIdentification>
+  </mdb:identificationInfo>
+  <mdb:distributionInfo>
+  <mrd:MD_Distribution>
+    <mrd:distributor>
+      <mrd:MD_Distributor>
+        <mrd:distributorContact>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="distributor"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+        </mrd:distributorContact>
+      </mrd:MD_Distributor>
+    </mrd:distributor>
+      <mrd:transferOptions>
+          <mrd:MD_DigitalTransferOptions>
+            <mrd:onLine>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/public/data-donnees/gliders/og/SEA019_20191022_R.nc</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>file</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>NetCDF File (OpenGlider)</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ficher NetCDF (OpenGlider)</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="fileAccess" />
+  </cit:function>
+</cit:CI_OnlineResource>
+            </mrd:onLine>
+          </mrd:MD_DigitalTransferOptions>
+      </mrd:transferOptions>
+  </mrd:MD_Distribution>
+  </mdb:distributionInfo>
+  <mdb:distributionInfo>
+  <mrd:MD_Distribution>
+    <mrd:distributor>
+      <mrd:MD_Distributor>
+        <mrd:distributorContact>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="distributor"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+        </mrd:distributorContact>
+      </mrd:MD_Distributor>
+    </mrd:distributor>
+      <mrd:transferOptions>
+          <mrd:MD_DigitalTransferOptions>
+            <mrd:onLine>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/public/data-donnees/gliders/ego/SEA019_20191022_R.nc</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>file</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>NetCDF File (EGO)</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Ficher NetCDF (EGO)</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="fileAccess" />
+  </cit:function>
+</cit:CI_OnlineResource>
+            </mrd:onLine>
+          </mrd:MD_DigitalTransferOptions>
+      </mrd:transferOptions>
+  </mrd:MD_Distribution>
+  </mdb:distributionInfo>
+  <mdb:distributionInfo>
+  <mrd:MD_Distribution>
+    <mrd:distributor>
+      <mrd:MD_Distributor>
+        <mrd:distributorContact>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="distributor"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+        </mrd:distributorContact>
+      </mrd:MD_Distributor>
+    </mrd:distributor>
+      <mrd:transferOptions>
+          <mrd:MD_DigitalTransferOptions>
+            <mrd:onLine>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/erddap/tabledap/SEA019_20191022_R</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>ERDDAP:tabledap</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>ERDDAP Web Site</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Site web ERDDAP</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="download" />
+  </cit:function>
+</cit:CI_OnlineResource>
+            </mrd:onLine>
+            <mrd:onLine>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/erddap/fr/tabledap/SEA019_20191022_R</gco:CharacterString>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>ERDDAP:tabledap</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>ERDDAP Web Site (French)</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Site web ERDDAP (français)</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="download" />
+  </cit:function>
+</cit:CI_OnlineResource>
+            </mrd:onLine>
+          </mrd:MD_DigitalTransferOptions>
+      </mrd:transferOptions>
+  </mrd:MD_Distribution>
+  </mdb:distributionInfo>
+  <mdb:metadataConstraints>
+ <mco:MD_LegalConstraints>
+      <mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Your use of this content is subject to the Open Government License of Canada (https://open.canada.ca/en/open-government-licence-canada).</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Votre utilisation de ce contenu est soumise à la Licence du gouvernement ouvert du Canada (https://ouvert.canada.ca/fr/licence-du-gouvernement-ouvert-canada).</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:useLimitation>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Open Government License - Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Licence du gouvernement ouvert - Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2022-12-02</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:edition xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>2.0</gco:CharacterString>
+</cit:edition>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://open.canada.ca/en/open-government-licence-canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://ouvert.canada.ca/fr/licence-du-gouvernement-ouvert-canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Open Government License - Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Licence du gouvernement ouvert - Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="author"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="pointOfContact"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+      <mco:accessConstraints>
+          <mco:MD_RestrictionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_RestrictionCode" codeListValue="licenceUnrestricted"/>
+      </mco:accessConstraints>
+      <mco:useConstraints>
+          <mco:MD_RestrictionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_RestrictionCode" codeListValue="licenceUnrestricted"/>
+      </mco:useConstraints>
+      <mco:otherConstraints xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Acknowledgement required as per the terms of the Open Government License</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Reconnaissance requise conformément aux termes de la licence du gouvernement ouvert</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:otherConstraints>
+    </mco:MD_LegalConstraints>
+  </mdb:metadataConstraints>
+  <mdb:metadataConstraints>
+    <mco:MD_SecurityConstraints>
+      <mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>This information is not considered classified or protected</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Cette information n&#39;est pas considérée comme classifiée ou protégée</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:useLimitation>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Directive on Security Management - Appendix J: Standard on Security Categorization</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Directive sur la gestion de la sécurité - Annexe J : Norme sur la catégorisation de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2019-07-01</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www.tbs-sct.canada.ca/pol/doc-eng.aspx?id=32614</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://www.tbs-sct.canada.ca/pol/doc-fra.aspx?id=32614</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Directive on Security Management - Appendix J: Standard on Security Categorization</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Directive sur la gestion de la sécurité - Annexe J : Norme sur la catégorisation de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+      <mco:reference>
+<cit:CI_Citation>
+  <cit:title xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Levels of security</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Niveaux de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:title>
+  <cit:date>
+<cit:CI_Date>
+  <cit:date>
+    <gco:Date>2024-12-31</gco:Date>
+  </cit:date>
+  <cit:dateType>
+    <cit:CI_DateTypeCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_DateTypeCode" codeListValue="publication" />
+  </cit:dateType>
+</cit:CI_Date>
+</cit:date>
+  <cit:onlineResource>
+<cit:CI_OnlineResource>
+  <cit:linkage xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>https://www.canada.ca/en/public-services-procurement/services/industrial-security/security-requirements-contracting/safeguarding-equipment-sites-assets-information/levels-security.html</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">https://www.canada.ca/fr/services-publics-approvisionnement/services/securite-industrielle/exigences-securite-contrats/protection-equipement-lieux-biens-renseignements/niveaux-securite.html</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:linkage>
+  <cit:protocol>
+  <gco:CharacterString>https</gco:CharacterString>
+</cit:protocol>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Levels of security</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Niveaux de sécurité</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+  </cit:name>
+  <cit:function>
+    <cit:CI_OnLineFunctionCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_OnLineFunctionCode" codeListValue="information" />
+  </cit:function>
+</cit:CI_OnlineResource>
+</cit:onlineResource>
+</cit:CI_Citation>
+</mco:reference>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="author"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+    <mco:responsibleParty>
+<cit:CI_Responsibility>
+  <cit:role>
+    <cit:CI_RoleCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#CI_RoleCode" codeListValue="pointOfContact"/>
+  </cit:role>
+  <cit:party>
+    <cit:CI_Organisation>
+  <cit:name xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Canadian National Oceanographic Data Centre</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Centre national de données océanographiques du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</cit:name>
+  <cit:contactInfo>
+    <cit:CI_Contact>
+      <cit:address>
+        <cit:CI_Address>
+          <cit:electronicMailAddress xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca</gco:CharacterString>
+          </cit:electronicMailAddress>
+        </cit:CI_Address>
+      </cit:address>
+    </cit:CI_Contact>
+  </cit:contactInfo>
+    </cit:CI_Organisation>
+  </cit:party>
+</cit:CI_Responsibility>
+</mco:responsibleParty>
+      <mco:classification>
+        <mco:MD_ClassificationCode codeList="https://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_ClassificationCode" codeListValue="unclassified"/>
+      </mco:classification>
+      <mco:classificationSystem xsi:type="lan:PT_FreeText_PropertyType">
+  <gco:CharacterString>Government of Canada</gco:CharacterString>
+  <lan:PT_FreeText>
+    <lan:textGroup>
+      <lan:LocalisedCharacterString locale="#fr">Gouvernement du Canada</lan:LocalisedCharacterString>
+    </lan:textGroup>
+  </lan:PT_FreeText>
+</mco:classificationSystem>
+    </mco:MD_SecurityConstraints>
+  </mdb:metadataConstraints>
+  <mdb:metadataMaintenance>
+<mmi:MD_MaintenanceInformation>
+  <mmi:maintenanceAndUpdateFrequency>
+    <mmi:MD_MaintenanceFrequencyCode codeList="http://standards.iso.org/iso/19115/resources/Codelists/cat/codelists.xml#MD_MaintenanceFrequencyCode" codeListValue="notPlanned" />
+  </mmi:maintenanceAndUpdateFrequency>
+</mmi:MD_MaintenanceInformation>
+  </mdb:metadataMaintenance>
+</mac:MI_Metadata>

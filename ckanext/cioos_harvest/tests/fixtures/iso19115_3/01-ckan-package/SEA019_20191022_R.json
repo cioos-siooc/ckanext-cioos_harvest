@@ -1,0 +1,250 @@
+{
+  "bbox-east-long": "-61.454183",
+  "bbox-north-lat": "44.508067",
+  "bbox-south-lat": "42.566983",
+  "bbox-west-long": "-63.42115",
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "DFO-MPO",
+      "organisation-uri_authority": "Research Organization Registry (ROR)",
+      "organisation-uri_code": "02qa1x782",
+      "organisation-uri_code-space": "https://ror.org/",
+      "organisation-uri_version": "",
+      "role": [
+        "contributor"
+      ]
+    }
+  ],
+  "dataset-reference-date": [
+    {
+      "type": "publication",
+      "value": "2026-07-13"
+    },
+    {
+      "type": "revision",
+      "value": "2026-07-13"
+    },
+    {
+      "type": "creation",
+      "value": "2026-07-13"
+    }
+  ],
+  "distributor": [
+    {
+      "contact-info_email": "DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Canadian National Oceanographic Data Centre",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "dissolvedOrganicCarbon",
+    "subSurfaceSalinity",
+    "subSurfaceTemperature"
+  ],
+  "extras": {
+    "access_constraints": "[\"Acknowledgement required as per the terms of the Open Government License\"]",
+    "contact-email": "DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca",
+    "coupled-resource": "[]",
+    "guid": "ca.dfo-mpo.cnodc-cndoc_SEA019_20191022_R",
+    "licence": "Your use of this content is subject to the Open Government License of Canada (https://open.canada.ca/en/open-government-licence-canada).",
+    "metadata-date": "2026-07-13",
+    "responsible-party": "[{\"name\": \"Canadian National Oceanographic Data Centre\", \"roles\": [\"owner\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true",
+    "temporal-extent-begin": "2018-07-12",
+    "temporal-extent-end": "2019-11-12"
+  },
+  "frequency-of-update": "notPlanned",
+  "id": "SEA019_20191022_R",
+  "keywords": {
+    "en": [
+      "Oceanography",
+      "Dissolved Organic Carbon",
+      "Sub-Surface Salinity",
+      "Sub-Surface Temperature",
+      "Scientists",
+      "Ontario - Ottawa"
+    ],
+    "fr": [
+      "Océanographie",
+      "Carbone organique dissous",
+      "Salinité sous la surface",
+      "Température sous la surface",
+      "Scientifiques",
+      "Ontario - Ottawa"
+    ]
+  },
+  "keywords_translation_method": {
+    "en": ""
+  },
+  "license_id": "Your use of this content is subject to the Open Government License of Canada (https://open.canada.ca/en/open-government-licence-canada).",
+  "lineage": null,
+  "metadata-language": "en",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "DFO.MEDS-SDMM.MPO@dfo-mpo.gc.ca",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Canadian National Oceanographic Data Centre",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "owner"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "created",
+      "value": "2026-07-13"
+    },
+    {
+      "type": "revision",
+      "value": "2026-07-13"
+    }
+  ],
+  "metadata_created": "2026-07-13",
+  "metadata_modified": "2026-07-13",
+  "name": "ca-dfo-mpo-cnodc-cndoc_SEA019_20191022_R",
+  "notes": "Real-time data from glider mission SEA019_20191022",
+  "notes_translated": {
+    "en": "Real-time data from glider mission SEA019_20191022",
+    "fr": "Données en temps réel de la mission du planeur SEA019_20191022"
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "final",
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "",
+      "format": "nc",
+      "name": "NetCDF File (OpenGlider)",
+      "name_translated": {
+        "en": "NetCDF File (OpenGlider)",
+        "fr": "Ficher NetCDF (OpenGlider)"
+      },
+      "resource_locator_function": "fileAccess",
+      "resource_locator_protocol": "file",
+      "url": "https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/public/data-donnees/gliders/og/SEA019_20191022_R.nc"
+    },
+    {
+      "description": "",
+      "format": "nc",
+      "name": "NetCDF File (EGO)",
+      "name_translated": {
+        "en": "NetCDF File (EGO)",
+        "fr": "Ficher NetCDF (EGO)"
+      },
+      "resource_locator_function": "fileAccess",
+      "resource_locator_protocol": "file",
+      "url": "https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/public/data-donnees/gliders/ego/SEA019_20191022_R.nc"
+    },
+    {
+      "description": "",
+      "format": "ERDDAP",
+      "name": "ERDDAP Web Site",
+      "name_translated": {
+        "en": "ERDDAP Web Site",
+        "fr": "Site web ERDDAP"
+      },
+      "resource_locator_function": "download",
+      "resource_locator_protocol": "ERDDAP:tabledap",
+      "url": "https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/erddap/tabledap/SEA019_20191022_R"
+    },
+    {
+      "description": "",
+      "format": "ERDDAP",
+      "name": "ERDDAP Web Site (French)",
+      "name_translated": {
+        "en": "ERDDAP Web Site (French)",
+        "fr": "Site web ERDDAP (français)"
+      },
+      "resource_locator_function": "download",
+      "resource_locator_protocol": "ERDDAP:tabledap",
+      "url": "https://cnodc-cndoc.azure.cloud-nuage.dfo-mpo.gc.ca/erddap/fr/tabledap/SEA019_20191022_R"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -63.42115,
+          42.566983
+        ],
+        [
+          -61.454183,
+          42.566983
+        ],
+        [
+          -61.454183,
+          44.508067
+        ],
+        [
+          -63.42115,
+          44.508067
+        ],
+        [
+          -63.42115,
+          42.566983
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": "2018-07-12",
+      "end": "2019-11-12"
+    }
+  ],
+  "title": "Glider SEA019 - 20191022 (Real-Time)",
+  "title_translated": {
+    "en": "Glider SEA019 - 20191022 (Real-Time)",
+    "fr": "Planeur SEA019 - 20191022 (temps réel)"
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "vertical-extent": [
+    {
+      "max": "9701.063516",
+      "min": "0.922491"
+    }
+  ]
+}

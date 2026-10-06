@@ -208,6 +208,78 @@ def all_packages_for_source(source_id):
 
 
 # ---------------------------------------------------------------------------
+# Remote content fetching
+# ---------------------------------------------------------------------------
+
+# Default read timeout for metadata documents, in seconds.  Upstream
+# ckanext-spatial hardcodes 10s, which is tight for a large WAF crawl served
+# from a cold cache.
+DEFAULT_FETCH_TIMEOUT = 60
+
+# Matches the encoding declared in an XML prolog, e.g. <?xml ... encoding="UTF-8"?>
+_XML_DECL_ENCODING_RE = re.compile(
+    rb"""^\s*<\?xml[^>]*?encoding\s*=\s*["']([\w.:+-]+)["']""", re.IGNORECASE
+)
+
+
+def resolve_response_encoding(response):
+    """Return the encoding that should be used to decode *response*.
+
+    ``requests`` follows RFC 2616 and falls back to ``ISO-8859-1`` for any
+    ``text/*`` response whose ``Content-Type`` omits ``charset``.  For XML that
+    default is simply wrong -- XML defaults to UTF-8 -- and it silently mangles
+    every non-ASCII character (e.g. ``temps réel`` -> ``temps rÃ©el``).
+
+    Some CIOOS sources do exactly this: the CNODC/DFO WAF serves ISO 19115-3 as
+    ``Content-Type: text/xml`` with no charset, while the bytes are UTF-8.
+
+    Resolution order:
+
+    1. An explicit ``charset`` in the ``Content-Type`` header -- the server said
+       so, believe it.
+    2. The ``encoding`` pseudo-attribute of the XML declaration.
+    3. ``requests``' chardet-based ``apparent_encoding``.
+    4. ``utf-8`` (the XML default).
+    """
+    content_type = response.headers.get("content-type", "")
+    if "charset=" in content_type.lower():
+        return response.encoding
+
+    declared = _XML_DECL_ENCODING_RE.match(response.content or b"")
+    if declared:
+        return declared.group(1).decode("ascii", "ignore")
+
+    return response.apparent_encoding or "utf-8"
+
+
+def get_content_as_unicode(url, timeout=DEFAULT_FETCH_TIMEOUT):
+    """Fetch *url* and return its body as text, decoded with the right encoding.
+
+    Drop-in replacement for ``SpatialHarvester._get_content_as_unicode()``,
+    which decodes with ``response.text`` and therefore inherits the broken
+    ISO-8859-1 fallback described in :func:`resolve_response_encoding`.
+
+    As with upstream, the original XML declaration is stripped (the content is
+    stored and served as unicode from here on) along with any BOM or leading
+    junk before the first ``<``.
+    """
+    response = requests.get(url.replace(" ", "%20"), timeout=timeout)
+    response.raise_for_status()
+    response.encoding = resolve_response_encoding(response)
+    content = response.text
+
+    # Remove the original XML declaration -- its encoding no longer applies.
+    content = re.sub(r"<\?xml(.*?)\?>", "", content, count=1)
+
+    # Get rid of the BOM and any other rubbish ahead of the root element.
+    start = content.find("<")
+    if start > 0:
+        content = content[start:]
+
+    return content
+
+
+# ---------------------------------------------------------------------------
 # XML content extraction
 # ---------------------------------------------------------------------------
 
@@ -231,6 +303,7 @@ def _get_xml_url_content(xml_url, urlopen_timeout, harvest_object):
     try:
         r = requests.get(xml_url, timeout=urlopen_timeout)
         ET.XML(r.content)  # test for valid xml
+        r.encoding = resolve_response_encoding(r)
         return r.text
     except Exception as e:
         msg = "%s: %s. From external XML content at %s" % (
