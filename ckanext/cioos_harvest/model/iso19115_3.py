@@ -503,24 +503,61 @@ def _parse_resource_locator(el):
     }
 
 
+# Thesaurus titles that identify a CIOOS controlled vocabulary, mapped to the
+# keyword type consumed by _infer_keyword_types().  Keys are compared
+# case-insensitively after whitespace collapsing.
+#
+# A thesaurus match wins over mri:MD_KeywordTypeCode because the ISO codelist
+# cannot express "these are EOVs" -- a standards-compliant producer labels an
+# EOV block as type 'theme' and names the vocabulary in mri:thesaurusName.
+_CIOOS_THESAURUS_TYPES = {
+    "eov": "eov",
+    "essential ocean variables": "eov",
+    "ecv": "ecv",
+    "essential climate variables": "ecv",
+    "project": "project",
+    "projects": "project",
+    "datacentre": "datacentre",
+    "data centre": "datacentre",
+    "datacenter": "datacentre",
+    "data center": "datacentre",
+}
+
+
+def _cioos_vocabulary_type(thesaurus_title):
+    """Map a thesaurus title to a CIOOS keyword type, or ``None`` if unknown."""
+    if not thesaurus_title:
+        return None
+    return _CIOOS_THESAURUS_TYPES.get(" ".join(thesaurus_title.split()).lower())
+
+
 def _parse_keyword_group(el):
     """Parse a mri:MD_Keywords element → {keywords: [localised_raw, ...], type: str}.
 
-    The type is taken from mri:MD_KeywordTypeCode when present; if absent, the
-    thesaurus name (mri:thesaurusName/cit:CI_Citation/cit:title) is used as a
-    fallback so that controlled-vocabulary blocks (e.g. the CIOOS EOV thesaurus)
-    are classified correctly.
+    Resolution order for the type:
+
+    1. The thesaurus name (mri:thesaurusName/cit:CI_Citation/cit:title) when it
+       names a known CIOOS controlled vocabulary -- see
+       :data:`_CIOOS_THESAURUS_TYPES`.
+    2. mri:type/mri:MD_KeywordTypeCode (the ISO codelist value).
+    3. The thesaurus name verbatim, so that non-CIOOS vocabularies can still be
+       recognised downstream (e.g. by _TAGS_ONLY_KEYWORD_TYPES).
+
+    The thesaurus must be checked before the codelist: ISO 19115-3 producers
+    legitimately tag an EOV block as ``theme`` *and* name the vocabulary
+    "Essential Ocean Variables".  Preferring the codelist there would classify
+    the block as ``theme`` and drop every EOV.
     """
-    ktype = _first_text(
+    thesaurus = _first_text(
+        el,
+        "mri:thesaurusName/cit:CI_Citation/cit:title/gco:CharacterString/text()",
+    )
+    codelist = _first_text(
         el,
         "mri:type/mri:MD_KeywordTypeCode/@codeListValue",
         "mri:type/mri:MD_KeywordTypeCode/text()",
     )
-    if not ktype:
-        ktype = _first_text(
-            el,
-            "mri:thesaurusName/cit:CI_Citation/cit:title/gco:CharacterString/text()",
-        )
+    ktype = _cioos_vocabulary_type(thesaurus) or codelist or thesaurus
     return {
         "keywords": [_localised_raw(kw) for kw in _x(el, "mri:keyword")],
         "type": ktype,
@@ -1014,13 +1051,27 @@ def _infer_keywords(values):
             for item in kgroup.get("keywords", []):
                 lang_dict = _local_to_dict(item, default_lang)
                 if lang_dict:
-                    result.append({"keyword": json.dumps(lang_dict), "type": ktype})
+                    result.append(
+                        {
+                            "keyword": json.dumps(lang_dict),
+                            "type": ktype,
+                            # gco:CharacterString, kept alongside the localised
+                            # labels because controlled-vocabulary blocks put the
+                            # machine-readable code there.  See
+                            # _infer_keyword_types().
+                            "code": item.get("default", ""),
+                        }
+                    )
     else:
         for item in keywords:
             lang_dict = _local_to_dict(item, default_lang)
             if lang_dict:
                 result.append(
-                    {"keyword": json.dumps(lang_dict), "type": item.get("type")}
+                    {
+                        "keyword": json.dumps(lang_dict),
+                        "type": item.get("type"),
+                        "code": item.get("default", ""),
+                    }
                 )
     values["keywords"] = result
 
@@ -1186,12 +1237,57 @@ def _infer_normalize_contact_roles(values):
 
 # Keyword types that have no dedicated CKAN schema field — their keywords flow
 # through as regular tags via _infer_tags_from_keywords without a warning.
+# Compared against the lower-cased keyword type.
+#
+# Includes the ISO 19115 MD_KeywordTypeCode codelist values, which a
+# standards-compliant producer supplies alongside mri:thesaurusName (see
+# _parse_keyword_group).  Without them every keyword of every record would log
+# an "Unknown keyword type" warning even though it was harvested correctly.
 _TAGS_ONLY_KEYWORD_TYPES = frozenset(
     {
+        # ISO 19115 MD_KeywordTypeCode (dataCentre/taxon handled above/below)
+        "discipline",
+        "place",
+        "stratum",
+        "temporal",
+        "theme",
+        "featuretype",
+        "instrument",
+        "platform",
+        "process",
+        "product",
+        "subtopiccategory",
+        "taxon",
+        # CIOOS / Government of Canada vocabularies with no schema field
         "taxa",
-        "Government of Canada Core Subject Thesaurus",
+        "government of canada core subject thesaurus",
+        "government of canada audiences",
+        "government of canada census divisions",
     }
 )
+
+
+def _first_vocabulary_code(*candidates):
+    """Return the first candidate that looks like a controlled-vocabulary code.
+
+    EOV/ECV values must match a schema choice such as ``subSurfaceSalinity``, so
+    only whitespace-free tokens qualify.  Human-readable labels
+    ("Sub-Surface Salinity", "Température sous la surface") are rejected.
+
+    Two producer conventions are in the wild and both are handled by ordering
+    the candidates code-first at the call site:
+
+    - CIOOS metadata-entry-form output puts the code in a ``#en``
+      LocalisedCharacterString and the label in ``gco:CharacterString``.
+    - ISO-conformant producers (e.g. the CNODC/DFO WAF) put the code in
+      ``gco:CharacterString`` and localised labels in the textGroups.
+    """
+    for candidate in candidates:
+        if candidate and isinstance(candidate, str) and not any(
+            c.isspace() for c in candidate
+        ):
+            return candidate
+    return None
 
 
 def _infer_keyword_types(values):
@@ -1223,26 +1319,21 @@ def _infer_keyword_types(values):
             projects.append(value)
         elif ktype_norm == "datacentre" and value not in datacentres:
             datacentres.append(value)
-        elif ktype_norm == "eov":
-            # EOV codes are always English identifiers — resolve 'en' key only;
-            # French-text-only keyword elements are intentionally skipped.
+        elif ktype_norm in ("eov", "ecv"):
+            # EOV/ECV values must be the canonical English code held in the
+            # schema's choice list, never a localised label.  Try the
+            # gco:CharacterString code first, then the 'en' localised string;
+            # label-only keyword elements are intentionally skipped.
             try:
                 parsed = json.loads(keyword_json)
-                eov_value = parsed.get("en") if isinstance(parsed, dict) else value
+                localised_en = parsed.get("en") if isinstance(parsed, dict) else value
             except (ValueError, TypeError):
-                eov_value = value
-            if eov_value and eov_value not in eovs:
-                eovs.append(eov_value)
-        elif ktype_norm == "ecv":
-            # ECV identifiers are stored as canonical English codes in schema.
-            try:
-                parsed = json.loads(keyword_json)
-                ecv_value = parsed.get("en") if isinstance(parsed, dict) else value
-            except (ValueError, TypeError):
-                ecv_value = value
-            if ecv_value and ecv_value not in ecvs:
-                ecvs.append(ecv_value)
-        elif ktype in _TAGS_ONLY_KEYWORD_TYPES:
+                localised_en = value
+            code = _first_vocabulary_code(kw.get("code"), localised_en)
+            target = eovs if ktype_norm == "eov" else ecvs
+            if code and code not in target:
+                target.append(code)
+        elif ktype_norm in _TAGS_ONLY_KEYWORD_TYPES:
             # Known thesaurus types with no dedicated schema field — keywords
             # are already captured as regular tags by _infer_tags_from_keywords.
             pass

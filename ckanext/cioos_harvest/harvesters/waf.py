@@ -15,6 +15,7 @@ from ckan import model as ckan_model
 from ckan import plugins as p
 from ckanext.cioos_harvest.harvesters.base import (
     from_json,
+    get_content_as_unicode,
     sanitize_tag,
     singleton_new,
     translate_resource_fields,
@@ -54,6 +55,21 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         }
 
     # ------------------------------------------------------------------
+    # Fetch stage
+    # ------------------------------------------------------------------
+
+    def _get_content_as_unicode(self, url):
+        """Fetch a metadata document with correct character-encoding detection.
+
+        Upstream ``SpatialHarvester._get_content_as_unicode()`` decodes with
+        ``response.text``, which means a source serving ``Content-Type:
+        text/xml`` without a ``charset`` gets decoded as ISO-8859-1 and every
+        non-ASCII character is corrupted.  See
+        :func:`~ckanext.cioos_harvest.harvesters.base.resolve_response_encoding`.
+        """
+        return get_content_as_unicode(url)
+
+    # ------------------------------------------------------------------
     # Validation
     # ------------------------------------------------------------------
 
@@ -89,7 +105,18 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # ------------------------------------------------------------------
 
     def import_stage(self, harvest_object):
-        """Monkey-patch spatial_base.ISODocument, run the base import, then restore."""
+        """Monkey-patch spatial_base.ISODocument, run the base import, then restore.
+
+        The ``original_document`` fallback below is load-bearing, not defensive:
+        upstream ``guess_standard()`` only recognises ``gmd:MD_Metadata``,
+        ``gmi:MI_Metadata`` and ``mdb:MD_Metadata`` roots.  ISO 19115-3
+        documents rooted at ``mac:MI_Metadata`` (the 19115-2
+        imagery/acquisition extension, used by e.g. the CNODC/DFO WAF) are
+        therefore classified ``'unknown'``, and ``WAFHarvester.fetch_stage()``
+        stashes them in the ``original_document`` extra instead of
+        ``harvest_object.content``.  We move them back here so no XSLT
+        transform is attempted -- the ISO 19115-3 parser reads them directly.
+        """
         original_document = self._get_object_extra(harvest_object, "original_document")
         content = original_document or harvest_object.content or ""
 
@@ -186,9 +213,11 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
         # Idempotent: the same XML record always maps to the same id/name.
         guid = iso_values.get("guid", "")
         if guid:
-            package_dict["id"] = guid.split("_")[
-                -1
-            ]  # Use the code portion of the GUID as the CKAN package id
+            # The GUID is '<authority>_<code>'.  Split on the FIRST underscore
+            # only: the authority never contains one, but the code often does
+            # (e.g. 'ca.dfo-mpo.cnodc-cndoc_SEA019_20191022_R'), and splitting
+            # on the last would reduce every such record to the same id ('R').
+            package_dict["id"] = guid.split("_", 1)[-1]
             package_dict["name"] = guid.replace(".", "-")
         elif package is not None:
             package_dict["name"] = package.name

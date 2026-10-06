@@ -50,8 +50,17 @@ _FIXTURES_DIR = _TESTS_DIR / "fixtures" / "iso19115_3"
 _XML_DIR = _FIXTURES_DIR / "00-xml"
 _JSON_DIR = _FIXTURES_DIR / "01-ckan-package"
 
-# ISO 19115-3 metadata namespace (used for root-element validation)
+# ISO 19115-3 metadata namespaces (used for root-element validation)
 _MDB_NS = "http://standards.iso.org/iso/19115/-3/mdb/2.0"
+_MAC_NS = "http://standards.iso.org/iso/19115/-3/mac/2.0"
+
+# (namespace, local-name) pairs accepted as an ISO 19115-3 document root.
+_ISO19115_3_ROOTS = frozenset(
+    {
+        (_MDB_NS, "MD_Metadata"),
+        (_MAC_NS, "MI_Metadata"),
+    }
+)
 
 # ---------------------------------------------------------------------------
 # Fields excluded from comparison
@@ -247,19 +256,22 @@ class TestISO19115_3:
     # ------------------------------------------------------------------
 
     @pytest.mark.parametrize("name", _fixture_names())
-    def test_xml_root_element_is_mdb_md_metadata(self, name):
-        """Every XML fixture must have ``mdb:MD_Metadata`` as its root element.
+    def test_xml_root_element_is_iso19115_3(self, name):
+        """Every XML fixture must be rooted at an ISO 19115-3 metadata element.
 
-        The ISO 19115-3 harvester rejects anything that is not a proper
-        ISO 19115-3 document (e.g. ISO 19139 ``gmd:MD_Metadata`` records).
+        Accepted roots are ``mdb:MD_Metadata`` and ``mac:MI_Metadata`` -- the
+        latter is the ISO 19115-2 imagery/acquisition extension expressed in the
+        19115-3 encoding, whose children are still in the ``mdb:`` namespace, so
+        the parser reads it identically.  Anything else (notably ISO 19139
+        ``gmd:MD_Metadata``) is rejected: this harvester is 19115-3 only.
         """
         xml_path = _XML_DIR / f"{name}.xml"
         tree = etree.fromstring(xml_path.read_bytes())
-        expected_tag = f"{{{_MDB_NS}}}MD_Metadata"
-        assert tree.tag == expected_tag, (
-            f"'{name}.xml' has root element <{tree.tag}>, "
-            f"expected <{{{{{_MDB_NS}}}}}MD_Metadata>.  "
-            "This harvester only accepts ISO 19115-3 documents."
+        namespace, _, local_name = tree.tag.rpartition("}")
+        assert (namespace.lstrip("{"), local_name) in _ISO19115_3_ROOTS, (
+            f"'{name}.xml' has root element <{tree.tag}>, expected one of "
+            f"{sorted(local for _, local in _ISO19115_3_ROOTS)} in the ISO 19115-3 "
+            "namespaces.  This harvester only accepts ISO 19115-3 documents."
         )
 
     # ------------------------------------------------------------------
