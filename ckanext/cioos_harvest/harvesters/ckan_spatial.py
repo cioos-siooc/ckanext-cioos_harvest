@@ -58,7 +58,7 @@ class CKANSpatialHarvester(CKANHarvester):
         }
 
     def validate_config(self, config):
-        config = super(CKANSpatialHarvester, self).validate_config(config)
+        config = super().validate_config(config)
         if config:
             config_obj = json.loads(config)
             if not config_obj.get("spatial_filter") and not config_obj.get(
@@ -80,7 +80,8 @@ class CKANSpatialHarvester(CKANHarvester):
             "harvest_object_id",
         }
         package_dict["extras"] = [
-            e for e in package_dict.get("extras", [])
+            e
+            for e in package_dict.get("extras", [])
             if e["key"] not in _remote_harvest_keys
         ]
 

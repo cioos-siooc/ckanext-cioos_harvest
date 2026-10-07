@@ -163,9 +163,7 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     def get_package_dict(self, iso_values, harvest_object):
         self._expand_point_bboxes(iso_values, guid=harvest_object.guid)
 
-        package_dict = super().get_package_dict(
-            iso_values, harvest_object
-        )
+        package_dict = super().get_package_dict(iso_values, harvest_object)
 
         package = harvest_object.package
 

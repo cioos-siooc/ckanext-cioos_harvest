@@ -512,9 +512,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         # This runs: _expand_point_bboxes, spatial base get_package_dict,
         # scheming/fluent/composite field handlers, license resolution,
         # ecv, metadata_created/modified, title/notes plain-string override.
-        package_dict = super().get_package_dict(
-            iso_values, harvest_object
-        )
+        package_dict = super().get_package_dict(iso_values, harvest_object)
 
         # ----------------------------------------------------------------
         # Step 6.3 — Extras cleanup
@@ -823,7 +821,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             .join(HOExtraAlias2, HarvestObject.extras)
             .filter(HOExtraAlias1.key == "waf_modified_date")
             .filter(HOExtraAlias2.key == "waf_location")
-            .filter(HarvestObject.current == True)
+            .filter(HarvestObject.current.is_(True))
             .filter(HarvestObject.harvest_source_id == harvest_job.source.id)
         )
 

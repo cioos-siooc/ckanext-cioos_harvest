@@ -430,9 +430,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         resources = package_dict.get("resources", [])
         for resource in resources:
             url = resource.get("url", "").strip()
-            protocol = resource.get("resource_locator_protocol") or resource.get(
-                "protocol"
-            )
             format = resource.get("format") or "text/html"
             if url:
                 format = self.cioos_guess_resource_format(url) or format

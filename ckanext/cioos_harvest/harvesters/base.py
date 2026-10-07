@@ -216,9 +216,7 @@ def _save_harvest_object_error(message, harvest_object, stage="Import"):
     """Record a HarvestObjectError without needing a harvester instance."""
     log.warning(message)
     try:
-        HarvestObjectError(
-            message=message, object=harvest_object, stage=stage
-        ).save()
+        HarvestObjectError(message=message, object=harvest_object, stage=stage).save()
     except StaleDataError as e:
         log.warning(
             "Harvest object %s is stale. Error object not created. %s"
