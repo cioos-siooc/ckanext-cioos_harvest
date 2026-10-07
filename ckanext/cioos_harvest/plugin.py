@@ -47,35 +47,7 @@ class MyValidator(BaseValidator):
 class Cioos_HarvestPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(plugins.IActions)
     plugins.implements(ISpatialHarvester, inherit=True)
-    plugins.implements(plugins.IOrganizationController, inherit=True)
-
-    # IOrganizationController
-    def read(self, entity):
-        pass
-
-    def create(self, entity):
-        if hasattr(entity, "title_translated"):
-            if entity.title_translated == "{}" or not entity.title_translated:
-                toolkit.get_action("organization_patch")(
-                    data_dict={
-                        "id": entity.id,
-                        "title": entity.title,
-                        "title_translated": '{"en":"%s", "fr":"%s"}'
-                        % (entity.title, entity.title),
-                    }
-                )
-        return entity
-
-    def edit(self, entity):
-        pass
-
-    def delete(self, entity):
-        pass
-
-    def before_dataset_view(self, pkg_dict):
-        return pkg_dict
 
     # IConfigurer
     def update_config(self, config_):
@@ -91,15 +63,6 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
             "cioos_spatial_widget_expands": h.spatial_widget_expands,
             "cioos_spatial_default_extent": h.spatial_default_extent,
             "cioos_spatial_get_map_initial_max_zoom": h.spatial_get_map_initial_max_zoom,
-        }
-
-    # IActions
-    def get_actions(self):
-        from ckanext.cioos_harvest import logic
-
-        return {
-            "spatial_query_geo": logic.spatial_query_geo,
-            "spatial_query_geo_package_search": logic.spatial_query_geo_package_search,
         }
 
     # ISpatialHarvester

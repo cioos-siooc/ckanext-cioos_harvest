@@ -1,7 +1,8 @@
 """CKAN Spatial Harvester.
 
 Harvests remote CKAN instances, filtering datasets by spatial query
-against the remote instance's spatial search API.
+against the remote instance's spatial_query_geo action (provided by
+ckanext-cioos, so the remote must be a CIOOS catalogue).
 """
 
 import json
@@ -124,7 +125,9 @@ class CKANSpatialHarvester(CKANHarvester):
         ss_params["crs"] = self.config.get("spatial_crs", 4326)
         spatial_id_list = []
         if spatial_filter_wkt:
-            spatial_search_url = remote_ckan_base_url + "/api/2/search/dataset/geo"
+            spatial_search_url = (
+                remote_ckan_base_url + "/api/3/action/spatial_query_geo"
+            )
             try:
                 ss_content = self._post_content(spatial_search_url, ss_params)
             except ContentFetchError as e:
@@ -140,12 +143,12 @@ class CKANSpatialHarvester(CKANHarvester):
                     "Spatial Search response from remote CKAN was not JSON: %r"
                     % ss_content
                 )
-            try:
-                spatial_id_list = ss_response_dict.get("results", [])
-            except ValueError:
+            result = ss_response_dict.get("result")
+            if not ss_response_dict.get("success") or not isinstance(result, dict):
                 raise SearchError(
-                    "Response JSON did not contain results list: %r" % ss_response_dict
+                    "Spatial Search on remote CKAN failed: %r" % ss_response_dict
                 )
+            spatial_id_list = result.get("results", [])
 
         # Filter out packages not found by spatial search
         pkg_dicts = [p for p in pkg_dicts if p["id"] in spatial_id_list]
