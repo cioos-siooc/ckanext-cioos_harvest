@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ckanext-cioos_harvest"
+version = "0.0.1"
+description = "Extension to make spatial harvest, scheming, composite and fluent extensions work together."
+readme = "README.rst"
+authors = [{ name = "Matthew Foster", email = "matthew.foster@hakai.org" }]
+license = { text = "AGPL" }
+keywords = ["CKAN"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+]
+requires-python = ">=3.10"
+# CKAN itself and the ckanext-* extensions this plugin builds on (harvest,
+# spatial, scheming, fluent) are installed by the deployment, not declared here.
+dependencies = [
+    "boto3",
+    "ckantoolkit",
+    "lxml",
+    # ckan_schema.py injects pyOpenSSL into urllib3
+    "pyopenssl",
+    "requests",
+    "shapely",
+    "urllib3",
+]
+
+[project.urls]
+Homepage = "https://github.com/cioos-siooc/ckanext-cioos_harvest"
+
+[project.entry-points."ckan.plugins"]
+cioos_harvest = "ckanext.cioos_harvest.plugin:Cioos_HarvestPlugin"
+ckan_cioos_harvester = "ckanext.cioos_harvest.harvesters.ckan_cioos:CIOOSCKANHarvester"
+ckan_spatial_harvester = "ckanext.cioos_harvest.harvesters.ckan_spatial:CKANSpatialHarvester"
+ckan_schema_harvester = "ckanext.cioos_harvest.harvesters:CIOOSCKANSchemaHarvester"
+waf_iso19115_3_harvester = "ckanext.cioos_harvest.harvesters:WAFHarvesterISO19115_3"
+cioos_datastream_harvester = "ckanext.cioos_harvest.harvesters:DatastreamSitemapHarvester"
+cioos_geonetwork_harvester = "ckanext.cioos_harvest.harvesters:GeoNetworkHarvester"
+
+[project.entry-points."babel.extractors"]
+ckan = "ckan.lib.extract:extract_ckan"
+
+[tool.setuptools.packages.find]
+include = ["ckanext*"]
