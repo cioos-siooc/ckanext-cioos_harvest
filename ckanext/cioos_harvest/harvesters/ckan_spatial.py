@@ -2,7 +2,7 @@
 
 Harvests remote CKAN instances, filtering datasets by spatial query
 against the remote instance's spatial_query_geo action (provided by
-ckanext-cioos, so the remote must be a CIOOS catalogue).
+the cioos plugin, so the remote must be a CIOOS catalogue).
 """
 
 import json

@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "ckanext-cioos_harvest"
 version = "0.0.1"
 description = "Extension to make spatial harvest, scheming, composite and fluent extensions work together."
-readme = "README.rst"
+readme = "README.md"
 authors = [{ name = "Matthew Foster", email = "matthew.foster@hakai.org" }]
 license = { text = "AGPL" }
 keywords = ["CKAN"]
