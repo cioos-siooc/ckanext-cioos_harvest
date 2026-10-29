@@ -860,7 +860,17 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 last_modified_node = url_node.find(
                     ".//{http://www.sitemaps.org/schemas/sitemap/0.9}lastmod"
                 )
-                url = loc_node.text + "/iso19115.xml"
+                # DataStream serves metadata under a language path
+                # (https://datastream.org/en-ca/dataset/{uuid}/iso19115.xml);
+                # matches the URLs already stored by production harvests.
+                base_url = loc_node.text
+                if (
+                    "/dataset/" in base_url
+                    and "/en-ca/" not in base_url
+                    and "/fr-ca/" not in base_url
+                ):
+                    base_url = base_url.replace("/dataset/", "/en-ca/dataset/", 1)
+                url = base_url + "/iso19115.xml"
                 modified_date = last_modified_node.text
                 url_to_modified_harvest[url] = modified_date
         except Exception as err:
