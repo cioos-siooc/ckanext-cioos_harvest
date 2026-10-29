@@ -142,11 +142,16 @@ def handle_fluent_field(
                 field_value[default_language].append(tobj)
 
         # Optionally merge plain tags from package_dict (plugin path)
+        # (skipping ones already present, ignoring case and surrounding whitespace)
         if merge_existing_tags:
+            default_keywords = field_value.setdefault(default_language, [])
+            seen = {str(kw).strip().lower() for kw in default_keywords}
             for item in package_dict.get("tags", []):
                 tag_name = item.get("name") if isinstance(item, dict) else item
-                if tag_name and tag_name not in field_value.get(default_language, []):
-                    field_value.setdefault(default_language, []).append(tag_name)
+                key = str(tag_name or "").strip().lower()
+                if key and key not in seen:
+                    seen.add(key)
+                    default_keywords.append(tag_name)
 
         package_dict[field_name] = field_value
         package_dict["tags"] = []

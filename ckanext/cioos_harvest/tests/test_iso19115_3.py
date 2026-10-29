@@ -37,6 +37,7 @@ import pytest
 from lxml import etree
 
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
+from ckanext.cioos_harvest.harvesters.field_handlers import handle_fluent_field
 from ckanext.cioos_harvest.model.iso19115_3 import (
     ISODocument,
     _infer_citation,
@@ -404,3 +405,26 @@ def test_infer_citation_omits_doi_without_doi_identifier():
 
     assert "DOI" not in json.loads(values["citation"]["en"])[0]
 
+
+def test_fluent_tags_merge_skips_case_insensitive_duplicates():
+    field = {"field_name": "keywords", "preset": "fluent_tags"}
+    iso_values = {"keywords": [{"keyword": {"en": ["Salmon"], "fr": ["Saumon"]}}]}
+    package_dict = {"tags": [{"name": "salmon "}, {"name": "Cod"}, {"name": "cod"}]}
+
+    with patch(
+        "ckanext.cioos_harvest.harvesters.field_handlers.toolkit.h.fluent_form_languages",
+        return_value=["en", "fr"],
+    ):
+        handle_fluent_field(
+            field,
+            iso_values,
+            package_dict,
+            schema={},
+            default_language="en",
+            handled_fields=[],
+            tag_source="keywords",
+            tag_accessor=lambda t: t["keyword"],
+            merge_existing_tags=True,
+        )
+
+    assert package_dict["keywords"] == {"en": ["Salmon", "Cod"], "fr": ["Saumon"]}
