@@ -722,6 +722,19 @@ def _parse_lineage(el, default_lang):
     }
 
 
+_DOI_RE = re.compile(r"^10\.\d{4,9}/[-._;()/:A-Z0-9]+$", re.IGNORECASE)
+
+
+def _doi_from_identifiers(identifiers):
+    """Return the first DOI found among resource identifiers, without its resolver prefix."""
+    for identifier in identifiers or []:
+        code = identifier if isinstance(identifier, str) else identifier.get("code") or ""
+        doi = re.sub(r"^.*doi\.org/", "", code.strip(), flags=re.IGNORECASE)
+        if _DOI_RE.match(doi):
+            return doi
+    return ""
+
+
 def _infer_citation(values):
     """Build a CSL-JSON citation per language for the 'citation' fluent_markdown field.
 
@@ -736,6 +749,7 @@ def _infer_citation(values):
     - ``_cit_edition``              → ``edition``  (private key from _parse_document)
     - ``_cit_edition_date``         → ``edition-date`` (private key from _parse_document)
     - publisher from cited-responsible-party (publisher role) → ``publisher``
+    - DOI in ``unique-resource-identifier-full``                → ``DOI``
 
     The ``URL`` field is left empty; plugin.py injects the CKAN dataset URL
     because ``ckan.site_url`` requires an active CKAN app context.
@@ -797,6 +811,8 @@ def _infer_citation(values):
     if not all_langs:
         all_langs = {default_lang}
 
+    doi = _doi_from_identifiers(values.get("unique-resource-identifier-full"))
+
     citation = {}
     for lang in sorted(all_langs):
         csl_obj = {
@@ -812,6 +828,8 @@ def _infer_citation(values):
             "language": lang,
             "URL": "",
         }
+        if doi:
+            csl_obj["DOI"] = doi
         citation[lang] = json.dumps([csl_obj], ensure_ascii=False)
 
     if citation:

@@ -37,7 +37,11 @@ import pytest
 from lxml import etree
 
 from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
-from ckanext.cioos_harvest.model.iso19115_3 import ISODocument, _infer_keyword_types
+from ckanext.cioos_harvest.model.iso19115_3 import (
+    ISODocument,
+    _infer_citation,
+    _infer_keyword_types,
+)
 
 log = logging.getLogger(__name__)
 
@@ -369,3 +373,34 @@ def test_infer_keyword_types_matches_type_case_insensitively():
     assert values["keyword-project"] == ["CIOOS Core"]
     assert values["projects"] == ["CIOOS Core"]
     assert values["keyword-datacentre"] == ["DFO"]
+
+
+def _citation_values(identifiers):
+    return {
+        "metadata-language": "en",
+        "guid": "abc",
+        "title": json.dumps({"en": "Title"}),
+        "abstract": json.dumps({"en": "Abstract"}),
+        "unique-resource-identifier-full": identifiers,
+    }
+
+
+@pytest.mark.parametrize(
+    "code",
+    ["https://doi.org/10.21966/abcd-1234", "10.21966/abcd-1234", "doi.org/10.21966/abcd-1234"],
+)
+def test_infer_citation_includes_doi(code):
+    values = _citation_values([{"code": "urn:uuid:abc"}, {"code": code}])
+
+    _infer_citation(values)
+
+    assert json.loads(values["citation"]["en"])[0]["DOI"] == "10.21966/abcd-1234"
+
+
+def test_infer_citation_omits_doi_without_doi_identifier():
+    values = _citation_values([{"code": "urn:uuid:abc"}])
+
+    _infer_citation(values)
+
+    assert "DOI" not in json.loads(values["citation"]["en"])[0]
+
