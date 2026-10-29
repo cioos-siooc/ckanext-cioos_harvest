@@ -26,6 +26,7 @@ from ckanext.cioos_harvest.harvesters.field_handlers import (
     handle_fluent_field,
     handle_scheming_field,
 )
+from ckanext.cioos_harvest.resource_formats import is_obis_url
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.validation.validation import BaseValidator
 
@@ -138,16 +139,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
         """
         url = url.lower().strip()
-        resource_types = {
-            # ERDDAP
-            "ERDDAP": ("/erddap/",),
-            # OBIS
-            "OBIS": ("/ipt.iobis.org/",),
-        }
-
-        for resource_type, parts in resource_types.items():
-            if any(part in url for part in parts):
-                return resource_type
+        if "/erddap/" in url:
+            return "ERDDAP"
+        if is_obis_url(url):
+            return "OBIS"
 
         file_types = {
             "CSV": ("csv",),

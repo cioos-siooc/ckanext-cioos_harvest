@@ -17,6 +17,8 @@ from shapely.geometry import mapping as shapely_mapping
 from shapely.geometry import shape as shapely_shape
 from shapely.ops import unary_union
 
+from ckanext.cioos_harvest.resource_formats import is_obis_url
+
 log = logging.getLogger(__name__)
 
 
@@ -1333,7 +1335,7 @@ def _guess_format_from_url(url):
         return "ERDDAP"
     if "thredds" in url_lower:
         return "THREDDS"
-    if "obis" in url_lower:
+    if is_obis_url(url):
         return "OBIS"
     if "gbif" in url_lower:
         return "GBIF"
