@@ -8,7 +8,6 @@ import json
 import logging
 
 import requests
-from ckan.lib.search import SearchError
 from requests.exceptions import HTTPError, RequestException
 from urllib3.contrib import pyopenssl
 
@@ -18,7 +17,7 @@ from ckanext.cioos_harvest.harvesters.base import (
     make_site_catalogue_entry,
     singleton_new,
 )
-from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckanext.harvest.harvesters.ckanharvester import CKANHarvester, SearchError
 
 log = logging.getLogger(__name__)
 

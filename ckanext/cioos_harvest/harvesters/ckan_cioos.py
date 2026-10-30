@@ -11,8 +11,10 @@ import logging
 
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from ckan.lib.search import SearchError
+import requests
 from ckan.logic import get_action
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from ckan import model
 from ckanext.cioos_harvest.harvesters.base import (
@@ -26,11 +28,25 @@ from ckanext.cioos_harvest.harvesters.base import (
     make_site_catalogue_entry,
     singleton_new,
 )
-from ckanext.harvest.harvesters.ckanharvester import CKANHarvester
+from ckanext.harvest.harvesters.ckanharvester import (
+    CKANHarvester,
+    ContentFetchError,
+    SearchError,
+)
 from ckanext.harvest.model import HarvestObject
 from ckanext.harvest.model import HarvestObjectExtra as HOExtra
 
 log = logging.getLogger(__name__)
+
+# Remote catalogues behind Cloudflare (e.g. catalogue.cioospacific.ca) answer
+# intermittent 502s; without retries one bad page aborts the whole gather.
+REMOTE_RETRY = Retry(
+    total=5,
+    backoff_factor=2,
+    status_forcelist=(502, 503, 504),
+    allowed_methods=("GET",),
+)
+REMOTE_TIMEOUT = 60
 
 
 class CIOOSCKANHarvester(CKANHarvester):
@@ -43,6 +59,34 @@ class CIOOSCKANHarvester(CKANHarvester):
             "description": "Harvests remote CKAN instances with improved handling/indexing of external xml files and organization matching",
             "form_config_interface": "Text",
         }
+
+    def _get_content(self, url):
+        """Upstream _get_content, plus retries on transient 5xx and a timeout.
+
+        Raises ckanext-harvest's ContentFetchError, which is what the inherited
+        search and fetch stages catch.
+        """
+        headers = {}
+        user_agent = self.config.get("user_agent")
+        if user_agent:
+            headers["User-Agent"] = str(user_agent)
+        api_key = self.config.get("api_key")
+        if api_key:
+            headers["Authorization"] = api_key
+
+        with requests.Session() as session:
+            session.mount("https://", HTTPAdapter(max_retries=REMOTE_RETRY))
+            session.mount("http://", HTTPAdapter(max_retries=REMOTE_RETRY))
+            try:
+                response = session.get(url, headers=headers, timeout=REMOTE_TIMEOUT)
+                response.raise_for_status()
+            except requests.HTTPError as e:
+                raise ContentFetchError(
+                    "HTTP error: %s %s" % (e.response.status_code, url)
+                )
+            except requests.RequestException as e:
+                raise ContentFetchError("Request error: %s" % e)
+        return response.text
 
     def validate_config(self, config):
         """
