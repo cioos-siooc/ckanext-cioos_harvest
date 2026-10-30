@@ -5,7 +5,6 @@ import unicodedata
 from collections import OrderedDict
 from pathlib import Path
 
-import boto3
 import requests
 from ckan.lib.helpers import json
 from ckan.plugins.core import implements
@@ -32,7 +31,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     Inherits CIOOS field handling (scheming/fluent/composite) from
     WAFHarvesterISO19115_3 but uses ckanext-spatial's standard ISODocument
     parser (not the ISO 19115-3 parser) and adds DataStream-specific
-    processing: DOI normalization, AWS Translate auto-translation, and a
+    processing: DOI normalization, Cohere auto-translation, and a
     single "Access DataStream" resource.
     """
 
@@ -40,8 +39,18 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
     __new__ = singleton_new
 
-    redis_translation_store = "awsTranslations"
-    translation_method_text = "text translated using the Amazon translate service / texte traduit à l'aide du service Amazon translate"
+    redis_translation_store = "cohereTranslations"
+    translation_method_text = "text translated using the Cohere service / texte traduit à l'aide du service Cohere"
+    cohere_model = "command-a-translate-08-2025"
+
+    # Lazy-loaded class-level caches for the prompt template, glossary, and
+    # Cohere client.  Loading is deferred to the first translation call so a
+    # missing API key or missing cohere package degrades gracefully (the
+    # harvester continues; translations are skipped with a warning).
+    _cohere_client = None
+    _cohere_client_init_failed = False
+    _prompt_template = None
+    _glossary = None
 
     def info(self):
         return {
@@ -71,6 +80,77 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     # Translation
     # ------------------------------------------------------------------
 
+    @classmethod
+    def _get_cohere_client(cls):
+        """Return a cached Cohere client, or None if it cannot be initialised.
+
+        Returns None (with a one-time warning) if the ``cohere`` package is not
+        installed or ``ckan.cohere.api_key`` is not configured.  Callers must
+        handle None and fall back to leaving text untranslated.
+        """
+        if cls._cohere_client is not None:
+            return cls._cohere_client
+        if cls._cohere_client_init_failed:
+            return None
+
+        api_key = config.get("ckan.cohere.api_key")
+        if not api_key:
+            log.warning(
+                "ckan.cohere.api_key is not set \u2014 DataStream harvest will "
+                "proceed without translations."
+            )
+            cls._cohere_client_init_failed = True
+            return None
+
+        try:
+            import cohere
+        except ImportError:
+            log.warning(
+                "cohere package is not installed \u2014 DataStream harvest will "
+                "proceed without translations."
+            )
+            cls._cohere_client_init_failed = True
+            return None
+
+        try:
+            cls._cohere_client = cohere.ClientV2(api_key=api_key)
+        except Exception as err:
+            log.warning(
+                "Could not initialise Cohere client (%s) \u2014 DataStream harvest "
+                "will proceed without translations.",
+                err,
+            )
+            cls._cohere_client_init_failed = True
+            return None
+        return cls._cohere_client
+
+    @classmethod
+    def _load_prompt_template(cls):
+        if cls._prompt_template is None:
+            path = Path(__file__).parent.parent / "translation" / "prompt-template.txt"
+            cls._prompt_template = path.read_text(encoding="utf-8")
+        return cls._prompt_template
+
+    @classmethod
+    def _load_glossary(cls):
+        if cls._glossary is None:
+            path = Path(__file__).parent.parent / "translation" / "glossary.json"
+            cls._glossary = json_stdlib.loads(path.read_text(encoding="utf-8"))
+        return cls._glossary
+
+    @classmethod
+    def _build_glossary_prompt(cls, source_lang, target_lang):
+        entries = cls._load_glossary()
+        pairs = []
+        for entry in entries:
+            src = entry.get(source_lang)
+            tgt = entry.get(target_lang)
+            if src and tgt:
+                pairs.append("- %s \u2192 %s" % (src, tgt))
+        if not pairs:
+            return ""
+        return "\n\nUse the following glossary:\n" + "\n".join(pairs) + "\n"
+
     def translate_string(
         self, redis_conn, string_to_translate, source_lang="en", target_lang="fr"
     ):
@@ -90,26 +170,41 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             log.debug('"%s" found in cache', string_to_translate)
             return redis_trans
 
-        # if not exists, call aws translate
+        client = self._get_cohere_client()
+        if client is None:
+            return None
+
+        lang_names = {"en": "English", "fr": "French"}
         try:
-            translate = boto3.client(service_name="translate", use_ssl=True)
-            aws_trans_obj = translate.translate_text(
-                Text=string_to_translate,
-                SourceLanguageCode=source_lang,
-                TargetLanguageCode=target_lang,
+            prompt = (
+                self._load_prompt_template()
+                .replace("{{sourceLang}}", lang_names.get(source_lang, source_lang))
+                .replace("{{targetLang}}", lang_names.get(target_lang, target_lang))
+                .replace(
+                    "{{glossaryPrompt}}",
+                    self._build_glossary_prompt(source_lang, target_lang),
+                )
+                .replace("{{originalText}}", string_to_translate)
             )
-            aws_trans = aws_trans_obj.get("TranslatedText")
+
+            response = client.chat(
+                model=self.cohere_model,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            translated = response.message.content[0].text.strip()
             # replace non-breaking white space
-            aws_trans = aws_trans.replace("\u00a0", " ")
+            translated = translated.replace("\u00a0", " ")
 
             # save translation to redis
-            if aws_trans:
+            if translated:
                 log.debug('"%s" saved to cache', string_to_translate)
-                redis_conn.hset(store_name, mapping={string_to_translate: aws_trans})
-                return aws_trans
+                redis_conn.hset(store_name, mapping={string_to_translate: translated})
+                return translated
         except Exception as err:
-            log.error(
-                'Could not translate text "%s": %s', string_to_translate[:80], err
+            log.warning(
+                'Could not translate text "%s" via Cohere: %s',
+                string_to_translate[:80],
+                err,
             )
 
         return None

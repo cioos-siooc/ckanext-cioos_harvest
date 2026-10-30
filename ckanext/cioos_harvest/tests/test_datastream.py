@@ -12,8 +12,8 @@ Fixture files
 - ``tests/fixtures/datastream/00-xml/<name>.xml``          — input XML
 - ``tests/fixtures/datastream/01-ckan-package/<name>.json`` — expected package dict
 
-The AWS Translate calls are replaced by a deterministic mock so the test
-never hits the network or requires AWS credentials.
+The Cohere translation calls are replaced by a deterministic mock so the test
+never hits the network or requires a Cohere API key.
 
 Workflow
 --------
@@ -101,7 +101,7 @@ _EXTRAS_SKIP_KEYS = frozenset(
     }
 )
 
-# Translated/fluent fields where the 'fr' sub-key is derived from AWS Translate
+# Translated/fluent fields where the 'fr' sub-key is derived from Cohere translation
 # at runtime.  The test uses a deterministic mock that produces '[FR:...]' strings
 # instead of real French, so we strip 'fr' before comparison to avoid false failures.
 _STRIP_FR_FIELDS = frozenset(
@@ -200,7 +200,7 @@ def _make_mock_harvest_object(guid: str) -> MagicMock:
 
 
 def _mock_translate(redis_conn, text, source_lang="en", target_lang="fr"):
-    """Deterministic stand-in for AWS Translate — wraps text in language tags."""
+    """Deterministic stand-in for Cohere translation — wraps text in language tags."""
     return f"[{target_lang.upper()}:{text}]"
 
 
@@ -218,8 +218,8 @@ def _fixture_names():
 class TestDatastreamHarvester:
     """Golden-file tests for the DataStream ISO 19115-2 → CKAN package dict pipeline.
 
-    AWS Translate is mocked with ``_mock_translate`` so tests are deterministic
-    and require no AWS credentials or network access beyond loading the XML
+    Cohere translation is mocked with ``_mock_translate`` so tests are deterministic
+    and require no Cohere API key or network access beyond loading the XML
     fixture from disk.
     """
 

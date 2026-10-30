@@ -41,7 +41,7 @@ callback plugin and six harvester types:
 | Plugin Name | Class | Source | Description |
 |---|---|---|---|
 | `waf_iso19115_3_harvester` | `WAFHarvesterISO19115_3` | `harvesters/waf.py` | Primary CIOOS harvester — WAF index of ISO 19115-3 XML files |
-| `cioos_datastream_harvester` | `DatastreamSitemapHarvester` | `harvesters/waf_datastream.py` | DataStream ISO 19115-2 via sitemap.xml, with AWS Translate |
+| `cioos_datastream_harvester` | `DatastreamSitemapHarvester` | `harvesters/waf_datastream.py` | DataStream ISO 19115-2 via sitemap.xml, with Cohere translation |
 | `ckan_cioos_harvester` | `CIOOSCKANHarvester` | `harvesters/ckan_cioos.py` | CKAN-to-CKAN with field filtering, org matching by URI |
 | `ckan_spatial_harvester` | `CKANSpatialHarvester` | `harvesters/ckan_spatial.py` | CKAN-to-CKAN filtered by spatial query (WKT polygon/bbox) |
 | `ckan_schema_harvester` | `CIOOSCKANSchemaHarvester` | `harvesters/ckan_schema.py` | CKAN-to-CKAN without requiring a matching schema |
