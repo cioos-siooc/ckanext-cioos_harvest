@@ -6,6 +6,7 @@ import ckan.lib.munge as munge
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 
+from ckanext.cioos_harvest import error_reporting
 from ckanext.cioos_harvest.harvesters.base import (
     extract_xml_from_harvest_object,
     get_object_extra,
@@ -83,6 +84,7 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         toolkit.add_template_directory(config_, "templates")
         toolkit.add_public_directory(config_, "public")
         toolkit.add_resource("fanstatic", "cioos_harvest")
+        error_reporting.register()
 
     # ITemplateHelpers
     def get_helpers(self):
