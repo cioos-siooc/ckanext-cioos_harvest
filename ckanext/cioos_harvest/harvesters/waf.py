@@ -58,7 +58,11 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
     # ------------------------------------------------------------------
 
     def validate_config(self, source_config):
-        """Strip validator_profiles before base validation — this harvester skips XSD validation."""
+        """Strip validator_profiles before base validation — this harvester skips XSD validation.
+
+        Also checks ``citation_contact_roles`` (list of ISO role codes kept as
+        citation authors) is a list of strings.
+        """
         if source_config:
             try:
                 config_obj = json.loads(source_config)
@@ -73,6 +77,12 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
                     source_config = json.dumps(config_obj)
             except ValueError:
                 pass
+            else:
+                roles = config_obj.get("citation_contact_roles")
+                if roles is not None and not (
+                    isinstance(roles, list) and all(isinstance(r, str) for r in roles)
+                ):
+                    raise ValueError("citation_contact_roles must be a list of strings")
         return super().validate_config(source_config)
 
     def _validate_document(self, document_string, harvest_object, validator=None):

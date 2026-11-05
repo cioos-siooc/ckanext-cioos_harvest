@@ -27,6 +27,7 @@ from ckanext.cioos_harvest.harvesters.field_handlers import (
     handle_fluent_field,
     handle_scheming_field,
 )
+from ckanext.cioos_harvest.model.iso19115_3 import citation_authors
 from ckanext.cioos_harvest.resource_formats import is_obis_url
 from ckanext.spatial.interfaces import ISpatialHarvester
 from ckanext.spatial.validation.validation import BaseValidator
@@ -248,6 +249,8 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate citation — inject CKAN dataset URL into each language's CSL-JSON.
             # The parser leaves URL='' because ckan.site_url is only accessible here.
+            # Likewise the optional citation_contact_roles filter on authors needs
+            # the harvest source / site config, so it is applied here too.
             _citation = iso_values.get("citation")
             if isinstance(_citation, dict) and _citation:
                 _pkg_url_base = (
@@ -255,12 +258,30 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
                     + "/dataset/"
                     + package_dict.get("name", "")
                 )
+                _contact_roles = load_json(
+                    source_config.get("citation_contact_roles")
+                    or toolkit.config.get("ckan.citation_contact_roles")
+                    or "[]"
+                )
+                if isinstance(_contact_roles, str):  # tolerate "owner,originator"
+                    _contact_roles = [
+                        r.strip() for r in _contact_roles.split(",") if r.strip()
+                    ]
+                _authors = (
+                    citation_authors(
+                        iso_values.get("cited-responsible-party"), _contact_roles
+                    )
+                    if _contact_roles
+                    else None
+                )
                 _updated_citation = {}
                 for _lang, _csl_str in _citation.items():
                     try:
                         _csl = json.loads(_csl_str)
                         if isinstance(_csl, list) and _csl:
                             _csl[0]["URL"] = _pkg_url_base + "?local=" + _lang
+                            if _authors is not None:
+                                _csl[0]["author"] = _authors
                         _updated_citation[_lang] = json.dumps(_csl, ensure_ascii=False)
                     except Exception:
                         _updated_citation[_lang] = _csl_str

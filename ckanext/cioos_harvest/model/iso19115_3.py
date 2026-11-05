@@ -737,6 +737,35 @@ def _doi_from_identifiers(identifiers):
     return ""
 
 
+def _party_name(party):
+    return party.get("organisation-name") or party.get("individual-name") or ""
+
+
+def citation_authors(parties, roles=None):
+    """CSL ``author`` list from cited-responsible-party contacts.
+
+    Publisher-only contacts are excluded (they fill the CSL ``publisher`` field)
+    and names are deduplicated in document order. ``roles``, when non-empty,
+    keeps only contacts holding at least one of those roles. A contact's ``role`` may be a string (raw
+    parse) or a list (after merging/normalisation).
+    """
+    authors = []
+    seen = set()
+    for party in parties or []:
+        party_roles = party.get("role") or []
+        if isinstance(party_roles, str):
+            party_roles = [party_roles]
+        if party_roles and all(str(r).lower() == "publisher" for r in party_roles):
+            continue
+        if roles and not set(party_roles).intersection(roles):
+            continue
+        name = _party_name(party)
+        if name and name not in seen:
+            authors.append({"literal": name})
+            seen.add(name)
+    return authors
+
+
 def _infer_citation(values):
     """Build a CSL-JSON citation per language for the 'citation' fluent_markdown field.
 
@@ -744,7 +773,7 @@ def _infer_citation(values):
     data already parsed into ``values``:
 
     - ``guid``                      → CSL ``id``
-    - ``cited-responsible-party``   → ``author`` list (publisher role excluded)
+    - ``cited-responsible-party``   → ``author`` list (see ``citation_authors``)
     - ``dataset-reference-date``    → ``issued`` (first non-creation date)
     - ``title`` / ``abstract``      → per-language title / abstract (JSON strings
                                        after ``_infer_multilingual`` has run)
@@ -762,22 +791,15 @@ def _infer_citation(values):
     default_lang = (values.get("metadata-language") or "en")[:2]
     guid = values.get("guid", "")
 
-    # Authors: all non-publisher cited-responsible-party entries, deduplicated
-    authors = []
+    parties = values.get("cited-responsible-party", [])
+    authors = citation_authors(parties)
     publisher = ""
-    seen_authors = set()
-    for party in values.get("cited-responsible-party", []):
-        role = party.get("role") or ""
+    for party in parties:
         # role is a plain string before _infer_normalize_contact_roles runs
-        role_lower = role.lower() if isinstance(role, str) else ""
-        name = party.get("organisation-name") or party.get("individual-name") or ""
-        if role_lower == "publisher":
-            if not publisher and name:
-                publisher = name
-        else:
-            if name and name not in seen_authors:
-                authors.append({"literal": name})
-                seen_authors.add(name)
+        if (party.get("role") or "").lower() == "publisher":
+            publisher = _party_name(party)
+            if publisher:
+                break
 
     # Issued: first non-creation dataset-reference-date, fall back to metadata-reference-date
     issued = []

@@ -41,6 +41,7 @@ from ckanext.cioos_harvest.harvesters.field_handlers import handle_fluent_field
 from ckanext.cioos_harvest.model.iso19115_3 import (
     ISODocument,
     _infer_citation,
+    citation_authors,
     _infer_keyword_types,
 )
 
@@ -404,6 +405,43 @@ def test_infer_citation_omits_doi_without_doi_identifier():
     _infer_citation(values)
 
     assert "DOI" not in json.loads(values["citation"]["en"])[0]
+
+
+_CITED_PARTIES = [
+    {"organisation-name": "Org A", "role": ["owner", "publisher"]},
+    {"individual-name": "Jane Doe", "role": ["author"]},
+    {"organisation-name": "Org B", "role": ["publisher"]},
+    {"organisation-name": "Org C", "role": "custodian"},
+    {"organisation-name": "Org D", "role": []},
+]
+
+
+def test_citation_authors_unfiltered_excludes_publisher_only_contacts():
+    assert citation_authors(_CITED_PARTIES) == [
+        {"literal": "Org A"},
+        {"literal": "Jane Doe"},
+        {"literal": "Org C"},
+        {"literal": "Org D"},
+    ]
+
+
+def test_citation_authors_keeps_only_listed_roles():
+    assert citation_authors(_CITED_PARTIES, ["owner", "custodian"]) == [
+        {"literal": "Org A"},
+        {"literal": "Org C"},
+    ]
+
+
+def test_citation_authors_publisher_only_contact_is_never_an_author():
+    assert citation_authors(_CITED_PARTIES, ["publisher"]) == [{"literal": "Org A"}]
+
+
+@pytest.mark.parametrize("roles", ['"owner"', '[1]', '{"a": 1}'])
+def test_validate_config_rejects_bad_citation_contact_roles(roles):
+    with pytest.raises(ValueError, match="citation_contact_roles"):
+        WAFHarvesterISO19115_3().validate_config(
+            '{"citation_contact_roles": %s}' % roles
+        )
 
 
 def test_fluent_tags_merge_skips_case_insensitive_duplicates():
