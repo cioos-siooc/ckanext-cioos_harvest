@@ -189,7 +189,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if iso_values.get("access-constraints"):
             extras["access-constraints"] = iso_values.get("access-constraints")
         if iso_values.get("use-constraints"):
+            # JSON {lang: text}; the translation method flags languages that
+            # were machine-translated and not yet verified.
             extras["use-constraints"] = iso_values.get("use-constraints")
+            if iso_values.get("use-constraints_translation_method"):
+                extras["use-constraints_translation_method"] = iso_values[
+                    "use-constraints_translation_method"
+                ]
         if iso_values.get("use-constraints-code"):
             extras["use-constraints-code"] = iso_values.get("use-constraints-code")
         if iso_values.get("legal-constraints-reference-code"):

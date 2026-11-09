@@ -1581,12 +1581,21 @@ def _parse_document(root):
         _ID
         + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:accessConstraints/mco:MD_RestrictionCode/text()",
     )
-    values["use-constraints"] = _first_text(
+    # Bilingual: the {default, local} dict becomes a JSON {lang: text} string
+    # in _infer_multilingual.  Left as '' when the record has no limitation.
+    use_limitation_els = _first_x(
         root,
-        _ID
-        + "/mri:resourceConstraints/mco:MD_Constraints/mco:useLimitation/gco:CharacterString/text()",
-        _ID
-        + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:useLimitation/gco:CharacterString/text()",
+        _ID + "/mri:resourceConstraints/mco:MD_Constraints/mco:useLimitation",
+        _ID + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:useLimitation",
+    )
+    use_limitation = (
+        _localised_raw(use_limitation_els[0]) if use_limitation_els else {}
+    )
+    values["use-constraints"] = (
+        use_limitation
+        if use_limitation.get("default")
+        or any(item["value"] for item in use_limitation.get("local", []))
+        else ""
     )
     values["use-constraints-code"] = _first_text(
         root,
