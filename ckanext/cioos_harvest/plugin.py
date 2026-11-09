@@ -189,7 +189,13 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
         if iso_values.get("access-constraints"):
             extras["access-constraints"] = iso_values.get("access-constraints")
         if iso_values.get("use-constraints"):
+            # JSON {lang: text}; the translation method flags languages that
+            # were machine-translated and not yet verified.
             extras["use-constraints"] = iso_values.get("use-constraints")
+            if iso_values.get("use-constraints_translation_method"):
+                extras["use-constraints_translation_method"] = iso_values[
+                    "use-constraints_translation_method"
+                ]
         if iso_values.get("use-constraints-code"):
             extras["use-constraints-code"] = iso_values.get("use-constraints-code")
         if iso_values.get("legal-constraints-reference-code"):
@@ -239,10 +245,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate license_id
             if not package_dict.get("license_id"):
+                # The licence lives in MD_LegalConstraints/reference only;
+                # use-constraints (mco:useLimitation) is free-text limitations.
                 package_dict["license_id"] = (
-                    iso_values.get("legal-constraints-reference-code")
-                    or iso_values.get("use-constraints")
-                    or ""
+                    iso_values.get("legal-constraints-reference-code") or ""
                 )
                 if not package_dict["license_id"]:
                     log.warning("No license_id found.")

@@ -199,8 +199,10 @@ def _localised_raw(el):
     """Extract a localised value in ISOLocalised_iso19115_3 format.
 
     Returns {'default': str, 'local': list} where each local item is
-    {'value': str, 'language_code': str}.  This structure is consumed by
-    _local_to_dict() and _infer_multilingual().
+    {'value': str, 'language_code': str} plus 'translation_method' when the
+    textGroup carries an ``xlink:title`` (metadata-xml writes it only for
+    machine translations not yet verified in the metadata entry form).  This
+    structure is consumed by _local_to_dict() and _infer_multilingual().
     """
     default = _text(el, "gco:CharacterString/text()")
     local_items = []
@@ -208,7 +210,11 @@ def _localised_raw(el):
         value = _text(tg, "lan:LocalisedCharacterString/text()")
         lang_code = _text(tg, "lan:LocalisedCharacterString/@locale")
         if value or lang_code:
-            local_items.append({"value": value, "language_code": lang_code})
+            item = {"value": value, "language_code": lang_code}
+            translation_method = _text(tg, "@xlink:title")
+            if translation_method:
+                item["translation_method"] = translation_method
+            local_items.append(item)
     return {"default": default, "local": local_items}
 
 
@@ -1068,7 +1074,12 @@ def _infer_keywords(values):
 
 
 def _infer_multilingual(values):
-    """Convert top-level {default, local} dicts to JSON lang-dict strings."""
+    """Convert top-level {default, local} dicts to JSON lang-dict strings.
+
+    Also emits ``<key>_translation_method`` = {lang: method} for every
+    translation flagged as machine-translated (unverified) in the XML.
+    """
+    translation_methods = {}
     for key in values:
         value = values[key]
         if isinstance(value, dict) and (
@@ -1078,6 +1089,16 @@ def _infer_multilingual(values):
             default_lang = _clean_lang_key(values.get("metadata-language", "en"))
             lang_dict = _local_to_dict(value, default_lang)
             values[key] = json.dumps(lang_dict)
+            methods = {
+                _clean_lang_key(item.get("language_code", "")): item[
+                    "translation_method"
+                ]
+                for item in value.get("local") or []
+                if item.get("translation_method")
+            }
+            if methods:
+                translation_methods[key + "_translation_method"] = methods
+    values.update(translation_methods)
 
 
 def _infer_temporal_vertical_extent(values):
@@ -1560,12 +1581,21 @@ def _parse_document(root):
         _ID
         + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:accessConstraints/mco:MD_RestrictionCode/text()",
     )
-    values["use-constraints"] = _first_text(
+    # Bilingual: the {default, local} dict becomes a JSON {lang: text} string
+    # in _infer_multilingual.  Left as '' when the record has no limitation.
+    use_limitation_els = _first_x(
         root,
-        _ID
-        + "/mri:resourceConstraints/mco:MD_Constraints/mco:useLimitation/gco:CharacterString/text()",
-        _ID
-        + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:useLimitation/gco:CharacterString/text()",
+        _ID + "/mri:resourceConstraints/mco:MD_Constraints/mco:useLimitation",
+        _ID + "/mri:resourceConstraints/mco:MD_LegalConstraints/mco:useLimitation",
+    )
+    use_limitation = (
+        _localised_raw(use_limitation_els[0]) if use_limitation_els else {}
+    )
+    values["use-constraints"] = (
+        use_limitation
+        if use_limitation.get("default")
+        or any(item["value"] for item in use_limitation.get("local", []))
+        else ""
     )
     values["use-constraints-code"] = _first_text(
         root,

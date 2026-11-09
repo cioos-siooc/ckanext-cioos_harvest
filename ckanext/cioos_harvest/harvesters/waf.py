@@ -361,13 +361,12 @@ class WAFHarvesterISO19115_3(WAFHarvester, SingletonPlugin):
             ):
                 resource["format"] = "HTML"
 
-        # Set license_id from CIOOS-specific legal constraints fields when the
-        # parent SpatialHarvester left it unset (use-constraints was empty).
+        # Set license_id from the licence reference code when the parent
+        # SpatialHarvester left it unset.  use-constraints (mco:useLimitation)
+        # is free-text limitations, never a licence id.
         if not package_dict.get("license_id"):
             package_dict["license_id"] = (
-                iso_values.get("legal-constraints-reference-code")
-                or iso_values.get("use-constraints")
-                or ""
+                iso_values.get("legal-constraints-reference-code") or ""
             )
             if not package_dict["license_id"]:
                 log.warning("No license_id found.")

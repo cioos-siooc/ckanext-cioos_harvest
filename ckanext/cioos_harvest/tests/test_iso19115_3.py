@@ -30,6 +30,7 @@ Regenerate all golden files after intentional pipeline changes::
 
 import json
 import logging
+import re
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -466,3 +467,60 @@ def test_fluent_tags_merge_skips_case_insensitive_duplicates():
         )
 
     assert package_dict["keywords"] == {"en": ["Salmon", "Cod"], "fr": ["Saumon"]}
+
+
+# ---------------------------------------------------------------------------
+# Bilingual use limitation (mco:useLimitation) + translation method
+# ---------------------------------------------------------------------------
+
+_EMPTY_USE_LIMITATION = re.compile(
+    r"<mco:useLimitation>\s*<gco:CharacterString></gco:CharacterString>\s*</mco:useLimitation>"
+)
+_TRANSLATION_METHOD = "text translated using Cohere / texte traduit à l'aide de Cohere"
+
+
+def _read_values_with_use_limitation(use_limitation_xml):
+    xml = (_XML_DIR / f"{_fixture_names()[0]}.xml").read_text(encoding="utf-8")
+    xml, count = _EMPTY_USE_LIMITATION.subn(use_limitation_xml, xml)
+    assert count == 1, "fixture no longer has an empty mco:useLimitation"
+    return ISODocument(xml).read_values()
+
+
+def test_use_limitation_is_parsed_bilingual_with_translation_method():
+    values = _read_values_with_use_limitation(
+        f"""<mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+          <gco:CharacterString>Ne pas utiliser pour la navigation</gco:CharacterString>
+          <lan:PT_FreeText>
+            <lan:textGroup xlink:href="https://cioos.ca/translation_method" xlink:role="translation" xlink:title="{_TRANSLATION_METHOD}">
+              <lan:LocalisedCharacterString locale="#en">Do not use for navigation</lan:LocalisedCharacterString>
+            </lan:textGroup>
+          </lan:PT_FreeText>
+        </mco:useLimitation>"""
+    )
+
+    assert json.loads(values["use-constraints"]) == {
+        "fr": "Ne pas utiliser pour la navigation",
+        "en": "Do not use for navigation",
+    }
+    assert values["use-constraints_translation_method"] == {"en": _TRANSLATION_METHOD}
+
+
+def test_verified_use_limitation_translation_has_no_translation_method():
+    values = _read_values_with_use_limitation(
+        """<mco:useLimitation xsi:type="lan:PT_FreeText_PropertyType">
+          <gco:CharacterString>Ne pas utiliser pour la navigation</gco:CharacterString>
+          <lan:PT_FreeText>
+            <lan:textGroup>
+              <lan:LocalisedCharacterString locale="#en">Do not use for navigation</lan:LocalisedCharacterString>
+            </lan:textGroup>
+          </lan:PT_FreeText>
+        </mco:useLimitation>"""
+    )
+
+    assert json.loads(values["use-constraints"])["en"] == "Do not use for navigation"
+    assert "use-constraints_translation_method" not in values
+
+
+def test_empty_use_limitation_is_blank():
+    xml = (_XML_DIR / f"{_fixture_names()[0]}.xml").read_text(encoding="utf-8")
+    assert ISODocument(xml).read_values()["use-constraints"] == ""
