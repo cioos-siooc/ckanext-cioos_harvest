@@ -245,10 +245,10 @@ class Cioos_HarvestPlugin(plugins.SingletonPlugin):
 
             # populate license_id
             if not package_dict.get("license_id"):
+                # The licence lives in MD_LegalConstraints/reference only;
+                # use-constraints (mco:useLimitation) is free-text limitations.
                 package_dict["license_id"] = (
-                    iso_values.get("legal-constraints-reference-code")
-                    or iso_values.get("use-constraints")
-                    or ""
+                    iso_values.get("legal-constraints-reference-code") or ""
                 )
                 if not package_dict["license_id"]:
                     log.warning("No license_id found.")
