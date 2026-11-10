@@ -325,3 +325,26 @@ class TestDatastreamHarvester:
             f"  Expected : {json_path}\n"
             f"  To regenerate all fixtures: pytest --regenerate-fixtures"
         )
+
+
+class _RateLimited(Exception):
+    status_code = 429
+    body = {"message": "You are past the per-month request limit"}
+
+
+def test_translate_string_backs_off_after_rate_limit(monkeypatch):
+    harvester = DatastreamSitemapHarvester()
+    client = MagicMock()
+    client.chat.side_effect = _RateLimited()
+    monkeypatch.setattr(DatastreamSitemapHarvester, "_cohere_client", client)
+    monkeypatch.setattr(DatastreamSitemapHarvester, "_cohere_rate_limited_until", 0.0)
+    redis_conn = MagicMock()
+    redis_conn.hget.return_value = None
+
+    assert harvester.translate_string(redis_conn, "first") is None
+    assert harvester.translate_string(redis_conn, "second") is None
+    assert client.chat.call_count == 1
+
+    monkeypatch.setattr(DatastreamSitemapHarvester, "_cohere_rate_limited_until", 0.0)
+    harvester.translate_string(redis_conn, "third")
+    assert client.chat.call_count == 2

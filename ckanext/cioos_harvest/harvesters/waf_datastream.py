@@ -1,6 +1,7 @@
 import hashlib
 import json as json_stdlib
 import logging
+import time
 import unicodedata
 from collections import OrderedDict
 from pathlib import Path
@@ -49,6 +50,10 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     # harvester continues; translations are skipped with a warning).
     _cohere_client = None
     _cohere_client_init_failed = False
+    # After a 429 (rate limit or exhausted monthly quota) stop calling Cohere
+    # until this time.monotonic() deadline instead of failing every string.
+    _cohere_rate_limited_until = 0.0
+    cohere_rate_limit_backoff = 3600
     _prompt_template = None
     _glossary = None
 
@@ -173,6 +178,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         client = self._get_cohere_client()
         if client is None:
             return None
+        if time.monotonic() < DatastreamSitemapHarvester._cohere_rate_limited_until:
+            return None
 
         lang_names = {"en": "English", "fr": "French"}
         try:
@@ -201,6 +208,17 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
                 redis_conn.hset(store_name, mapping={string_to_translate: translated})
                 return translated
         except Exception as err:
+            if getattr(err, "status_code", None) == 429:
+                DatastreamSitemapHarvester._cohere_rate_limited_until = (
+                    time.monotonic() + self.cohere_rate_limit_backoff
+                )
+                log.warning(
+                    "Cohere rate limit reached (%s) \u2014 skipping translations "
+                    "for the next %d s.",
+                    getattr(err, "body", err),
+                    self.cohere_rate_limit_backoff,
+                )
+                return None
             log.warning(
                 'Could not translate text "%s" via Cohere: %s',
                 string_to_translate[:80],
