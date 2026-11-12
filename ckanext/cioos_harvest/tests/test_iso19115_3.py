@@ -43,6 +43,8 @@ from ckanext.cioos_harvest.model.iso19115_3 import (
     _infer_citation,
     citation_authors,
     _infer_keyword_types,
+    _infer_multilingual,
+    _localised_raw,
 )
 
 log = logging.getLogger(__name__)
@@ -340,6 +342,47 @@ class TestISO19115_3:
             f"  Expected : {json_path}\n"
             f"  To regenerate all fixtures: pytest --regenerate-fixtures"
         )
+
+
+def test_machine_translation_method_is_read_from_text_group_title():
+    el = etree.fromstring(
+        """<cit:title xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/2.0"
+            xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0"
+            xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0"
+            xmlns:xlink="http://www.w3.org/1999/xlink">
+          <gco:CharacterString>Titre</gco:CharacterString>
+          <lan:PT_FreeText>
+            <lan:textGroup xlink:href="https://cioos.ca/translation_method"
+                xlink:role="translation" xlink:title="Cohere">
+              <lan:LocalisedCharacterString locale="#en">Title</lan:LocalisedCharacterString>
+            </lan:textGroup>
+          </lan:PT_FreeText>
+        </cit:title>"""
+    )
+    values = {"metadata-language": "fr", "title": _localised_raw(el)}
+
+    _infer_multilingual(values)
+
+    assert json.loads(values["title"]) == {"fr": "Titre", "en": "Title"}
+    assert values["title_translation_method"] == {"en": "Cohere"}
+
+
+def test_approved_translation_has_no_translation_method():
+    el = etree.fromstring(
+        """<cit:title xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/2.0"
+            xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0"
+            xmlns:lan="http://standards.iso.org/iso/19115/-3/lan/1.0">
+          <gco:CharacterString>Titre</gco:CharacterString>
+          <lan:PT_FreeText><lan:textGroup>
+            <lan:LocalisedCharacterString locale="#en">Title</lan:LocalisedCharacterString>
+          </lan:textGroup></lan:PT_FreeText>
+        </cit:title>"""
+    )
+    values = {"metadata-language": "fr", "title": _localised_raw(el)}
+
+    _infer_multilingual(values)
+
+    assert "title_translation_method" not in values
 
 
 def test_infer_keyword_types_extracts_ecv_from_keywords():

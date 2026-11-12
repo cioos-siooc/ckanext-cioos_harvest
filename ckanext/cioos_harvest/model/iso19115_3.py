@@ -208,7 +208,13 @@ def _localised_raw(el):
         value = _text(tg, "lan:LocalisedCharacterString/text()")
         lang_code = _text(tg, "lan:LocalisedCharacterString/@locale")
         if value or lang_code:
-            local_items.append({"value": value, "language_code": lang_code})
+            item = {"value": value, "language_code": lang_code}
+            # Machine translations not yet approved carry the translation
+            # method in the textGroup's xlink:title (role="translation").
+            method = _text(tg, "@xlink:title")
+            if method:
+                item["translation_method"] = method
+            local_items.append(item)
     return {"default": default, "local": local_items}
 
 
@@ -1068,7 +1074,12 @@ def _infer_keywords(values):
 
 
 def _infer_multilingual(values):
-    """Convert top-level {default, local} dicts to JSON lang-dict strings."""
+    """Convert top-level {default, local} dicts to JSON lang-dict strings.
+
+    Also records ``<key>_translation_method`` ({lang: method}) for every
+    language whose text is a not-yet-approved machine translation.
+    """
+    translation_methods = {}
     for key in values:
         value = values[key]
         if isinstance(value, dict) and (
@@ -1078,6 +1089,16 @@ def _infer_multilingual(values):
             default_lang = _clean_lang_key(values.get("metadata-language", "en"))
             lang_dict = _local_to_dict(value, default_lang)
             values[key] = json.dumps(lang_dict)
+            methods = {
+                _clean_lang_key(item.get("language_code", "")): item[
+                    "translation_method"
+                ]
+                for item in value.get("local") or []
+                if item.get("translation_method")
+            }
+            if methods:
+                translation_methods[key + "_translation_method"] = methods
+    values.update(translation_methods)
 
 
 def _infer_temporal_vertical_extent(values):
