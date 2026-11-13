@@ -42,7 +42,10 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
 
     redis_translation_store = "cohereTranslations"
     translation_method_text = "text translated using the Cohere service / texte traduit à l'aide du service Cohere"
-    cohere_model = "command-a-translate-08-2025"
+    # Overridable with ckan.cohere.model (CKAN__COHERE__MODEL).  Not
+    # command-a-translate-08-2025: Cohere caps production keys at 1,000
+    # calls/month on that model, less than one full DataStream harvest.
+    default_cohere_model = "command-a-03-2025"
 
     # Lazy-loaded class-level caches for the prompt template, glossary, and
     # Cohere client.  Loading is deferred to the first translation call so a
@@ -195,7 +198,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             )
 
             response = client.chat(
-                model=self.cohere_model,
+                model=config.get("ckan.cohere.model") or self.default_cohere_model,
                 messages=[{"role": "user", "content": prompt}],
             )
             translated = response.message.content[0].text.strip()
