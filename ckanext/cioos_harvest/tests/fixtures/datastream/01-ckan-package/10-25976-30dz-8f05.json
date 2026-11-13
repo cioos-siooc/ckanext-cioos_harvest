@@ -83,7 +83,7 @@
   },
   "keywords_translation_method": {
     "en": "",
-    "fr": "Keyword text translated using the Cohere service / texte traduit à l'aide du service Cohere"
+    "fr": "Traduit de l'anglais par le modèle [Cohere](https://cohere.com) command-a-03-2025, avec les instructions et le glossaire de traduction de [cioos-commons](https://github.com/cioos-siooc/cioos-commons)"
   },
   "license_id": "ODC-By",
   "license_title": "Open Data Commons Attribution License 1.0",
@@ -118,7 +118,7 @@
   },
   "notes_translation_method": {
     "en": "",
-    "fr": "Description text translated using the Cohere service / texte traduit à l'aide du service Cohere"
+    "fr": "Traduit de l'anglais par le modèle [Cohere](https://cohere.com) command-a-03-2025, avec les instructions et le glossaire de traduction de [cioos-commons](https://github.com/cioos-siooc/cioos-commons)"
   },
   "progress": "onGoing",
   "projects": [],
@@ -177,7 +177,7 @@
   },
   "title_translation_method": {
     "en": "",
-    "fr": "Title text translated using the Cohere service / texte traduit à l'aide du service Cohere"
+    "fr": "Traduit de l'anglais par le modèle [Cohere](https://cohere.com) command-a-03-2025, avec les instructions et le glossaire de traduction de [cioos-commons](https://github.com/cioos-siooc/cioos-commons)"
   },
   "unique-resource-identifier-full": [
     {

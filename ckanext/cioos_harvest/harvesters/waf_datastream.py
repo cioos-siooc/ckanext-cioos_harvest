@@ -1,6 +1,7 @@
 import hashlib
 import json as json_stdlib
 import logging
+import re
 import time
 import unicodedata
 from collections import OrderedDict
@@ -41,7 +42,10 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     __new__ = singleton_new
 
     redis_translation_store = "cohereTranslations"
-    translation_method_text = "text translated using the Cohere service / texte traduit à l'aide du service Cohere"
+    # translation/prompt-template.txt and glossary.json are cioos-commons'
+    # translation/cohere/default/prompt-template.base.txt and glossary.json,
+    # kept up to date by cioos-commons' sync-repos workflow.
+    cioos_commons_url = "https://github.com/cioos-siooc/cioos-commons"
     # Overridable with ckan.cohere.model (CKAN__COHERE__MODEL).  Not
     # command-a-translate-08-2025: Cohere caps production keys at 1,000
     # calls/month on that model, less than one full DataStream harvest.
@@ -57,8 +61,8 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     # until this time.monotonic() deadline instead of failing every string.
     _cohere_rate_limited_until = 0.0
     cohere_rate_limit_backoff = 3600
-    _prompt_template = None
-    _glossary = None
+    # {"prompt", "glossary", "version"}, loaded on first use
+    _translation_assets = None
 
     def info(self):
         return {
@@ -133,37 +137,63 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         return cls._cohere_client
 
     @classmethod
-    def _load_prompt_template(cls):
-        if cls._prompt_template is None:
-            path = Path(__file__).parent.parent / "translation" / "prompt-template.txt"
-            cls._prompt_template = path.read_text(encoding="utf-8")
-        return cls._prompt_template
+    def _load_translation_assets(cls):
+        if cls._translation_assets is None:
+            folder = Path(__file__).parent.parent / "translation"
+            prompt = (folder / "prompt-template.txt").read_bytes()
+            glossary = (folder / "glossary.json").read_bytes()
+            cls._translation_assets = {
+                "prompt": prompt.decode("utf-8"),
+                "glossary": json_stdlib.loads(glossary),
+                # keys the Redis cache, so a synced prompt or glossary
+                # change re-translates instead of serving old translations
+                "version": hashlib.sha1(prompt + glossary).hexdigest()[:7],
+            }
+        return cls._translation_assets
 
     @classmethod
-    def _load_glossary(cls):
-        if cls._glossary is None:
-            path = Path(__file__).parent.parent / "translation" / "glossary.json"
-            cls._glossary = json_stdlib.loads(path.read_text(encoding="utf-8"))
-        return cls._glossary
+    def _build_glossary_entries(cls, source_lang, target_lang):
+        # Same entry format as cioos-commons' config.json glossaryEntryFormat.
+        return "\n".join(
+            '- "%s" \u2192 "%s"' % (entry[source_lang], entry[target_lang])
+            for entry in cls._load_translation_assets()["glossary"]
+            if entry.get(source_lang) and entry.get(target_lang)
+        )
 
     @classmethod
-    def _build_glossary_prompt(cls, source_lang, target_lang):
-        entries = cls._load_glossary()
-        pairs = []
-        for entry in entries:
-            src = entry.get(source_lang)
-            tgt = entry.get(target_lang)
-            if src and tgt:
-                pairs.append("- %s \u2192 %s" % (src, tgt))
-        if not pairs:
-            return ""
-        return "\n\nUse the following glossary:\n" + "\n".join(pairs) + "\n"
+    def _cohere_model(cls):
+        return config.get("ckan.cohere.model") or cls.default_cohere_model
+
+    @classmethod
+    def translation_method(cls, source_lang, target_lang):
+        """Disclaimer, in ``target_lang``, for text machine-translated by
+        translate_string: the source language, the Cohere model, and where the
+        prompt and glossary come from.  Markdown, so the theme can link them."""
+        model = cls._cohere_model()
+        if target_lang == "fr":
+            source = {"en": "de l'anglais"}.get(source_lang, "de " + source_lang)
+            return (
+                "Traduit %s par le modèle [Cohere](https://cohere.com) %s, avec "
+                "les instructions et le glossaire de traduction de [cioos-commons](%s)"
+                % (source, model, cls.cioos_commons_url)
+            )
+        source = {"fr": "French"}.get(source_lang, source_lang)
+        return (
+            "Translated from %s by the [Cohere](https://cohere.com) model %s, "
+            "using the translation prompt and glossary from [cioos-commons](%s)"
+            % (source, model, cls.cioos_commons_url)
+        )
 
     def translate_string(
         self, redis_conn, string_to_translate, source_lang="en", target_lang="fr"
     ):
-        store_name = "%s_%s_to_%s" % (
+        assets = self._load_translation_assets()
+        # Keyed on the model and prompt version so a cached translation is
+        # always one translation_method() describes truthfully.
+        store_name = "%s_%s_%s_%s_to_%s" % (
             self.redis_translation_store,
+            self._cohere_model(),
+            assets["version"],
             source_lang,
             target_lang,
         )
@@ -187,18 +217,29 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
         lang_names = {"en": "English", "fr": "French"}
         try:
             prompt = (
-                self._load_prompt_template()
+                assets["prompt"]
                 .replace("{{sourceLang}}", lang_names.get(source_lang, source_lang))
                 .replace("{{targetLang}}", lang_names.get(target_lang, target_lang))
                 .replace(
-                    "{{glossaryPrompt}}",
-                    self._build_glossary_prompt(source_lang, target_lang),
+                    "{{glossaryEntries}}",
+                    "(%s \u2192 %s)\n%s"
+                    % (
+                        source_lang,
+                        target_lang,
+                        self._build_glossary_entries(source_lang, target_lang),
+                    ),
                 )
-                .replace("{{originalText}}", string_to_translate)
+                # keep the text inside the prompt's data delimiters
+                .replace(
+                    "{{originalText}}",
+                    re.sub(
+                        r"</?text_to_translate>", "", string_to_translate, flags=re.I
+                    ),
+                )
             )
 
             response = client.chat(
-                model=config.get("ckan.cohere.model") or self.default_cohere_model,
+                model=self._cohere_model(),
                 messages=[{"role": "user", "content": prompt}],
             )
             translated = response.message.content[0].text.strip()
@@ -560,7 +601,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             other_lang = "fr" if primary_lang == "en" else "en"
             iso_values["keywords_translation_method"] = {
                 primary_lang: "",
-                other_lang: "Keyword " + self.translation_method_text,
+                other_lang: self.translation_method(primary_lang, other_lang),
             }
 
         # ----------------------------------------------------------------
@@ -580,7 +621,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             if translated:
                 iso_values["title_translation_method"] = {
                     primary_lang: "",
-                    other_lang: "Title " + self.translation_method_text,
+                    other_lang: self.translation_method(primary_lang, other_lang),
                 }
 
         # ----------------------------------------------------------------
@@ -601,7 +642,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             if translated:
                 iso_values["abstract_translation_method"] = {
                     primary_lang: "",
-                    other_lang: "Description " + self.translation_method_text,
+                    other_lang: self.translation_method(primary_lang, other_lang),
                 }
 
         # ----------------------------------------------------------------

@@ -12,8 +12,8 @@
     "fr": "mouillages"
   },
   {
-    "en": "DFO",
-    "fr": "MPO"
+    "en": "moon-pool",
+    "fr": "moon-pool"
   },
   {
     "en": "Environment and Climate Change Canada",
@@ -36,7 +36,35 @@
     "fr": "Ministère des Pêches et des Océans"
   },
   {
-    "en": "moon-pool",
-    "fr": "moon-pool"
+    "en": "Fisheries and Oceans Canada",
+    "fr": "Pêches et Océans Canada"
+  },
+  {
+    "en": "DFO",
+    "fr": "MPO"
+  },
+  {
+    "en": "MEDS",
+    "fr": "SDMM"
+  },
+  {
+    "en": "Marine Environmental Data Section",
+    "fr": "Section des Données sur le Milieu Marin"
+  },
+  {
+    "en": "Canadian Coast Guard",
+    "fr": "Garde côtière canadienne"
+  },
+  {
+    "en": "CCGS",
+    "fr": "NGCC"
+  },
+  {
+    "en": "CCG",
+    "fr": "GCC"
+  },
+  {
+    "en": "cast",
+    "fr": "profile"
   }
 ]
