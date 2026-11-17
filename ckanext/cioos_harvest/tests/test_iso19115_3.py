@@ -45,6 +45,7 @@ from ckanext.cioos_harvest.model.iso19115_3 import (
     _infer_keyword_types,
     _infer_multilingual,
     _localised_raw,
+    _parse_aggregation_info,
 )
 
 log = logging.getLogger(__name__)
@@ -365,6 +366,34 @@ def test_machine_translation_method_is_read_from_text_group_title():
 
     assert json.loads(values["title"]) == {"fr": "Titre", "en": "Title"}
     assert values["title_translation_method"] == {"en": "Cohere"}
+
+
+def test_aggregation_info_identifier_matches_schema_subfield():
+    # A nested identifier dict is not a scheming subfield: it lands in
+    # __extras and the "Related Works" link disappears from the dataset page.
+    el = etree.fromstring(
+        """<mri:MD_AssociatedResource
+            xmlns:mri="http://standards.iso.org/iso/19115/-3/mri/1.0"
+            xmlns:cit="http://standards.iso.org/iso/19115/-3/cit/2.0"
+            xmlns:mcc="http://standards.iso.org/iso/19115/-3/mcc/1.0"
+            xmlns:gco="http://standards.iso.org/iso/19115/-3/gco/1.0">
+          <mri:name><cit:CI_Citation>
+            <cit:title><gco:CharacterString>Parent</gco:CharacterString></cit:title>
+            <cit:identifier><mcc:MD_Identifier>
+              <mcc:code><gco:CharacterString>https://example.org/parent</gco:CharacterString></mcc:code>
+            </mcc:MD_Identifier></cit:identifier>
+          </cit:CI_Citation></mri:name>
+          <mri:associationType>
+            <mri:DS_AssociationTypeCode codeListValue="largerWorkCitation"/>
+          </mri:associationType>
+        </mri:MD_AssociatedResource>"""
+    )
+
+    item = _parse_aggregation_info(el)
+
+    assert item["aggregate-dataset-identifier_code"] == "https://example.org/parent"
+    assert "aggregate-dataset-identifier" not in item
+    assert item["association-type"] == "largerWorkCitation"
 
 
 def test_approved_translation_has_no_translation_method():

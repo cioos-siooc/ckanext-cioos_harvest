@@ -570,18 +570,23 @@ def _parse_vertical_extent(el):
 
 
 def _parse_aggregation_info(el):
-    """Parse a mri:MD_AssociatedResource element."""
+    """Parse a mri:MD_AssociatedResource element.
+
+    Keys match the schema's repeating subfields (the identifier is flattened to
+    ``aggregate-dataset-identifier_code``); scheming would otherwise drop a
+    nested identifier into ``__extras``.
+    """
     name_els = _x(el, "mri:name/cit:CI_Citation/cit:title")
-    identifier_els = _x(el, "mri:name/cit:CI_Citation/cit:identifier/mcc:MD_Identifier")
+    code = _first_text(
+        el,
+        "mri:name/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gco:CharacterString/text()",
+        "mri:name/cit:CI_Citation/cit:identifier/mcc:MD_Identifier/mcc:code/gcx:Anchor/text()",
+    )
     return {
         "aggregate-dataset-name": (
             _localised_raw(name_els[0]) if name_els else {"default": "", "local": []}
         ),
-        "aggregate-dataset-identifier": (
-            _parse_identifier(identifier_els[0])
-            if identifier_els
-            else {"code": "", "authority": "", "code-space": "", "version": ""}
-        ),
+        "aggregate-dataset-identifier_code": code,
         "association-type": _first_text(
             el,
             "mri:associationType/mri:DS_AssociationTypeCode/@codeListValue",
