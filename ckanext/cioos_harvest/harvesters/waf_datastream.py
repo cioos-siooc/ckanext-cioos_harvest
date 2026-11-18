@@ -980,7 +980,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
             .join(HOExtraAlias2, HarvestObject.extras)
             .filter(HOExtraAlias1.key == "waf_modified_date")
             .filter(HOExtraAlias2.key == "waf_location")
-            .filter(HarvestObject.current == True)
+            .filter(HarvestObject.current.is_(True))
             .filter(HarvestObject.harvest_source_id == harvest_job.source.id)
         )
 

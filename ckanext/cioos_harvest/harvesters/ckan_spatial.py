@@ -57,7 +57,7 @@ class CKANSpatialHarvester(CKANHarvester):
         }
 
     def validate_config(self, config):
-        config = super(CKANSpatialHarvester, self).validate_config(config)
+        config = super().validate_config(config)
         if config:
             config_obj = json.loads(config)
             if not config_obj.get("spatial_filter") and not config_obj.get(

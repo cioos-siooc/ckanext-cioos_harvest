@@ -36,16 +36,16 @@ from unittest.mock import MagicMock, patch
 import pytest
 from lxml import etree
 
-from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.cioos_harvest.harvesters.field_handlers import handle_fluent_field
+from ckanext.cioos_harvest.harvesters.waf import WAFHarvesterISO19115_3
 from ckanext.cioos_harvest.model.iso19115_3 import (
     ISODocument,
     _infer_citation,
-    citation_authors,
     _infer_keyword_types,
     _infer_multilingual,
     _localised_raw,
     _parse_aggregation_info,
+    citation_authors,
 )
 
 log = logging.getLogger(__name__)
