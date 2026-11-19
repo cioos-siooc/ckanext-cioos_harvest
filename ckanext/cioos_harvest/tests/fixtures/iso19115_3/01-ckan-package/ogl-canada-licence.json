@@ -1,0 +1,226 @@
+{
+  "bbox-east-long": -68.9,
+  "bbox-north-lat": 46.29,
+  "bbox-south-lat": 48.47,
+  "bbox-west-long": -72.59,
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Fisheries and Oceans Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/02qa1x782",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    }
+  ],
+  "dataset-reference-date": [
+    {
+      "type": "creation",
+      "value": "1994-05-01"
+    }
+  ],
+  "distributor": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Fisheries and Oceans Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/02qa1x782",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "surfaceCurrents"
+  ],
+  "extras": {
+    "access_constraints": "",
+    "contact-email": "",
+    "coupled-resource": "[]",
+    "guid": "ca.cioos_21053e6e-eb79-4cd5-9bb2-df4fcd0b900e",
+    "licence": "",
+    "metadata-date": "2024-01-30T20:53:25.218Z",
+    "responsible-party": "[{\"name\": \"Fisheries and Oceans Canada\", \"roles\": [\"custodian\", \"owner\", \"distributor\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true",
+    "temporal-extent-begin": "1994-05-01"
+  },
+  "frequency-of-update": "asNeeded",
+  "id": "21053e6e-eb79-4cd5-9bb2-df4fcd0b900e",
+  "keywords": {
+    "en": [
+      "sea currents",
+      "tide",
+      "oceans",
+      "surface currents",
+      "surfaceCurrents"
+    ],
+    "fr": [
+      "Oceans",
+      "courant marin",
+      "marée",
+      "océans",
+      "courants de surface",
+      "Courants de surface"
+    ]
+  },
+  "keywords_translation_method": {
+    "fr": ""
+  },
+  "license_id": "government-open-license-canada",
+  "lineage": null,
+  "maintenance-note": "Generated from https://cioos-siooc.github.io/metadata-entry-form",
+  "metadata-language": "fr",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Fisheries and Oceans Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/02qa1x782",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "publication",
+      "value": "2023-10-02"
+    },
+    {
+      "type": "revision",
+      "value": "2024-01-30"
+    }
+  ],
+  "metadata_created": "2023-10-02",
+  "metadata_modified": "2024-01-30",
+  "name": "ca-cioos_21053e6e-eb79-4cd5-9bb2-df4fcd0b900e",
+  "notes": "Ce jeu de données présente les prédictions de l'intensité et la direction des courants de surface dans l'estuaire du Saint-Laurent, entre cap de Bon-Désir et Trois-Rivières, une zone où les marées exercent une influence importante et prévisible sur la circulation des eaux de surface. Ces données de courants de surface du fleuve et de l'estuaire du Saint-Laurent ont été produites à partir d'un modèle de Pêches et Océans Canada, utilisant une grille de 400 m de résolution. Le modèle océanique intègre la topographie du fond, les débits moyens des rivières, les prédictions de la marée et les conditions moyennes de stratification verticale (couches d’eau de densités différentes). Le modèle exclut l'effet des vents, les prévisions doivent être utilisées avec réserve dans des conditions de vents intenses ou extrême. Pour plus d'informations, consultez la publication: [F.-J. Saucier, J. Chassé, M. Couture, A. D’Astous, R. Dorais, D. Lefaivre et A. Gosselin, 1999. The making of a surface current atlas of the St. Lawrence. Brebbia, C.A., P. Anagnostopoulos (Eds), Transactions on the Built Environment, vol. 43. 1999 WIT Press, www.witpress.com, ISSN 1743-3509, 87-97.](https://www.witpress.com/elibrary/wit-transactions-on-the-built-environment/43/5681) Consultez les données dans l'application [**NAVIGATION**](https://navigation.ogsl.ca/).",
+  "notes_translated": {
+    "en": "This dataset presents forecasts of the intensity and direction of surface currents in the St. Lawrence Estuary, between Cap de Bon-Désir and Trois-Rivières, an area where tides have a significant and predictable influence on surface water circulation. These surface current data for the St. Lawrence River and Estuary were produced using a model by Fisheries and Oceans Canada, using a grid 400 m of resolution. The ocean model integrates bottom topography, average river flows, tide predictions, and average vertical stratification conditions (water layers of different densities).The model excludes the effect of winds, the forecasts should be used with caution in intense or extreme wind conditions. For more information: [F.-J. Saucier, J. Chassé, M. Couture, A. D’Astous, R. Dorais, D. Lefaivre et A. Gosselin, 1999. The making of a surface current atlas of the St. Lawrence. Brebbia, C.A., P. Anagnostopoulos (Eds), Transactions on the Built Environment, vol. 43. 1999 WIT Press, www.witpress.com, ISSN 1743-3509, 87-97.](https://www.witpress.com/elibrary/wit-transactions-on-the-built-environment/43/5681) View the data in the [**NAVIGATION**](https://navigation.ogsl.ca/) app.",
+    "fr": "Ce jeu de données présente les prédictions de l'intensité et la direction des courants de surface dans l'estuaire du Saint-Laurent, entre cap de Bon-Désir et Trois-Rivières, une zone où les marées exercent une influence importante et prévisible sur la circulation des eaux de surface. Ces données de courants de surface du fleuve et de l'estuaire du Saint-Laurent ont été produites à partir d'un modèle de Pêches et Océans Canada, utilisant une grille de 400 m de résolution. Le modèle océanique intègre la topographie du fond, les débits moyens des rivières, les prédictions de la marée et les conditions moyennes de stratification verticale (couches d’eau de densités différentes). Le modèle exclut l'effet des vents, les prévisions doivent être utilisées avec réserve dans des conditions de vents intenses ou extrême. Pour plus d'informations, consultez la publication: [F.-J. Saucier, J. Chassé, M. Couture, A. D’Astous, R. Dorais, D. Lefaivre et A. Gosselin, 1999. The making of a surface current atlas of the St. Lawrence. Brebbia, C.A., P. Anagnostopoulos (Eds), Transactions on the Built Environment, vol. 43. 1999 WIT Press, www.witpress.com, ISSN 1743-3509, 87-97.](https://www.witpress.com/elibrary/wit-transactions-on-the-built-environment/43/5681) Consultez les données dans l'application [**NAVIGATION**](https://navigation.ogsl.ca/)."
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "onGoing",
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "Formulaire d'accès aux données de courants de surface du fleuve et de l'estuaire du Saint-Laurent. Seules les prédictions des 4 prochains jours sont disponibles.",
+      "description_translated": {
+        "en": "Access form to Surface Current Data of the St. Lawrence River and Estuary. Only the predictions of the next 4 days are available.",
+        "fr": "Formulaire d'accès aux données de courants de surface du fleuve et de l'estuaire du Saint-Laurent. Seules les prédictions des 4 prochains jours sont disponibles."
+      },
+      "format": "ERDDAP",
+      "name": "Données de courants de surface",
+      "name_translated": {
+        "en": "Surface Currents Data",
+        "fr": "Données de courants de surface"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://erddap.ogsl.ca/erddap/griddap/mpoStleCourants.html"
+    },
+    {
+      "description": "Atlas des courants de marée de l'Estuaire du Saint-Laurent, du cap de Bon-Désir à Trois-Rivières.",
+      "description_translated": {
+        "en": "Atlas of tidal currents of St. Lawrence Estuary, from Cap de Bon-Désir to Trois-Rivières.",
+        "fr": "Atlas des courants de marée de l'Estuaire du Saint-Laurent, du cap de Bon-Désir à Trois-Rivières."
+      },
+      "format": "HTML",
+      "name": "Atlas des courants de marée",
+      "name_translated": {
+        "en": "Atlas of Tidal Currents",
+        "fr": "Atlas des courants de marée"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://waves-vagues.dfo-mpo.gc.ca/library-bibliotheque/chs-shc-atlas-stlawrence-saintlaurent-2008-41023195.pdf"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -72.59,
+          48.47
+        ],
+        [
+          -68.9,
+          48.47
+        ],
+        [
+          -68.9,
+          46.29
+        ],
+        [
+          -72.59,
+          46.29
+        ],
+        [
+          -72.59,
+          48.47
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": "1994-05-01"
+    }
+  ],
+  "title": "Données de courants de surface du fleuve et de l'estuaire du Saint-Laurent",
+  "title_translated": {
+    "en": "Surface Current Data of the St. Lawrence River and Estuary",
+    "fr": "Données de courants de surface du fleuve et de l'estuaire du Saint-Laurent"
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "vertical-extent": [
+    {
+      "max": "5.0",
+      "min": "0.0"
+    }
+  ]
+}

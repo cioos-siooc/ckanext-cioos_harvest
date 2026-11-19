@@ -1,0 +1,269 @@
+{
+  "bbox-east-long": "-61.137820999999995",
+  "bbox-north-lat": "45.388512000000006",
+  "bbox-south-lat": "45.388492",
+  "bbox-west-long": "-61.137841",
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "info@cmar.ca",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Centre for Marine Applied Research (CMAR)",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "owner"
+      ]
+    }
+  ],
+  "dataset-reference-date": [
+    {
+      "type": "creation",
+      "value": "2020-07-07"
+    },
+    {
+      "type": "publication",
+      "value": "2020-07-07"
+    },
+    {
+      "type": "revision",
+      "value": "2021-04-02"
+    }
+  ],
+  "distributor": [
+    {
+      "contact-info_email": "scott@xeostech.com",
+      "contact-info_online-resource": "",
+      "individual-name": "Scott Tobin",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "XEOS Technologies",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "seaState",
+    "seaSurfaceHeight",
+    "subSurfaceTemperature"
+  ],
+  "extras": {
+    "access_constraints": "",
+    "contact-email": "info@cmar.ca",
+    "coupled-resource": "[]",
+    "guid": "ca.cioos_439a887e-81bd-423e-9f0d-bf0f259364be",
+    "licence": "Licence",
+    "metadata-date": "2022-06-22T18:33:46.410Z",
+    "responsible-party": "[{\"name\": \"Centre for Marine Applied Research (CMAR)\", \"roles\": [\"custodian\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true",
+    "temporal-extent-begin": "2020-07-07"
+  },
+  "frequency-of-update": "asNeeded",
+  "id": "439a887e-81bd-423e-9f0d-bf0f259364be",
+  "keywords": {
+    "en": [
+      "Oceans",
+      "sea_surface_wave_significant_height",
+      "sea_surface_wave_maximum_period",
+      "sea_surface_wave_maximum_height",
+      "sea_surface_wave_from_direction",
+      "sea_surface_wind_wave_directional_spread",
+      "sea_water_temperature",
+      "wind_speed",
+      "wind_from_direction",
+      "air_pressure",
+      "relative_humidity",
+      "air_temperature",
+      "stratiform_rainfall_rate",
+      "battery_temp_c",
+      "Timestamp",
+      "Battery Level - Volts",
+      "Temperature",
+      "Significant Wave Height",
+      "Peak Wave period",
+      "Maximum Wave Height",
+      "Wave Direction",
+      "Wave Spread",
+      "Sample Quality",
+      "water temperature",
+      "Wind Speed",
+      "Wind Direction",
+      "atmospheric pressure",
+      "Air Pressure",
+      "Humidity Percent",
+      "Air Temperature",
+      "Rain Intensity",
+      "Hail Intensity",
+      "Compass Direction",
+      "Wind From",
+      "wind",
+      "waves",
+      "meteorology",
+      "pressure",
+      "seaState",
+      "seaSurfaceHeight",
+      "subSurfaceTemperature"
+    ],
+    "fr": [
+      "température de l'eau",
+      "pression atmosphérique",
+      "vents",
+      "vagues",
+      "météorologie",
+      "pression",
+      "État de la mer",
+      "Niveau de l'eau",
+      "Température sous la surface"
+    ]
+  },
+  "keywords_translation_method": {
+    "en": ""
+  },
+  "license_id": "government-open-license-nova-scotia",
+  "lineage": null,
+  "maintenance-note": "Generated from https://cioos-siooc.github.io/metadata-entry-form",
+  "metadata-language": "en",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "info@cmar.ca",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Centre for Marine Applied Research (CMAR)",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "revision",
+      "value": "2022-06-22"
+    },
+    {
+      "type": "publication",
+      "value": "2022-06-22"
+    }
+  ],
+  "metadata_created": "2022-06-22",
+  "metadata_modified": "2022-06-22",
+  "name": "ca-cioos_439a887e-81bd-423e-9f0d-bf0f259364be",
+  "notes": "This dataset is collected using a 3 metre tall, 1 metre in diameter meteorological/oceanographic buoy from Xeos Technologies Inc., of Dartmouth, Nova Scotia. The buoy is deployed in Chedabucto Bay, Nova Scotia. It measures wave data (Maximum Wave Height, Significant Wave Height, Peak Wave Period, Mean Wave Direction, and Mean Wave Spread) using a Brizo wave sensor manufactured by Xeos, sea temperature using a T Node sensor, and meteorological data (Wind Speed, Wind Direction, Air Pressure, Humidity, Air Temperature, Rain Intensity, and Hail Intensity) using Vaisala sensors. The data is streamed to CIOOS every 20 minutes. The data will be used to support science-based decision making and advancement of Nova Scotia's coastal resources.",
+  "notes_translated": {
+    "en": "This dataset is collected using a 3 metre tall, 1 metre in diameter meteorological/oceanographic buoy from Xeos Technologies Inc., of Dartmouth, Nova Scotia. The buoy is deployed in Chedabucto Bay, Nova Scotia. It measures wave data (Maximum Wave Height, Significant Wave Height, Peak Wave Period, Mean Wave Direction, and Mean Wave Spread) using a Brizo wave sensor manufactured by Xeos, sea temperature using a T Node sensor, and meteorological data (Wind Speed, Wind Direction, Air Pressure, Humidity, Air Temperature, Rain Intensity, and Hail Intensity) using Vaisala sensors. The data is streamed to CIOOS every 20 minutes. The data will be used to support science-based decision making and advancement of Nova Scotia's coastal resources.",
+    "fr": "Cet ensemble de données est recueilli au moyen d'une bouée météorologique/océanographique de 3 mètres de haut et de 1 mètre de diamètre de Xeos Technologies Inc., de Dartmouth (Nouvelle-Écosse). La bouée est déployée dans la baie Chedabucto, en Nouvelle-Écosse. Il mesure les données des vagues (hauteur maximale des vagues, hauteur significative des vagues, période de pointe, direction moyenne des vagues et propagation moyenne des vagues) à l'aide d'un capteur Brizo fabriqué par Xeos, température de la mer à l'aide d'un capteur Nœud T et données météorologiques (vitesse du vent, direction du vent, pression de l'air, humidité, température de l'air, Intensité de pluie et intensité de grêle) à l'aide de capteurs Vaisala. Les données sont diffusées à SIOOC toutes les 20 minutes. Les données serviront à appuyer la prise de décisions fondées sur des données scientifiques et l'avancement des ressources côtières de la Nouvelle-Écosse."
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "onGoing",
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "CIOOS Atlantic dataset ERDDAP link",
+      "description_translated": {
+        "en": "CIOOS Atlantic dataset ERDDAP link",
+        "fr": "Liaison ERDDAP du jeu de données de SIOOC Atlantique"
+      },
+      "format": "ERDDAP",
+      "name": "CIOOS Atlantic ERDDAP",
+      "name_translated": {
+        "en": "CIOOS Atlantic ERDDAP"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://cioosatlantic.ca/erddap/tabledap/cmar_c5a5_c41c_2090.html"
+    },
+    {
+      "description": "XEOS Online data access (login required)",
+      "description_translated": {
+        "en": "XEOS Online data access (login required)",
+        "fr": "Accès aux données en ligne XEOS (connexion requise)"
+      },
+      "format": "HTML",
+      "name": "XEOS Online",
+      "name_translated": {
+        "en": "XEOS Online"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://xeostech.com/xeosonlinetm"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -61.137841,
+          45.388492
+        ],
+        [
+          -61.137820999999995,
+          45.388492
+        ],
+        [
+          -61.137820999999995,
+          45.388512000000006
+        ],
+        [
+          -61.137841,
+          45.388512000000006
+        ],
+        [
+          -61.137841,
+          45.388492
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": "2020-07-07"
+    }
+  ],
+  "title": "CMAR - Chedabucto Bay",
+  "title_translated": {
+    "en": "CMAR - Chedabucto Bay",
+    "fr": "CMAR - Chedabucto Bay"
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "vertical-extent": [
+    {
+      "max": "10.0",
+      "min": "0.0"
+    }
+  ]
+}

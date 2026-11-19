@@ -1,0 +1,243 @@
+{
+  "aggregation-info": [
+    {
+      "aggregate-dataset-identifier_code": "https://eccc-msc.github.io/open-data/msc-data/nwp_hrdps/readme_hrdps_fr/",
+      "aggregate-dataset-name": {
+        "en": "Data and Products of the High Resolution Deterministic Prediction System",
+        "fr": "Données et Produits du Système à haute résolution de prévision déterministe"
+      },
+      "association-type": "dependency",
+      "initiative-type": ""
+    }
+  ],
+  "bbox-east-long": "-46.0",
+  "bbox-north-lat": "64.0",
+  "bbox-south-lat": "41.05",
+  "bbox-west-long": "-100.0",
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Environment and Climate Change Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/026ny0e17",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor",
+        "owner"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Meteorological Service of Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor",
+        "owner"
+      ]
+    }
+  ],
+  "dataset-reference-date": [],
+  "distributor": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Environment and Climate Change Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/026ny0e17",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Meteorological Service of Canada",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "other"
+  ],
+  "extras": {
+    "access_constraints": "",
+    "contact-email": "",
+    "coupled-resource": "[]",
+    "guid": "ca.cioos_094d1bfa-9640-49dc-8460-efe95daf087a",
+    "licence": "",
+    "metadata-date": "2026-03-30T20:01:31.405Z",
+    "responsible-party": "[{\"name\": \"SLGO\", \"roles\": [\"custodian\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true"
+  },
+  "frequency-of-update": "asNeeded",
+  "id": "094d1bfa-9640-49dc-8460-efe95daf087a",
+  "keywords": {
+    "en": [
+      "meteorology",
+      "other"
+    ],
+    "fr": [
+      "Oceans",
+      "météorologie",
+      "Autre"
+    ]
+  },
+  "keywords_translation_method": {
+    "fr": ""
+  },
+  "license_id": "ca-eccc-odl",
+  "license_title": "Environment and Climate Change Canada Data Servers End-use Licence",
+  "license_url": "https://eccc-msc.github.io/open-data/licence/readme_en/",
+  "lineage": null,
+  "maintenance-note": "Generated from https://cioos-siooc.github.io/metadata-entry-form#/fr/stlaurent/7ukNb80dBccbfWOKNRT9ivHJden1/-OlHI5RGVoPPCPYAw6Qi",
+  "metadata-language": "fr",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "SLGO",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/03wfagk22",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "publication",
+      "value": "2026-02-12"
+    },
+    {
+      "type": "revision",
+      "value": "2026-03-30"
+    }
+  ],
+  "metadata_created": "2026-02-12",
+  "metadata_modified": "2026-03-30",
+  "name": "ca-cioos_094d1bfa-9640-49dc-8460-efe95daf087a",
+  "notes": "**Extrait du [datamart du Service météorologique du Canada](https://eccc-msc.github.io/open-data/msc-data/nwp_hrdps/readme_hrdps_fr/) :** *Le Système à haute résolution de prévision déterministe (SHRPD) procède à des calculs physiques afin de produire des prévisions déterministes d'éléments de l'atmosphère du jour présent jusqu'à 48 heures dans le futur. Les éléments de l'atmosphère incluent notamment la température, les précipitations, la couverture nuageuse, la vitesse et direction des vents et l'humidité. Ce produit contient les résultats numériques bruts de ces calculs. La couverture géographique inclut la majeure partie du Canada. La résolution spatiale horizontale des données est d'environ 2.5 km distribuées sur au plus 31 niveaux verticaux. Les prévisions sont exécutées quatre fois par jour.* Le sous-ensemble de données présent sur le catalogue de l'OGSL présentent la **direction du vent**, la **vitesse du vent**, et la **vitesse des rafales** à 10m d'altitude, ainsi que la **température de l'air** à 2m d'altitude. La période couverte concerne les 2 derniers jours et inclue des prévisions pour les 48h suivant le dernier fonctionnement du modèle avec une résolution horaire. L'étendu du jeu de données concerne les provinces du Québec et de l'Ontario (Canada), la Baie d'Hudson, ainsi qu'une partie localisée de l'Atlantique Nord-Ouest. Une visualisation interactive du jeu de données est disponible au travers de **l'[application Nautilo](https://nautilo.ca/)** de l'OGSL",
+  "notes_translated": {
+    "en": "**Extract of the [Meteorological Service of Canada Datamart](https://eccc-msc.github.io/open-data/msc-data/nwp_hrdps/readme_hrdps_en/):** *The High Resolution Deterministic Prediction System (HRDPS) carries out physics calculations to arrive at deterministic predictions of atmospheric elements from the current day out to 48 hours into the future. Atmospheric elements include temperature, precipitation, cloud cover, wind speed and direction, humidity and others. This product contains raw numerical results of these calculations. Geographical coverage of the system is most of Canada. Data is available over specific areas in the [MSC Datamart](https://eccc-msc.github.io/open-data/msc-data/nwp_hrdps/readme_hrdps-datamart_en/) and the whole coverage is available in the [MSC GeoMet web services](https://eccc-msc.github.io/open-data/msc-geomet/readme_en/). Data is available at a horizontal resolution of about 2.5 km up to 31 vertical levels. Predictions are performed up to four times a day.* The subset of data availables on the SLGO catalogue provides the **wind direction**, **wind speed** and **gust wind speed** at 10m, as well as the **air temperature** at 2m. The dataset provide hourly data for the last three days and include 48-hours forecasts derived from the latest model run. Spatially, the SLGO subset covers the Québec and Ontario provinces (Canada), the Hudson Bay, and a localized portion of the Northwest Atlantic. An interactive visualization of this dataset is available via the SLGO's **[Nautilo app](https://nautilo.ca/)**",
+    "fr": "**Extrait du [datamart du Service météorologique du Canada](https://eccc-msc.github.io/open-data/msc-data/nwp_hrdps/readme_hrdps_fr/) :** *Le Système à haute résolution de prévision déterministe (SHRPD) procède à des calculs physiques afin de produire des prévisions déterministes d'éléments de l'atmosphère du jour présent jusqu'à 48 heures dans le futur. Les éléments de l'atmosphère incluent notamment la température, les précipitations, la couverture nuageuse, la vitesse et direction des vents et l'humidité. Ce produit contient les résultats numériques bruts de ces calculs. La couverture géographique inclut la majeure partie du Canada. La résolution spatiale horizontale des données est d'environ 2.5 km distribuées sur au plus 31 niveaux verticaux. Les prévisions sont exécutées quatre fois par jour.* Le sous-ensemble de données présent sur le catalogue de l'OGSL présentent la **direction du vent**, la **vitesse du vent**, et la **vitesse des rafales** à 10m d'altitude, ainsi que la **température de l'air** à 2m d'altitude. La période couverte concerne les 2 derniers jours et inclue des prévisions pour les 48h suivant le dernier fonctionnement du modèle avec une résolution horaire. L'étendu du jeu de données concerne les provinces du Québec et de l'Ontario (Canada), la Baie d'Hudson, ainsi qu'une partie localisée de l'Atlantique Nord-Ouest. Une visualisation interactive du jeu de données est disponible au travers de **l'[application Nautilo](https://nautilo.ca/)** de l'OGSL"
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "onGoing",
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "Température de l'air, et direction et vitesse du vent",
+      "description_translated": {
+        "en": "Air temperatude, and direction and speed of winds",
+        "fr": "Température de l'air, et direction et vitesse du vent"
+      },
+      "format": "ERDDAP",
+      "name": "Sous-ensemble de l'OGSL issu du jeu de données SHRPD",
+      "name_translated": {
+        "en": "OGSL Subset Derived from the HRDPS Dataset",
+        "fr": "Sous-ensemble de l'OGSL issu du jeu de données SHRPD"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://erddap.ogsl.ca/erddap/griddap/ecccHrdpsNautilo.graph"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -100.0,
+          41.05
+        ],
+        [
+          -46.0,
+          41.05
+        ],
+        [
+          -46.0,
+          64.0
+        ],
+        [
+          -100.0,
+          64.0
+        ],
+        [
+          -100.0,
+          41.05
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": ""
+    }
+  ],
+  "title": "Sous-ensemble de données provenant du produits du système à haute résolution de prévision déterministe (SHRPD)",
+  "title_translated": {
+    "en": "Subset of Data from the High Resolution Deterministic Prediction System (HRDPS)",
+    "fr": "Sous-ensemble de données provenant du produits du système à haute résolution de prévision déterministe (SHRPD)"
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "vertical-extent": [
+    {
+      "max": "0",
+      "min": "0"
+    }
+  ]
+}

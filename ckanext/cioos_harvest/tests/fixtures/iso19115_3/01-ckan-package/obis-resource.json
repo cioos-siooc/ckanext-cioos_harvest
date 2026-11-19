@@ -1,0 +1,335 @@
+{
+  "bbox-east-long": "-53.785622583448855",
+  "bbox-north-lat": "47.912179576700325",
+  "bbox-south-lat": "46.92729634247795",
+  "bbox-west-long": "-55.36848774400448",
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "info@acaphumberarm.com",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "ACAP Humber Arm",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    }
+  ],
+  "dataset-reference-date": [
+    {
+      "type": "creation",
+      "value": "2018-08-04"
+    },
+    {
+      "type": "publication",
+      "value": "2021-11-15"
+    },
+    {
+      "type": "revision",
+      "value": "2024-07-02"
+    }
+  ],
+  "distributor": [
+    {
+      "contact-info_email": "info@acaphumberarm.com",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "ACAP Humber Arm",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "seaSurfaceTemperature",
+    "seaSurfaceSalinity",
+    "oxygen",
+    "seaState",
+    "fishAbundanceAndDistribution",
+    "invertebrateAbundanceAndDistribution"
+  ],
+  "extras": {
+    "access_constraints": "",
+    "contact-email": "info@acaphumberarm.com",
+    "coupled-resource": "[]",
+    "guid": "ca.cioos_f25afe09-d1a4-4588-b064-8b6de9359b96",
+    "licence": "",
+    "metadata-date": "2024-08-09T14:06:29.754Z",
+    "responsible-party": "[{\"name\": \"ACAP Humber Arm\", \"roles\": [\"owner\", \"custodian\", \"distributor\", \"pointOfContact\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true",
+    "temporal-extent-begin": "2018-08-04"
+  },
+  "frequency-of-update": "asNeeded",
+  "id": "f25afe09-d1a4-4588-b064-8b6de9359b96",
+  "keywords": {
+    "en": [
+      "Oceans",
+      "abundance and biomass",
+      "habitat characterization",
+      "coastal characterization",
+      "invasive species",
+      "fish inventory",
+      "macroalgae",
+      "benthic macrofauna",
+      "sea grass",
+      "water quality",
+      "salinity",
+      "sediment",
+      "water temperature",
+      "seaSurfaceTemperature",
+      "seaSurfaceSalinity",
+      "oxygen",
+      "seaState",
+      "fishAbundanceAndDistribution",
+      "invertebrateAbundanceAndDistribution",
+      "Animalia",
+      "Chromista",
+      "Plantae",
+      "Coastal Environmental Baseline Program"
+    ],
+    "fr": [
+      "abondance et biomasse",
+      "caractérisation des habitats",
+      "caractérisation des rives",
+      "espèces envahissante",
+      "inventaire poisson",
+      "macroalgue",
+      "macrofaune benthique",
+      "plantes aquatique",
+      "qualité eau",
+      "salinité",
+      "sédiment",
+      "température de l'eau",
+      "Température de surface",
+      "Salinité de surface",
+      "Oxygène",
+      "État de la mer",
+      "Abondance et distribution de poissons",
+      "Abondance et distribution d'invertébrés",
+      "Animalia",
+      "Chromista",
+      "Plantae"
+    ]
+  },
+  "keywords_translation_method": {
+    "en": ""
+  },
+  "license_id": "CC-BY-4.0",
+  "license_title": "Creative Commons Attribution 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "lineage": null,
+  "maintenance-note": "Generated from https://cioos-siooc.github.io/metadata-entry-form#/en/stlaurent/v4vHeO4DUaeoR0nna6X3nEbBDbe2/-MoZPXAwEpfCCbrNVFhA",
+  "metadata-language": "en",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "info@acaphumberarm.com",
+      "contact-info_online-resource": "",
+      "individual-name": "",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "ACAP Humber Arm",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    },
+    {
+      "contact-info_email": "gmoore@acaphumberarm.com",
+      "contact-info_online-resource": "",
+      "individual-name": "Moore, Greg",
+      "individual-uri_authority": "",
+      "individual-uri_code": "",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "ACAP Humber Arm",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "pointOfContact"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "publication",
+      "value": "2022-01-10"
+    },
+    {
+      "type": "revision",
+      "value": "2024-08-09"
+    }
+  ],
+  "metadata_created": "2022-01-10",
+  "metadata_modified": "2024-08-09",
+  "name": "ca-cioos_f25afe09-d1a4-4588-b064-8b6de9359b96",
+  "notes": "Data is being collected on target components and features of the local Placentia Bay coastal ecosystem over a five-year study to develop a baseline dataset on eelgrass habitat within Placentia Bay, NL. As part of the study, the presence of other forms of marine vegetation and structure-providing species are documented. Water quality parameters such as dissolved oxygen, pH, and temperature are recorded bi-annually. Marine sediment characterization and pole seines are conducted annually at each site to provide baseline data on the diversity of fish species present. Observations of any aquatic invasive species are documented and reported. **MARINE VEGETATION :** Eelgrass presence, distribution, and abundance were documented at ten sites in 2018-2019. An additional five sites were surveyed in 2019-2022. At each site, eelgrass transects are surveyed at each location semi-annually to document seasonal growth changes in abundance. During each survey, other marine vegetation, soft corals and sponges, are also identified. Any marine vegetation which may be beach-cast along the shoreline is documented and photographed. **WATER QUALITY :** Dissolved oxygen, pH, salinity, conductivity, and temperature are recorded at the start and endpoint of each eelgrass transect. 72-hour rainfall and wave conditions for the site are also recorded. **MARINE SEDIMENT :** During the eelgrass surveys, the composition of the marine sediment is documented at 5m intervals. **INVENTORY OF VARIOUS SPECIES :** Pole seines are conducted annually at each site to provide baseline data on nearshore fish and invertebrate community assemblages. Aquatic Invasive Species are recorded and reported if encountered throughout the water or shoreline surveys. This project is part of the Coastal Environmental Baseline Program Initiative under the Oceans Protection Plan of Fisheries and Oceans Canada.",
+  "notes_translated": {
+    "en": "Data is being collected on target components and features of the local Placentia Bay coastal ecosystem over a five-year study to develop a baseline dataset on eelgrass habitat within Placentia Bay, NL. As part of the study, the presence of other forms of marine vegetation and structure-providing species are documented. Water quality parameters such as dissolved oxygen, pH, and temperature are recorded bi-annually. Marine sediment characterization and pole seines are conducted annually at each site to provide baseline data on the diversity of fish species present. Observations of any aquatic invasive species are documented and reported. **MARINE VEGETATION :** Eelgrass presence, distribution, and abundance were documented at ten sites in 2018-2019. An additional five sites were surveyed in 2019-2022. At each site, eelgrass transects are surveyed at each location semi-annually to document seasonal growth changes in abundance. During each survey, other marine vegetation, soft corals and sponges, are also identified. Any marine vegetation which may be beach-cast along the shoreline is documented and photographed. **WATER QUALITY :** Dissolved oxygen, pH, salinity, conductivity, and temperature are recorded at the start and endpoint of each eelgrass transect. 72-hour rainfall and wave conditions for the site are also recorded. **MARINE SEDIMENT :** During the eelgrass surveys, the composition of the marine sediment is documented at 5m intervals. **INVENTORY OF VARIOUS SPECIES :** Pole seines are conducted annually at each site to provide baseline data on nearshore fish and invertebrate community assemblages. Aquatic Invasive Species are recorded and reported if encountered throughout the water or shoreline surveys. This project is part of the Coastal Environmental Baseline Program Initiative under the Oceans Protection Plan of Fisheries and Oceans Canada.",
+    "fr": "Des données ont été recueillies sur les composantes cibles et les caractéristiques de l'écosystème côtier local de la baie de Placentia. L'étude, d'une durée de cinq ans, vise à élaborer un jeu de données de référence sur l'habitat de la zostère dans la baie de Placentia, à Terre-Neuve-et-Labrador. Dans le cadre de cette étude, la présence d'autres formes de végétation marine et d'espèces dans le milieu est aussi documentée. Les paramètres de qualité de l'eau, tels que l'oxygène dissous, le pH et la température, sont enregistrés deux fois par an. La caractérisation des sédiments marins et les traits de senne sont effectués chaque année sur chaque site afin de fournir des données de référence sur la diversité des espèces de poissons présentes. Les observations de toutes les espèces aquatiques envahissantes sont aussi documentées et signalées. **VÉGÉTATION MARINE :** La présence, la distribution et l'abondance de la zostère marine ont été documentées dans dix sites en 2018-2019. Cinq autres sites ont été étudiés en 2019-2022. Les transects de zostères sont étudiés semestriellement à chaque emplacement pour documenter les changements saisonniers dans la croissance et l'abondance de celles-ci. Au cours de chaque relevé, d'autres végétations marines, par exemple des coraux mous et des éponges, sont également identifiées et répertoriées. Toute végétation marine qui pourrait être rencontrée sur la plage le long du rivage est documentée et photographiée. **QUALITÉ DE L'EAU :** Les paramètres de qualité de l'eau tels que l'oxygène dissous, le pH, la salinité, la conductivité et la température sont enregistrés au début et à l'extrémité de chaque transect où les zostères ont été caractérisées. Les précipitations et les conditions des vagues sur 72 heures pour les sites sont également enregistrées. **SÉDIMENT MARIN :** Au cours des relevés de zostères marines, la composition des sédiments marins a été documentée à des intervalles de 5 mètres. **INVENTAIRE ESPÈCES DIVERSES :** Des traits de senne sont effectués chaque année sur chaque site pour fournir des données de référence sur les assemblages de communautés de poissons et d'invertébrés près du rivage. Les espèces aquatiques envahissantes sont enregistrées et signalées si elles sont rencontrées tout au long des relevés sur l'eau ou le littoral. Ce projet fait partie du Programme sur les données environnementales côtières de référence de Pêches et Océan Canada."
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "completed",
+  "projects": [
+    "Coastal Environmental Baseline Program"
+  ],
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "Archive according to Darwin Core standard. Sampling events, occurrences, and additional measurements are presented in 4 files.",
+      "description_translated": {
+        "en": "Archive according to Darwin Core standard. Sampling events, occurrences, and additional measurements are presented in 4 files.",
+        "fr": "Archive selon la norme Darwin Core. Les évènements d'échantillonnages, les occurrences et les mesures supplémentaires sont présentées dans 4 fichiers."
+      },
+      "format": "zip",
+      "name": "DwC_acap-humberarm_placentia_eelgrass_2018-2022.zip",
+      "name_translated": {
+        "en": "DwC_acap-humberarm_placentia_eelgrass_2018-2022.zip",
+        "fr": "DwC_acap-humberarm_placentia_eelgrass_2018-2022.zip"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://catalogue.ogsl.ca/data/acap-humber-arm/ca-cioos_f25afe09-d1a4-4588-b064-8b6de9359b96/DwC_acap-humberarm_placentia_eelgrass_2018-2022.zip"
+    },
+    {
+      "description": "Data dictionary to understand the study and the different variables analyzed.",
+      "description_translated": {
+        "en": "Data dictionary to understand the study and the different variables analyzed.",
+        "fr": "Dictionnaire de données permettant de comprendre l'étude et les différentes variables analysées."
+      },
+      "format": "HTML",
+      "name": "Data dictionnary",
+      "name_translated": {
+        "en": "Data dictionnary",
+        "fr": "Dictionnaire de données"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://catalogue.ogsl.ca/data/acap-humber-arm/ca-cioos_f25afe09-d1a4-4588-b064-8b6de9359b96/acap-humberarm-data_dictionary.ods"
+    },
+    {
+      "description": "See the dataset on the biodiversity platform: GBIF (Global Biodiversity Information Facility)",
+      "description_translated": {
+        "en": "See the dataset on the biodiversity platform: GBIF (Global Biodiversity Information Facility)",
+        "fr": "Voir le jeu de données sur la plateforme de biodiversité GBIF (Global Biodiversity Information Facility)"
+      },
+      "format": "GBIF",
+      "name": "GBIF Dataset",
+      "name_translated": {
+        "en": "GBIF Dataset",
+        "fr": "Jeu de données GBIF"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://www.gbif.org/dataset/5a89d74e-eb11-4b8e-b190-e14938c30942"
+    },
+    {
+      "description": "See the dataset on the biodiversity platform: OBIS (Ocean Biodiversity Information System)",
+      "description_translated": {
+        "en": "See the dataset on the biodiversity platform: OBIS (Ocean Biodiversity Information System)",
+        "fr": "Voir le jeu de données sur la plateforme de biodiversité OBIS (Ocean Biodiversity Information System)"
+      },
+      "format": "OBIS",
+      "name": "OBIS Dataset",
+      "name_translated": {
+        "en": "OBIS Dataset",
+        "fr": "Jeu de données OBIS"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://obis.org/dataset/9d4650f0-dce2-4ad7-9dba-ae0a6ad378d3"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -55.36848774400448,
+          46.92729634247795
+        ],
+        [
+          -53.785622583448855,
+          46.92729634247795
+        ],
+        [
+          -53.785622583448855,
+          47.912179576700325
+        ],
+        [
+          -55.36848774400448,
+          47.912179576700325
+        ],
+        [
+          -55.36848774400448,
+          46.92729634247795
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": "2018-08-04"
+    }
+  ],
+  "title": "Characterization of Eelgrass Sites in Placentia Bay (2018-2022)",
+  "title_translated": {
+    "en": "Characterization of Eelgrass Sites in Placentia Bay (2018-2022)",
+    "fr": "Caractérisation des sites de zostères dans la baie de Placentia (2018-2022)"
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "unique-resource-identifier-full": [
+    {
+      "authority": "",
+      "code": "https://doi.org/10.26071/ogsl-f25afe09-d1a4",
+      "code-space": "",
+      "version": ""
+    }
+  ],
+  "vertical-extent": [
+    {
+      "max": "0.0",
+      "min": "0.0"
+    }
+  ]
+}

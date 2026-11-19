@@ -1,0 +1,322 @@
+{
+  "bbox-east-long": "-64.33691",
+  "bbox-north-lat": "49.82506",
+  "bbox-south-lat": "49.76397",
+  "bbox-west-long": "-64.40006",
+  "citation": {
+    "en": "",
+    "fr": ""
+  },
+  "cited-responsible-party": [
+    {
+      "contact-info_email": "raphael.mabit@gmail.com",
+      "contact-info_online-resource": "",
+      "individual-name": "Mabit, Raphaël",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-5341-873X",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Rimouski Marine Sciences Institute",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/05wn3mp32",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "author",
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "Bélanger, Simon",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-9172-8376",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/049jtt335",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "Bernatchez, Pascal",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-0117-1632",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/049jtt335",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "coAuthor"
+      ]
+    }
+  ],
+  "dataset-reference-date": [
+    {
+      "type": "creation",
+      "value": "2022-07-01"
+    }
+  ],
+  "distributor": [
+    {
+      "contact-info_email": "raphael.mabit@gmail.com",
+      "contact-info_online-resource": "",
+      "individual-name": "Mabit, Raphaël",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-5341-873X",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Rimouski Marine Sciences Institute",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/05wn3mp32",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "Bélanger, Simon",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-9172-8376",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/049jtt335",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "distributor"
+      ]
+    }
+  ],
+  "ecv": [],
+  "eov": [
+    "oceanColour",
+    "seaSurfaceTemperature",
+    "seaSurfaceSalinity"
+  ],
+  "extras": {
+    "access_constraints": "",
+    "contact-email": "raphael.mabit@gmail.com",
+    "coupled-resource": "[]",
+    "guid": "ca.cioos_73bd6579-fa69-4907-ae01-47bbd851252f",
+    "licence": "Not to be used for navigational purposes",
+    "metadata-date": "2026-07-07T19:38:00.584Z",
+    "responsible-party": "[{\"name\": \"Rimouski Marine Sciences Institute\", \"roles\": [\"custodian\", \"owner\", \"author\", \"distributor\"]}, {\"name\": \"\", \"roles\": [\"custodian\", \"owner\", \"distributor\"]}]",
+    "spatial-data-service-type": "",
+    "spatial-reference-system": "",
+    "spatial_harvester": "true",
+    "temporal-extent-begin": "2022-07-01",
+    "temporal-extent-end": "2023-08-26"
+  },
+  "frequency-of-update": "asNeeded",
+  "id": "73bd6579-fa69-4907-ae01-47bbd851252f",
+  "keywords": {
+    "en": [
+      "Oceans",
+      "remote sensing reflectance",
+      "bathymetry",
+      "optically active constituents",
+      "oceanColour",
+      "seaSurfaceTemperature",
+      "seaSurfaceSalinity",
+      "RQM",
+      "Coastal Environmental Baseline Program"
+    ],
+    "fr": [
+      "réfléctance de télédétection",
+      "bathymetrie",
+      "composés optiquement actifs",
+      "Couleur des océans",
+      "Température de surface",
+      "Salinité de surface"
+    ]
+  },
+  "keywords_translation_method": {
+    "en": ""
+  },
+  "license_id": "CC-BY-SA-4.0",
+  "license_title": "Creative Commons Attribution Share-Alike 4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "lineage": null,
+  "maintenance-note": "Generated from https://cioos-siooc.github.io/metadata-entry-form#/en/stlaurent/Qob2vqYWFjgrfUqK1yfXA2npaZ02/-OnNCgvi_rgBYnDLVurw",
+  "metadata-language": "en",
+  "metadata-point-of-contact": [
+    {
+      "contact-info_email": "raphael.mabit@gmail.com",
+      "contact-info_online-resource": "",
+      "individual-name": "Mabit, Raphaël",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-5341-873X",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "Rimouski Marine Sciences Institute",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/05wn3mp32",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "author",
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    },
+    {
+      "contact-info_email": "",
+      "contact-info_online-resource": "",
+      "individual-name": "Bélanger, Simon",
+      "individual-uri_authority": "",
+      "individual-uri_code": "https://orcid.org/0000-0002-9172-8376",
+      "individual-uri_code-space": "",
+      "individual-uri_version": "",
+      "organisation-name": "",
+      "organisation-uri_authority": "",
+      "organisation-uri_code": "https://ror.org/049jtt335",
+      "organisation-uri_code-space": "",
+      "organisation-uri_version": "",
+      "role": [
+        "custodian",
+        "distributor",
+        "owner"
+      ]
+    }
+  ],
+  "metadata-reference-date": [
+    {
+      "type": "publication",
+      "value": "2026-06-12"
+    },
+    {
+      "type": "revision",
+      "value": "2026-07-07"
+    }
+  ],
+  "metadata_created": "2026-06-12",
+  "metadata_modified": "2026-07-07",
+  "name": "ca-cioos_73bd6579-fa69-4907-ae01-47bbd851252f",
+  "notes": "The primary variables of this dataset are the in situ remote sensing réflectance, the water leaving radiance, the diffuse attenuation coefficient of upwelling radiance, the water depth and canopy height of the submerged aquatic vegetation. Data was acquired around Gamache bay, Anticosti Island, from the jet-ski platform, in July 2022 and august 2023 (Thesis Chap. 1 of R. Mabit, 2026, and [Mabit et al., L&O methods, 2026](https://doi.org/10.1002/lom3.70053)). Data from the CTD (temperature, depth, salinity) and the SeaOWL (chlorophyll-a, fluorescence of dissolved organic matter, and volume scattering function at 700 nm) are included in the dataset. Metadata from the jet-ski inertial measurement unit are also included (latitude, longitude, altitude, pitch, roll, heading).",
+  "notes_translated": {
+    "en": "The primary variables of this dataset are the in situ remote sensing réflectance, the water leaving radiance, the diffuse attenuation coefficient of upwelling radiance, the water depth and canopy height of the submerged aquatic vegetation. Data was acquired around Gamache bay, Anticosti Island, from the jet-ski platform, in July 2022 and august 2023 (Thesis Chap. 1 of R. Mabit, 2026, and [Mabit et al., L&O methods, 2026](https://doi.org/10.1002/lom3.70053)). Data from the CTD (temperature, depth, salinity) and the SeaOWL (chlorophyll-a, fluorescence of dissolved organic matter, and volume scattering function at 700 nm) are included in the dataset. Metadata from the jet-ski inertial measurement unit are also included (latitude, longitude, altitude, pitch, roll, heading).",
+    "fr": "Les variables principales de ce jeu de données sont la réflectance de télédétection in situ, la luminance émergeant de l'eau, le coefficient d'atténuation diffus de la luminance ascendante, la profondeur de l'eau et la hauteur de la canopée de la végétation aquatique submergée (Chap. 1 de la thèse de R. Mabit, 2026 et [Mabit et al., L&O methods, 2026](https://doi.org/10.1002/lom3.70053)). Les données ont été acquises autour de la baie Gamache, à l'île d'Anticosti, depuis la plateforme jet-ski, en juillet 2022 et en août 2023. Les données de la CTD (température, profondeur, salinité) et du SeaOWL (chlorophylle-a, fluorescence de la matière organique dissoute et fonction de diffusion volumique à 700 nm) sont incluses dans le jeu de données. Les métadonnées de l'unité de mesure inertielle du jet-ski sont également incluses (latitude, longitude, altitude, tangage, roulis, cap)."
+  },
+  "notes_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "progress": "completed",
+  "projects": [
+    "RQM",
+    "Coastal Environmental Baseline Program"
+  ],
+  "resource-type": "dataset",
+  "resources": [
+    {
+      "description": "The scalar (i.e., not spectral) data from the jet-ski platform at level 2 (products calculated from calibrated data).",
+      "description_translated": {
+        "en": "The scalar (i.e., not spectral) data from the jet-ski platform at level 2 (products calculated from calibrated data).",
+        "fr": "Les données scalaire (i.e., non spectrale) de la moto-marine au niveau 2 (produits calculés à partir des données calibrées)."
+      },
+      "format": "ERDDAP",
+      "name": "Jet-ski Scalar Data L2",
+      "name_translated": {
+        "en": "Jet-ski Scalar Data L2",
+        "fr": "Données moto-marine scalaire L2"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://erddap.ogsl.ca/erddap/tabledap/ismerReflectanceGamacheBayAlgeaWise.html?Id%2Ctime%2Clongitude%2Clatitude%2Cheading%2Cpitch%2Croll%2Cspeed%2Csol_zen%2Csol_azi%2Cboat_raa%2CTE90%2CPSAL%2Caltitude%2Caltitude_sd%2Cwater_level%2Cwater_level_sd%2Cplant_height%2Cplant_height_sd%2CVSF_700%2Cchlorophyll_a%2CFDOM&time%3E=2022-07-01T15%3A27%3A44Z&measurement_type=%22scalar%22&.bgColor=0xffffffff"
+    },
+    {
+      "description": "The spectral (i.e., function of wavelength) data from the jet-ski platform at level 2 (products calculated from calibrated data).",
+      "description_translated": {
+        "en": "The spectral (i.e., function of wavelength) data from the jet-ski platform at level 2 (products calculated from calibrated data).",
+        "fr": "Les données spectrale (i.e., function de la longueur d'onde) de la moto-marine au niveau 2 (produits calculés à partir des données calibrées)."
+      },
+      "format": "ERDDAP",
+      "name": "Jet-ski Spectral Data L2",
+      "name_translated": {
+        "en": "Jet-ski Spectral Data L2",
+        "fr": "Données moto-marine spectrale L2"
+      },
+      "resource_locator_function": "",
+      "resource_locator_protocol": "WWW:LINK",
+      "url": "https://erddap.ogsl.ca/erddap/tabledap/ismerReflectanceGamacheBayAlgeaWise.html?Id%2Ctime%2Clongitude%2Clatitude%2Cwavelength%2Creflectance%2Creflectance_uncertainty%2Cradiance%2Cradiance_uncertainty%2Cattenuation_coef%2Cattenuation_coef_uncertainty&time%3E=2022-07-01T15%3A27%3A44Z&measurement_type=%22spectral%22&.bgColor=0xffffffff"
+    }
+  ],
+  "spatial": {
+    "coordinates": [
+      [
+        [
+          -64.40006,
+          49.76397
+        ],
+        [
+          -64.33691,
+          49.76397
+        ],
+        [
+          -64.33691,
+          49.82506
+        ],
+        [
+          -64.40006,
+          49.82506
+        ],
+        [
+          -64.40006,
+          49.76397
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "tags": [],
+  "temporal-extent": [
+    {
+      "begin": "2022-07-01",
+      "end": "2023-08-26"
+    }
+  ],
+  "title": "In Situ Remote Sensing Reflectance of Gamache Bay, Anticosti Island.",
+  "title_translated": {
+    "en": "In Situ Remote Sensing Reflectance of Gamache Bay, Anticosti Island.",
+    "fr": "Réflectance de télédétection in situ de la baie Gamache, île d'Anticosti."
+  },
+  "title_translation_method": {
+    "en": "",
+    "fr": ""
+  },
+  "unique-resource-identifier-full": [
+    {
+      "authority": "",
+      "code": "https://doi.org/10.26071/73bd6579-fa69-4907",
+      "code-space": "",
+      "version": ""
+    }
+  ],
+  "vertical-extent": [
+    {
+      "max": "0",
+      "min": "0"
+    }
+  ]
+}
