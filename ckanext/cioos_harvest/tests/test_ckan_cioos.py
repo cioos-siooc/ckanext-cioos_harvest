@@ -52,3 +52,14 @@ def test_search_error_is_the_one_upstream_raises():
     # gather_stage must catch the class _search_for_datasets raises, or a
     # remote failure crashes the gather consumer instead of logging an error.
     assert ckan_cioos.SearchError is SearchError
+
+
+def test_owner_org_by_name_uses_the_remote_org_name():
+    pkg = {"owner_org": "8f1ade88-id", "organization": {"id": "8f1ade88-id", "name": "dfo-mpo"}}
+
+    assert ckan_cioos.owner_org_by_name(pkg)["owner_org"] == "dfo-mpo"
+
+
+def test_owner_org_by_name_keeps_owner_org_without_remote_org():
+    assert ckan_cioos.owner_org_by_name({"owner_org": "abc"})["owner_org"] == "abc"
+    assert ckan_cioos.owner_org_by_name({"organization": None}) == {"organization": None}

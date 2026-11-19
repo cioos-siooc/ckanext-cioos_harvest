@@ -1,7 +1,7 @@
 """CIOOS CKAN Harvester.
 
 Harvests remote CKAN instances with improved handling/indexing of external
-XML files, organization matching, field filtering, and package deletion
+XML files, organization matching by name, field filtering, and package deletion
 tracking.
 """
 
@@ -47,6 +47,21 @@ REMOTE_RETRY = Retry(
     allowed_methods=("GET",),
 )
 REMOTE_TIMEOUT = 60
+
+
+def owner_org_by_name(package_dict):
+    """Point owner_org at the remote organization's name instead of its id.
+
+    ckanext-harvest's remote_orgs lookup (organization_show, then fetching and
+    creating the remote org) accepts a name or an id. Regional catalogues give
+    the same organization name different ids, so matching on the name keeps
+    one local organization per name instead of falling back to the source's
+    organization when the second catalogue's id doesn't match.
+    """
+    name = (package_dict.get("organization") or {}).get("name")
+    if name:
+        package_dict["owner_org"] = name
+    return package_dict
 
 
 class CIOOSCKANHarvester(CKANHarvester):
@@ -358,6 +373,11 @@ class CIOOSCKANHarvester(CKANHarvester):
                 log.info("Deleted package {0}".format(package_dict["id"]))
                 return True
 
+            if self.config.get("remote_orgs") in ("only_local", "create"):
+                harvest_object.content = json.dumps(
+                    owner_org_by_name(package_dict)
+                )
+
             # Call parent import_stage for normal processing
             return super().import_stage(harvest_object)
 
@@ -365,29 +385,6 @@ class CIOOSCKANHarvester(CKANHarvester):
             log.exception(e)
             self._save_object_error("%s" % e, harvest_object, "Import")
             return False
-
-    def modify_remote_organization(self, remote_org_id, pkg_dict, context):
-        try:
-            package_org = pkg_dict.get("organization")
-            if package_org and package_org.get("id") == remote_org_id:
-                remote_org_id = package_org.get("name", remote_org_id)
-
-            # if there is a organization uri then try to match on that
-            # get first item from organization-uri list if it exists
-            uri = next(iter(package_org.get("organization-uri", [])), {})
-            # we assume uri code is unique
-            code = uri.get("code")
-            if code:
-                data_dict = {"fq": "organization-uri:%s" % code.replace(":", "_")}
-                org = toolkit.get_action("organization_list")(
-                    context.copy(), data_dict=data_dict
-                )
-                if org:
-                    remote_org_id = org[0]
-        except Exception as e:
-            log.exception(e)
-            raise
-        return remote_org_id
 
     def modify_package_dict(self, package_dict, harvest_object):
         base_context = {
