@@ -231,16 +231,16 @@ via Docker Compose.
 
 ```bash
 # Run all harvester tests
-just harvest-test -vv
+just test-harvest -vv
 
 # Run only parser tests (XML parsing, no CKAN stack needed)
-just harvest-test -vv -k parser
+just test-harvest -vv -k parser
 
 # Run only package dict tests (full pipeline, needs CKAN stack)
-just harvest-test -vv -k package
+just test-harvest -vv -k package
 
 # Regenerate golden files after intentional pipeline changes
-just harvest-test -- --regenerate-fixtures
+just test-harvest --regenerate-fixtures
 ```
 
 Golden files live in `tests/fixtures/iso19115_3/`. If a JSON file
