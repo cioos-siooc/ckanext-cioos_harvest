@@ -44,7 +44,7 @@ class DatastreamSitemapHarvester(WAFHarvesterISO19115_3):
     redis_translation_store = "cohereTranslations"
     # translation/prompt-template.txt and glossary.json are cioos-commons'
     # translation/cohere/default/prompt-template.base.txt and glossary.json,
-    # kept up to date by cioos-commons' sync-repos workflow.
+    # kept up to date by cioos-ckan-docker-base's sync-cioos-commons workflow.
     cioos_commons_url = "https://github.com/cioos-siooc/cioos-commons"
     # Overridable with ckan.cohere.model (CKAN__COHERE__MODEL).  Not
     # command-a-translate-08-2025: Cohere caps production keys at 1,000
